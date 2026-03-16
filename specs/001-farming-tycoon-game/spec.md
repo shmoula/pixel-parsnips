@@ -161,7 +161,9 @@ net change in coin balance.
 **Turn Progression**
 
 - **FR-001**: The game MUST provide a "Next Day" button that advances the game
-  state by one day when clicked.
+  state by one day when clicked. The button MUST be disabled and visually
+  dimmed for the duration of the turn-processing sequence to prevent
+  double-submission.
 - **FR-002**: Clicking "Next Day" MUST execute the end-of-turn sequence in this
   order: (1) advance crop growth, (2) generate weather, (3) harvest mature crops
   applying the weather multiplier, (4) deduct Land Lease fee, (5) deduct Tax on
@@ -187,16 +189,18 @@ net change in coin balance.
 
 **Weather System**
 
-- **FR-007**: The game MUST randomly select one weather event per day from a
-  predefined set, each carrying a distinct yield multiplier.
+- **FR-007**: The game MUST randomly select one weather event per day from the
+  predefined set of five events using a uniform distribution (each event has
+  an equal 20% probability of occurring).
 - **FR-008**: The selected weather multiplier MUST be applied to the base yield
   of every crop harvested on that day before coins are awarded.
 - **FR-009**: The weather event name and multiplier MUST appear in the daily log.
 
 **Shop**
 
-- **FR-010**: The game MUST provide a shop accessible at any time between turns
-  where players can purchase seeds.
+- **FR-010**: The game MUST provide a shop as a persistent side-panel always
+  visible on screen alongside the farm grid; no open/close action is required
+  to access it.
 - **FR-011**: The shop MUST display the current price, a description, and the
   growth/yield stats for each available seed type.
 - **FR-012**: The game MUST offer at least one line of permanent tool upgrades
@@ -225,6 +229,14 @@ net change in coin balance.
   day, showing each harvest line-item (crop, base yield, weather multiplier,
   adjusted yield), the Land Lease deduction, the Tax deduction, and the net
   balance change.
+
+**Session Persistence**
+
+- **FR-023**: The game MUST save the full game state to localStorage after every
+  state-changing action (Next Day, plant, buy seed, buy upgrade, restart).
+- **FR-024**: On page load the game MUST restore the saved state if a valid
+  save exists; if the save is missing or schema-mismatched, the game MUST start
+  fresh and log a console notice.
 
 **Bankruptcy & Restart**
 
@@ -273,12 +285,22 @@ net change in coin balance.
 - **SC-006**: Weather multipliers are applied to harvests correctly (within ±1
   coin of the expected rounded value) in all tested weather/crop combinations.
 
+## Clarifications
+
+### Session 2026-03-16
+
+- Q: Should game state persist between browser sessions (localStorage) or reset on every page load? → A: localStorage — full game state persists across page refresh and browser close/reopen.
+- Q: What is the shop UI pattern — persistent panel or modal dialog? → A: Persistent side-panel always visible alongside the farm grid; no open/close toggle needed.
+- Q: Should "Next Day" be protected against double-clicks during processing? → A: Yes — button disabled and visually dimmed for the full duration of the turn sequence.
+- Q: What probability distribution governs daily weather selection? → A: Uniform — each of the 5 weather events has an equal 20% chance per day.
+- Q: Does the player start with seeds in inventory on Day 1? → A: No — seed inventory starts empty; player must buy all seeds from the shop using the 100-coin starting balance.
+
 ## Assumptions
 
 The following values are assumed for game balance and may be adjusted during
 implementation without changing the specification:
 
-- **Starting coin balance**: 100 coins
+- **Starting coin balance**: 100 coins (seed inventory starts empty; player must purchase all seeds)
 - **Farm plot capacity**: 12 plots per run
 - **Land Lease fee**: 15 coins per day (flat)
 - **Tax rate**: 5% of coin balance remaining after Land Lease deduction, per day
@@ -296,7 +318,8 @@ implementation without changing the specification:
   cumulatively (Tier 1: −20%, Tier 2: −40%, Tier 3: −60%)
 - **Tool upgrade costs**: 50 coins (Tier 1), 120 coins (Tier 2), 250 coins
   (Tier 3)
-- **Session persistence**: No save/load between browser sessions is required;
-  game state is in-memory only for a single session
+- **Session persistence**: Game state MUST be persisted to localStorage so
+  progress survives page refresh and browser close/reopen. A schema version
+  guard ensures stale data is discarded gracefully (see localStorage contract).
 - **Coin math**: All coin values are integers; fractional results are rounded
   down (floor) to the nearest whole coin
