@@ -31,8 +31,8 @@ All paths relative to repo root. Single SPA project: `src/`, `tests/`.
 
 - [ ] T001 Bootstrap Vite + React + TypeScript project at repo root (`npm create vite@latest . -- --template react-ts && npm install`)
 - [ ] T002 [P] Install and configure Tailwind CSS 3 with `farm` color palette and `pixel` font in `tailwind.config.ts` and `src/index.css`
-- [ ] T003 [P] Install and configure Vitest 1.x + React Testing Library in `vite.config.ts` and `tests/setup.ts`
-- [ ] T004 [P] Configure ESLint with `typescript-eslint` and Prettier; enable `noUnusedLocals: true` and `strict: true` in `tsconfig.json`
+- [ ] T003 [P] Install and configure Vitest 1.x + React Testing Library + `vitest-axe` in `vite.config.ts` and `tests/setup.ts` (import `vitest-axe/extend-expect` in setup to enable `toHaveNoViolations`)
+- [ ] T004 [P] Configure ESLint with `typescript-eslint` and Prettier; add `"complexity": ["error", 10]` to enforce cyclomatic complexity gate per constitution §I; enable `noUnusedLocals: true` and `strict: true` in `tsconfig.json`
 
 ---
 
@@ -69,11 +69,11 @@ All paths relative to repo root. Single SPA project: `src/`, `tests/`.
 ### Implementation for User Story 1
 
 - [ ] T012 [US1] Implement `plantSeed()` pure function in `src/engine/gameEngine.ts` (depends on T010; make T010 tests pass)
-- [ ] T013 [US1] Implement `processTurn()` — crop advancement and harvest steps only (1.0× multiplier, no lease/tax/bankruptcy yet) in `src/engine/gameEngine.ts` (depends on T011, T012)
+- [ ] T013 [US1] Implement `processTurn(state: GameState, weatherRoll: WeatherId = 'sunny'): TurnResult` — crop advancement and harvest steps only (default 'sunny' = 1.0× enables deterministic US1/US2/US3 tests; lease/tax/bankruptcy stubs return unchanged balance) in `src/engine/gameEngine.ts` (depends on T011, T012)
 - [ ] T014 [US1] Implement `useGameEngine` hook skeleton with `state`, `nextDay()`, and `plantSeed()` in `src/engine/useGameEngine.ts` (depends on T013)
-- [ ] T015 [P] [US1] Create `PlotCard` component displaying crop type, emoji/icon, and days-remaining badge (empty state shows empty-plot placeholder) in `src/components/PlotCard.tsx`
-- [ ] T016 [P] [US1] Create `FarmGrid` component rendering 12 `PlotCard` instances in a responsive grid in `src/components/FarmGrid.tsx` (depends on T015)
-- [ ] T017 [P] [US1] Create `HUD` component displaying Current Day and Coin Balance using `farm-gold` and `farm-sky` palette tokens in `src/components/HUD.tsx`
+- [ ] T015 [P] [US1] Create `PlotCard` component displaying crop type, emoji/icon, "Planted Day N" label, and days-remaining badge per FR-006 (empty state shows empty-plot placeholder) in `src/components/PlotCard.tsx`
+- [ ] T016 [US1] Create `FarmGrid` component rendering 12 `PlotCard` instances in a responsive grid in `src/components/FarmGrid.tsx` (depends on T015)
+- [ ] T017 [P] [US1] Create `HUD` component displaying Current Day, Coin Balance, Land Lease fee (15 coins/day), and Tax rate (5%) using `farm-gold` and `farm-sky` palette tokens per FR-017 in `src/components/HUD.tsx`
 - [ ] T018 [US1] Create `GameBoard` layout component composing `HUD`, `FarmGrid`, and "Next Day" button (button disabled during processing per FR-001) in `src/components/GameBoard.tsx` (depends on T016, T017)
 - [ ] T019 [US1] Update `App.tsx` to instantiate `useGameEngine` and render `<GameBoard>`, passing state and actions as props
 
@@ -90,7 +90,7 @@ confirm Bankruptcy screen shows days survived and peak balance with a working Re
 
 ### Tests for User Story 2 (TDD — write BEFORE implementation) ⚠️
 
-- [ ] T020 [P] [US2] Write failing tests for `processTurn()` lease deduction, tax deduction, exact-balance edge case, and bankruptcy trigger in `tests/engine/gameEngine.test.ts`
+- [ ] T020 [P] [US2] Write failing tests for `processTurn()` lease deduction, tax deduction, exact-balance edge case, and bankruptcy trigger — pass `weatherRoll='sunny'` in all calls to isolate drain logic from weather variance in `tests/engine/gameEngine.test.ts`
 
 ### Implementation for User Story 2
 
@@ -123,7 +123,7 @@ seed appears in inventory, balance decreases by 20 coins, and plot can accept th
 - [ ] T030 [US3] Add `buySeed()`, `buyUpgrade()`, `getSeedPrice()`, and `getNextUpgradeCost()` to `useGameEngine` hook in `src/engine/useGameEngine.ts` (depends on T029)
 - [ ] T031 [P] [US3] Create `SeedCard` component displaying seed name, growth duration, base yield, current price, seed-count badge, and Buy button (disabled + message when insufficient funds per FR-014) in `src/components/SeedCard.tsx`
 - [ ] T032 [P] [US3] Create `UpgradeCard` component displaying tier label, cost, cumulative discount, and Buy/Maxed button in `src/components/UpgradeCard.tsx`
-- [ ] T033 [US3] Create `Shop` persistent side-panel component composing three `SeedCard` instances and one `UpgradeCard` per remaining tier in `src/components/Shop.tsx` (depends on T031, T032)
+- [ ] T033 [US3] Create `Shop` persistent side-panel component composing three `SeedCard` instances and all three `UpgradeCard` tiers (purchased tiers styled as "Owned" and non-interactive; next purchasable tier shows cost; future tiers dimmed) in `src/components/Shop.tsx` (depends on T031, T032)
 - [ ] T034 [US3] Update `GameBoard` to include `<Shop>` as a persistent side-panel alongside `<FarmGrid>` per FR-010
 
 **Checkpoint**: Buy Radish seed → see it in inventory badge → plant → advance day → coins increase. Buy Tier 1 upgrade → verify all seed prices drop 20%.
@@ -173,14 +173,15 @@ seed appears in inventory, balance decreases by 20 coins, and plot can accept th
 
 **Purpose**: HUD completeness, accessibility, coverage gate, build verification.
 
-- [ ] T044 [P] Add Land Lease fee and Tax rate display to `HUD` component per FR-017 in `src/components/HUD.tsx`
+- [ ] T044 [P] Write 100-turn automated stress test: loop `processTurn` 100 times from `initialGameState`, assert no exceptions thrown, coin values are integers (no floating point), and displayed balance matches daily log closing balance on every turn (SC-002, SC-003) in `tests/engine/gameEngine.test.ts`
 - [ ] T045 [P] Add `aria-label` attributes to all interactive elements: "Next Day" button, all Buy buttons, PlotCard click targets, Restart button for WCAG 2.1 AA in relevant component files
 - [ ] T046 [P] Write hook integration tests covering full turn sequence (plant → nextDay → harvest income → lease → tax → updated balance) in `tests/engine/useGameEngine.test.ts`
-- [ ] T047 [P] Write smoke tests verifying `GameBoard` renders HUD, FarmGrid, Shop panel, and DailyLog without crashing in `tests/components/GameBoard.test.tsx`
+- [ ] T047 [P] Write smoke tests verifying `GameBoard` renders HUD, FarmGrid, Shop panel, and DailyLog without crashing, and assert `expect(container).toHaveNoViolations()` (via `vitest-axe`) to enforce WCAG 2.1 AA gate per constitution §III in `tests/components/GameBoard.test.tsx`
 - [ ] T048 Run Vitest coverage (`npm run test -- --coverage`); fix gaps until `src/engine/` ≥ 95% line coverage and overall ≥ 80%
 - [ ] T049 Run ESLint (`npx eslint src tests`) and fix all reported errors
 - [ ] T050 Run TypeScript check (`npx tsc --noEmit`) and resolve any type errors
 - [ ] T051 Run production build (`npm run build`); verify `dist/` is generated without errors and bundle is < 200 KB
+- [ ] T052 Create `.github/workflows/ci.yml` running Vitest + ESLint + TypeScript check + Lighthouse CI on every PR; record initial performance baseline (TTI target < 2 s; > 10% regression blocks merge per constitution §IV)
 
 ---
 
@@ -227,7 +228,7 @@ T006 [P] constants.ts
 T010 [P] plantSeed tests
 T011 [P] processTurn harvest tests
 → T012 (depends on T010) then T013 (depends on T011, T012)
-→ T015 [P], T016 [P], T017 [P] components in parallel
+→ T015 [P] and T017 [P] in parallel; then T016 (depends on T015)
 → T018 (depends on T016, T017) → T019
 
 # Phase 5 — all three test tasks in parallel:
