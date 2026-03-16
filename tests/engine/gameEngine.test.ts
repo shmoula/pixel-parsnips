@@ -4,6 +4,7 @@ import {
   plantSeed,
   processTurn,
 } from '../../src/engine/gameEngine';
+import { LAND_LEASE_FEE } from '../../src/engine/constants';
 import type { GameState } from '../../src/engine/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -214,5 +215,101 @@ describe('processTurn — crop growth and harvest (US1, sunny)', () => {
     processTurn(original, 'sunny');
 
     expect(original.currentDay).toBe(originalDay); // unchanged
+  });
+});
+
+// ── processTurn — economic drains & bankruptcy (US2, weatherRoll='sunny') ─────
+
+describe('processTurn — economic drains & bankruptcy (US2)', () => {
+  it('deducts LAND_LEASE_FEE (15 coins) from balance each turn', () => {
+    // 100 coins, no harvest → lease 15 → 85 → tax floor(85×0.05)=4 → 81
+    const state = initialGameState();
+    const { log } = processTurn(state, 'sunny');
+    expect(log.landLeaseDeducted).toBe(15);
+  });
+
+  it('deducts 5% tax on post-lease balance using Math.floor', () => {
+    // 100 → no harvest → 100 - 15 = 85 → tax = floor(85 × 0.05) = floor(4.25) = 4
+    const state = initialGameState();
+    const { log } = processTurn(state, 'sunny');
+    expect(log.taxDeducted).toBe(4);
+  });
+
+  it('records correct closingBalance (openingBalance + harvest - lease - tax)', () => {
+    // 100 + 0 - 15 - 4 = 81
+    const state = initialGameState();
+    const { state: after, log } = processTurn(state, 'sunny');
+    expect(log.closingBalance).toBe(81);
+    expect(after.coinBalance).toBe(81);
+  });
+
+  it('computes tax on balance AFTER lease deduction (not before)', () => {
+    // With radish harvest: 100 + 12 = 112 → lease → 97 → tax = floor(97 × 0.05) = floor(4.85) = 4
+    const state = withSeeds(initialGameState(), { radish: 1 });
+    const planted = plantSeed(state, 0, 'radish');
+    expect(planted.ok).toBe(true);
+    if (!planted.ok) return;
+
+    const { log } = processTurn(planted.state, 'sunny');
+    expect(log.landLeaseDeducted).toBe(15);
+    expect(log.taxDeducted).toBe(4); // floor((100+12-15) × 0.05) = floor(4.85) = 4
+    expect(log.netChange).toBe(12 - 15 - 4); // -7
+    expect(log.closingBalance).toBe(100 + 12 - 15 - 4); // 93
+  });
+
+  it('triggers bankruptcy when coinBalance < LAND_LEASE_FEE after harvest', () => {
+    const state = { ...initialGameState(), coinBalance: 10 }; // 10 < 15
+    const { state: after, isBankrupt } = processTurn(state, 'sunny');
+    expect(isBankrupt).toBe(true);
+    expect(after.phase).toBe('bankrupt');
+  });
+
+  it('sets phase=bankrupt and does NOT deduct lease or tax when bankrupt', () => {
+    const state = { ...initialGameState(), coinBalance: 10 };
+    const { state: after, log } = processTurn(state, 'sunny');
+    expect(after.phase).toBe('bankrupt');
+    expect(after.coinBalance).toBe(10); // unchanged — no lease/tax deducted
+    expect(log.landLeaseDeducted).toBe(0);
+    expect(log.taxDeducted).toBe(0);
+  });
+
+  it('does NOT trigger bankruptcy when coinBalance === LAND_LEASE_FEE (exact boundary)', () => {
+    // 15 is exactly the fee; 15 < 15 is false → not bankrupt
+    const state = { ...initialGameState(), coinBalance: LAND_LEASE_FEE };
+    const { state: after, isBankrupt } = processTurn(state, 'sunny');
+    expect(isBankrupt).toBe(false);
+    expect(after.phase).toBe('playing');
+    // 15 - 15 = 0, tax = floor(0 × 0.05) = 0 → balance = 0
+    expect(after.coinBalance).toBe(0);
+  });
+
+  it('triggers bankruptcy when coinBalance === LAND_LEASE_FEE - 1', () => {
+    const state = { ...initialGameState(), coinBalance: LAND_LEASE_FEE - 1 }; // 14
+    const { isBankrupt } = processTurn(state, 'sunny');
+    expect(isBankrupt).toBe(true);
+  });
+
+  it('does NOT increment currentDay when bankruptcy triggers', () => {
+    const state = { ...initialGameState(), coinBalance: 10 };
+    const { state: after } = processTurn(state, 'sunny');
+    expect(after.currentDay).toBe(state.currentDay); // day unchanged
+  });
+
+  it('updates peakBalance only AFTER drains are applied', () => {
+    // Plant pumpkin (65 coins yield, 3 days), run 3 turns
+    const s0 = withSeeds(initialGameState(), { pumpkin: 1 });
+    const planted = plantSeed(s0, 0, 'pumpkin');
+    expect(planted.ok).toBe(true);
+    if (!planted.ok) return;
+
+    let s = planted.state; // 100 coins
+    // Turn 1: no harvest → 100-15=85, tax=4 → 81
+    s = processTurn(s, 'sunny').state;
+    // Turn 2: no harvest → 81-15=66, tax=3 → 63
+    s = processTurn(s, 'sunny').state;
+    // Turn 3: harvest 65 → 63+65=128, -15=113, tax=floor(113×0.05)=5 → 108
+    const { state: final } = processTurn(s, 'sunny');
+
+    expect(final.peakBalance).toBe(108); // 108 > 100 initial peak
   });
 });

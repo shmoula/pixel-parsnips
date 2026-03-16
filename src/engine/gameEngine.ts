@@ -2,6 +2,7 @@ import {
   SCHEMA_VERSION,
   STARTING_BALANCE,
   PLOT_COUNT,
+  LAND_LEASE_FEE,
   CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
   TAX_RATE,
@@ -85,14 +86,12 @@ export function plantSeed(
   };
 }
 
-// ── T013: processTurn (US1 — harvest only; lease/tax/bankruptcy added in T021) ─
+// ── T013/T021: processTurn (FR-002 full 10-step sequence) ────────────────────
 
 /**
- * Executes the end-of-turn sequence.
- *
- * Phase 3 implements steps 1–4 and 8–10 (crop growth + harvest).
- * Steps 5–7 (bankruptcy check, lease, tax) are added in T021 (Phase 4).
- * Pass `weatherRoll` in tests for deterministic results; omit in production.
+ * Executes the full end-of-turn sequence (FR-002).
+ * Pass `weatherRoll` in tests for deterministic results; omit in production
+ * to use uniform-random weather selection (added in T037, Phase 6).
  */
 export function processTurn(
   state: GameState,
@@ -104,7 +103,7 @@ export function processTurn(
     return { ...plot, daysRemaining: plot.daysRemaining - 1 };
   });
 
-  // Step 2: Resolve weather
+  // Step 2: Resolve weather (uniform random added in T037; deterministic via weatherRoll)
   const weatherId = weatherRoll;
   const weather = WEATHER_DEFINITIONS[weatherId];
 
@@ -130,12 +129,40 @@ export function processTurn(
     0
   );
   const openingBalance = state.coinBalance;
-  const coinBalance = openingBalance + totalHarvestIncome;
+  let coinBalance = openingBalance + totalHarvestIncome;
 
-  // Steps 5–7 (lease deduction, tax, bankruptcy) will be added in T021.
-  // Stubs: deductions are 0 so balance is unchanged beyond harvest income.
-  const landLeaseDeducted = 0;
-  const taxDeducted = 0;
+  // Step 5: Bankruptcy check — if balance < lease fee, game over
+  if (coinBalance < LAND_LEASE_FEE) {
+    const log: DailyLogEntry = {
+      day: state.currentDay,
+      weatherId,
+      weatherMultiplier: weather.multiplier,
+      harvests,
+      totalHarvestIncome,
+      openingBalance,
+      landLeaseDeducted: 0,
+      taxRate: TAX_RATE,
+      taxDeducted: 0,
+      netChange: totalHarvestIncome,
+      closingBalance: coinBalance,
+    };
+    const bankruptState: GameState = {
+      ...state,
+      plots: harvestedPlots,
+      coinBalance,
+      phase: 'bankrupt',
+      lastDailyLog: log,
+    };
+    return { state: bankruptState, log, isBankrupt: true };
+  }
+
+  // Step 6: Deduct land lease fee
+  coinBalance -= LAND_LEASE_FEE;
+  const landLeaseDeducted = LAND_LEASE_FEE;
+
+  // Step 7: Compute and deduct tax (5% of post-lease balance, floor-rounded)
+  const taxDeducted = coins(coinBalance * TAX_RATE);
+  coinBalance -= taxDeducted;
 
   // Step 8: Increment currentDay
   const currentDay = state.currentDay + 1;

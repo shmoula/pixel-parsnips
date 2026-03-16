@@ -90,15 +90,15 @@ confirm Bankruptcy screen shows days survived and peak balance with a working Re
 
 ### Tests for User Story 2 (TDD — write BEFORE implementation) ⚠️
 
-- [ ] T020 [P] [US2] Write failing tests for `processTurn()` lease deduction, tax deduction, exact-balance edge case, and bankruptcy trigger — pass `weatherRoll='sunny'` in all calls to isolate drain logic from weather variance in `tests/engine/gameEngine.test.ts`
+- [x] T020 [P] [US2] Write failing tests for `processTurn()` lease deduction, tax deduction, exact-balance edge case, and bankruptcy trigger — pass `weatherRoll='sunny'` in all calls to isolate drain logic from weather variance in `tests/engine/gameEngine.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T021 [US2] Extend `processTurn()` to add steps 4–6 of FR-002 sequence: lease deduction, tax deduction, bankruptcy check in `src/engine/gameEngine.ts` (depends on T020; make T020 tests pass)
-- [ ] T022 [P] [US2] Write failing smoke test for `BankruptcyScreen` rendering (days survived, peak balance, Restart button present) in `tests/components/GameBoard.test.tsx`
-- [ ] T023 [US2] Create `BankruptcyScreen` component displaying days survived, peak balance, and Restart button in `src/components/BankruptcyScreen.tsx` (depends on T022)
-- [ ] T024 [US2] Add `restart()` action to `useGameEngine` hook; resets state to `initialGameState()` in `src/engine/useGameEngine.ts`
-- [ ] T025 [US2] Update `App.tsx` to render `<BankruptcyScreen>` when `state.phase === 'bankrupt'`, passing `daysPlayed`, `peakBalance`, and `restart` props
+- [x] T021 [US2] Extend `processTurn()` to add steps 4–6 of FR-002 sequence: lease deduction, tax deduction, bankruptcy check in `src/engine/gameEngine.ts` (depends on T020; make T020 tests pass)
+- [x] T022 [P] [US2] Write failing smoke test for `BankruptcyScreen` rendering (days survived, peak balance, Restart button present) in `tests/components/GameBoard.test.tsx`
+- [x] T023 [US2] Create `BankruptcyScreen` component displaying days survived, peak balance, and Restart button in `src/components/BankruptcyScreen.tsx` (depends on T022)
+- [x] T024 [US2] Add `restart()` action to `useGameEngine` hook; resets state to `initialGameState()` in `src/engine/useGameEngine.ts`
+- [x] T025 [US2] Update `App.tsx` to render `<BankruptcyScreen>` when `state.phase === 'bankrupt'`, passing `daysPlayed`, `peakBalance`, and `restart` props
 
 **Checkpoint**: Run below 15-coin threshold → Bankruptcy screen appears → click Restart → Day 1 fresh start confirmed.
 
