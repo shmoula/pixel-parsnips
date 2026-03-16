@@ -1,6 +1,16 @@
-// Placeholder — will be wired to useGameEngine in Phase 3 (T019)
+import { useGameEngine } from './engine/useGameEngine';
+import { GameBoard } from './components/GameBoard';
+
 function App() {
-  return <div id="app" />;
+  const { state, nextDay, plantSeed } = useGameEngine();
+
+  return (
+    <GameBoard
+      state={state}
+      onNextDay={nextDay}
+      onPlantSeed={plantSeed}
+    />
+  );
 }
 
 export default App;

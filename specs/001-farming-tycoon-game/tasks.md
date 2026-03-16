@@ -63,19 +63,19 @@ All paths relative to repo root. Single SPA project: `src/`, `tests/`.
 
 > **NOTE: Write these tests first; confirm they FAIL before implementing**
 
-- [ ] T010 [P] [US1] Write failing tests for `plantSeed()` (empty plot success, occupied plot error, no-seed error, invalid-plot error) in `tests/engine/gameEngine.test.ts`
-- [ ] T011 [P] [US1] Write failing tests for `processTurn()` crop-growth and harvest steps (1× multiplier placeholder, no drains yet) in `tests/engine/gameEngine.test.ts`
+- [x] T010 [P] [US1] Write failing tests for `plantSeed()` (empty plot success, occupied plot error, no-seed error, invalid-plot error) in `tests/engine/gameEngine.test.ts`
+- [x] T011 [P] [US1] Write failing tests for `processTurn()` crop-growth and harvest steps (1× multiplier placeholder, no drains yet) in `tests/engine/gameEngine.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Implement `plantSeed()` pure function in `src/engine/gameEngine.ts` (depends on T010; make T010 tests pass)
-- [ ] T013 [US1] Implement `processTurn(state: GameState, weatherRoll: WeatherId = 'sunny'): TurnResult` — crop advancement and harvest steps only (default 'sunny' = 1.0× enables deterministic US1/US2/US3 tests; lease/tax/bankruptcy stubs return unchanged balance) in `src/engine/gameEngine.ts` (depends on T011, T012)
-- [ ] T014 [US1] Implement `useGameEngine` hook skeleton with `state`, `nextDay()`, and `plantSeed()` in `src/engine/useGameEngine.ts` (depends on T013)
-- [ ] T015 [P] [US1] Create `PlotCard` component displaying crop type, emoji/icon, "Planted Day N" label, and days-remaining badge per FR-006 (empty state shows empty-plot placeholder) in `src/components/PlotCard.tsx`
-- [ ] T016 [US1] Create `FarmGrid` component rendering 12 `PlotCard` instances in a responsive grid in `src/components/FarmGrid.tsx` (depends on T015)
-- [ ] T017 [P] [US1] Create `HUD` component displaying Current Day, Coin Balance, Land Lease fee (15 coins/day), and Tax rate (5%) using `farm-gold` and `farm-sky` palette tokens per FR-017 in `src/components/HUD.tsx`
-- [ ] T018 [US1] Create `GameBoard` layout component composing `HUD`, `FarmGrid`, and "Next Day" button (button disabled during processing per FR-001) in `src/components/GameBoard.tsx` (depends on T016, T017)
-- [ ] T019 [US1] Update `App.tsx` to instantiate `useGameEngine` and render `<GameBoard>`, passing state and actions as props
+- [x] T012 [US1] Implement `plantSeed()` pure function in `src/engine/gameEngine.ts` (depends on T010; make T010 tests pass)
+- [x] T013 [US1] Implement `processTurn(state: GameState, weatherRoll: WeatherId = 'sunny'): TurnResult` — crop advancement and harvest steps only (default 'sunny' = 1.0× enables deterministic US1/US2/US3 tests; lease/tax/bankruptcy stubs return unchanged balance) in `src/engine/gameEngine.ts` (depends on T011, T012)
+- [x] T014 [US1] Implement `useGameEngine` hook skeleton with `state`, `nextDay()`, and `plantSeed()` in `src/engine/useGameEngine.ts` (depends on T013)
+- [x] T015 [P] [US1] Create `PlotCard` component displaying crop type, emoji/icon, "Planted Day N" label, and days-remaining badge per FR-006 (empty state shows empty-plot placeholder) in `src/components/PlotCard.tsx`
+- [x] T016 [US1] Create `FarmGrid` component rendering 12 `PlotCard` instances in a responsive grid in `src/components/FarmGrid.tsx` (depends on T015)
+- [x] T017 [P] [US1] Create `HUD` component displaying Current Day, Coin Balance, Land Lease fee (15 coins/day), and Tax rate (5%) using `farm-gold` and `farm-sky` palette tokens per FR-017 in `src/components/HUD.tsx`
+- [x] T018 [US1] Create `GameBoard` layout component composing `HUD`, `FarmGrid`, and "Next Day" button (button disabled during processing per FR-001) in `src/components/GameBoard.tsx` (depends on T016, T017)
+- [x] T019 [US1] Update `App.tsx` to instantiate `useGameEngine` and render `<GameBoard>`, passing state and actions as props
 
 **Checkpoint**: Plant a Radish, click "Next Day", verify balance increases by 12 coins and plot empties. "Next Day" button dims during the turn.
 
