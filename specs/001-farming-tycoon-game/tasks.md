@@ -29,10 +29,10 @@ All paths relative to repo root. Single SPA project: `src/`, `tests/`.
 
 **Purpose**: Bootstrap toolchain; no game logic yet.
 
-- [ ] T001 Bootstrap Vite + React + TypeScript project at repo root (`npm create vite@latest . -- --template react-ts && npm install`)
-- [ ] T002 [P] Install and configure Tailwind CSS 3 with `farm` color palette and `pixel` font in `tailwind.config.ts` and `src/index.css`
-- [ ] T003 [P] Install and configure Vitest 1.x + React Testing Library + `vitest-axe` in `vite.config.ts` and `tests/setup.ts` (import `vitest-axe/extend-expect` in setup to enable `toHaveNoViolations`)
-- [ ] T004 [P] Configure ESLint with `typescript-eslint` and Prettier; add `"complexity": ["error", 10]` to enforce cyclomatic complexity gate per constitution §I; enable `noUnusedLocals: true` and `strict: true` in `tsconfig.json`
+- [x] T001 Bootstrap Vite + React + TypeScript project at repo root (`npm create vite@latest . -- --template react-ts && npm install`)
+- [x] T002 [P] Install and configure Tailwind CSS 3 with `farm` color palette and `pixel` font in `tailwind.config.ts` and `src/index.css`
+- [x] T003 [P] Install and configure Vitest 1.x + React Testing Library + `vitest-axe` in `vite.config.ts` and `tests/setup.ts` (import `vitest-axe/extend-expect` in setup to enable `toHaveNoViolations`)
+- [x] T004 [P] Configure ESLint with `typescript-eslint` and Prettier; add `"complexity": ["error", 10]` to enforce cyclomatic complexity gate per constitution §I; enable `noUnusedLocals: true` and `strict: true` in `tsconfig.json`
 
 ---
 
