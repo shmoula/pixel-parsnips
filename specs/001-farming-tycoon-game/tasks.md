@@ -42,11 +42,11 @@ All paths relative to repo root. Single SPA project: `src/`, `tests/`.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 [P] Define all TypeScript interfaces and union types in `src/engine/types.ts` (`GameState`, `PlotState`, `CropId`, `WeatherId`, `UpgradeTier`, `SeedInventory`, `HarvestEvent`, `DailyLogEntry`, `TurnResult`, `PlantResult`, `BuyResult`, `UpgradeResult`)
-- [ ] T006 [P] Define all game constants and `coins()` helper in `src/engine/constants.ts` (`CROP_DEFINITIONS`, `WEATHER_DEFINITIONS`, `UPGRADE_TIER_DEFINITIONS`, `LAND_LEASE_FEE`, `TAX_RATE`, `PLOT_COUNT`, `STARTING_BALANCE`, `MAX_UPGRADE_TIER`, `SCHEMA_VERSION`)
-- [ ] T007 Implement `initialGameState()` factory function in `src/engine/gameEngine.ts` (depends on T005, T006)
-- [ ] T008 [P] Create `src/App.tsx` root component skeleton that renders a placeholder `<div>` (wired up in US1)
-- [ ] T009 [P] Create `src/main.tsx` Vite entry point mounting `<App />` into `#root`
+- [x] T005 [P] Define all TypeScript interfaces and union types in `src/engine/types.ts` (`GameState`, `PlotState`, `CropId`, `WeatherId`, `UpgradeTier`, `SeedInventory`, `HarvestEvent`, `DailyLogEntry`, `TurnResult`, `PlantResult`, `BuyResult`, `UpgradeResult`)
+- [x] T006 [P] Define all game constants and `coins()` helper in `src/engine/constants.ts` (`CROP_DEFINITIONS`, `WEATHER_DEFINITIONS`, `UPGRADE_TIER_DEFINITIONS`, `LAND_LEASE_FEE`, `TAX_RATE`, `PLOT_COUNT`, `STARTING_BALANCE`, `MAX_UPGRADE_TIER`, `SCHEMA_VERSION`)
+- [x] T007 Implement `initialGameState()` factory function in `src/engine/gameEngine.ts` (depends on T005, T006)
+- [x] T008 [P] Create `src/App.tsx` root component skeleton that renders a placeholder `<div>` (wired up in US1)
+- [x] T009 [P] Create `src/main.tsx` Vite entry point mounting `<App />` into `#root`
 
 **Checkpoint**: `npm run dev` starts; blank page loads without errors; `npx tsc --noEmit` passes.
 
