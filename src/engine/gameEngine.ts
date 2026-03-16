@@ -3,8 +3,10 @@ import {
   STARTING_BALANCE,
   PLOT_COUNT,
   LAND_LEASE_FEE,
+  MAX_UPGRADE_TIER,
   CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
+  UPGRADE_TIER_DEFINITIONS,
   TAX_RATE,
   coins,
 } from './constants';
@@ -13,7 +15,10 @@ import type {
   PlotState,
   CropId,
   WeatherId,
+  UpgradeTier,
   PlantResult,
+  BuyResult,
+  UpgradeResult,
   TurnResult,
   DailyLogEntry,
   HarvestEvent,
@@ -82,6 +87,74 @@ export function plantSeed(
         ...state.seedInventory,
         [cropId]: state.seedInventory[cropId] - 1,
       },
+    },
+  };
+}
+
+// ── T029: computeSeedCost ─────────────────────────────────────────────────────
+
+/** Returns the current purchase price for one seed, applying upgrade discount. */
+export function computeSeedCost(cropId: CropId, upgradeTier: UpgradeTier): number {
+  const crop = CROP_DEFINITIONS[cropId];
+  if (upgradeTier === 0) return crop.baseSeedCost;
+  const def = UPGRADE_TIER_DEFINITIONS[upgradeTier - 1];
+  return coins(crop.baseSeedCost * (1 - def.cumulativeDiscount));
+}
+
+// ── T029: buySeed ─────────────────────────────────────────────────────────────
+
+/** Purchases seeds from the shop. Pure — no mutations. */
+export function buySeed(
+  state: GameState,
+  cropId: CropId,
+  quantity: number
+): BuyResult {
+  const unitCost = computeSeedCost(cropId, state.upgradeTier);
+  const totalCost = unitCost * quantity;
+
+  if (state.coinBalance < totalCost) {
+    return {
+      ok: false,
+      error: 'insufficient_funds',
+      cost: totalCost,
+      balance: state.coinBalance,
+    };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      coinBalance: state.coinBalance - totalCost,
+      seedInventory: {
+        ...state.seedInventory,
+        [cropId]: state.seedInventory[cropId] + quantity,
+      },
+    },
+  };
+}
+
+// ── T029: buyUpgrade ──────────────────────────────────────────────────────────
+
+/** Purchases the next tool upgrade tier. Pure — no mutations. */
+export function buyUpgrade(state: GameState): UpgradeResult {
+  if (state.upgradeTier >= MAX_UPGRADE_TIER) {
+    return { ok: false, error: 'max_tier_reached' };
+  }
+
+  const nextTier = (state.upgradeTier + 1) as UpgradeTier;
+  const def = UPGRADE_TIER_DEFINITIONS[nextTier - 1];
+
+  if (state.coinBalance < def.cost) {
+    return { ok: false, error: 'insufficient_funds' };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      upgradeTier: nextTier,
+      coinBalance: state.coinBalance - def.cost,
     },
   };
 }

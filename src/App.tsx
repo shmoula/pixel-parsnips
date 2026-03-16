@@ -3,7 +3,16 @@ import { GameBoard } from './components/GameBoard';
 import { BankruptcyScreen } from './components/BankruptcyScreen';
 
 function App() {
-  const { state, nextDay, plantSeed, restart } = useGameEngine();
+  const {
+    state,
+    nextDay,
+    plantSeed,
+    buySeed,
+    buyUpgrade,
+    restart,
+    getSeedPrice,
+    getNextUpgradeCost,
+  } = useGameEngine();
 
   if (state.phase === 'bankrupt') {
     return (
@@ -20,6 +29,10 @@ function App() {
       state={state}
       onNextDay={nextDay}
       onPlantSeed={plantSeed}
+      onBuySeed={cropId => buySeed(cropId, 1)}
+      onBuyUpgrade={buyUpgrade}
+      getSeedPrice={getSeedPrice}
+      getNextUpgradeCost={getNextUpgradeCost}
     />
   );
 }

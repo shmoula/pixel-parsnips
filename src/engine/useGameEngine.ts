@@ -1,6 +1,13 @@
 import { useState, useCallback } from 'react';
-import { initialGameState, plantSeed, processTurn } from './gameEngine';
-import { CROP_DEFINITIONS, UPGRADE_TIER_DEFINITIONS, coins } from './constants';
+import {
+  initialGameState,
+  plantSeed,
+  processTurn,
+  buySeed as engineBuySeed,
+  buyUpgrade as engineBuyUpgrade,
+  computeSeedCost,
+} from './gameEngine';
+import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER } from './constants';
 import type { GameState, CropId } from './types';
 
 export interface GameEngineHook {
@@ -26,40 +33,43 @@ export function useGameEngine(): GameEngineHook {
     let success = false;
     setState(prev => {
       const result = plantSeed(prev, plotId, cropId);
-      if (result.ok) {
-        success = true;
-        return result.state;
-      }
+      if (result.ok) { success = true; return result.state; }
       return prev;
     });
     return success;
   }, []);
 
-  // buySeed and buyUpgrade are stubs for Phase 3; implemented in T030 (Phase 5)
-  const buySeed = useCallback(
-    (_cropId: CropId, _quantity: number): boolean => false,
-    []
-  );
+  const buySeed = useCallback((cropId: CropId, quantity: number): boolean => {
+    let success = false;
+    setState(prev => {
+      const result = engineBuySeed(prev, cropId, quantity);
+      if (result.ok) { success = true; return result.state; }
+      return prev;
+    });
+    return success;
+  }, []);
 
-  const buyUpgrade = useCallback((): boolean => false, []);
+  const buyUpgrade = useCallback((): boolean => {
+    let success = false;
+    setState(prev => {
+      const result = engineBuyUpgrade(prev);
+      if (result.ok) { success = true; return result.state; }
+      return prev;
+    });
+    return success;
+  }, []);
 
   const restart = useCallback(() => {
     setState(initialGameState());
   }, []);
 
   const getSeedPrice = useCallback(
-    (cropId: CropId): number => {
-      const crop = CROP_DEFINITIONS[cropId];
-      const tier = state.upgradeTier;
-      if (tier === 0) return crop.baseSeedCost;
-      const def = UPGRADE_TIER_DEFINITIONS[tier - 1];
-      return coins(crop.baseSeedCost * (1 - def.cumulativeDiscount));
-    },
+    (cropId: CropId): number => computeSeedCost(cropId, state.upgradeTier),
     [state.upgradeTier]
   );
 
   const getNextUpgradeCost = useCallback((): number | null => {
-    if (state.upgradeTier >= 3) return null;
+    if (state.upgradeTier >= MAX_UPGRADE_TIER) return null;
     return UPGRADE_TIER_DEFINITIONS[state.upgradeTier].cost;
   }, [state.upgradeTier]);
 

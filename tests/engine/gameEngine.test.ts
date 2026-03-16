@@ -3,6 +3,9 @@ import {
   initialGameState,
   plantSeed,
   processTurn,
+  computeSeedCost,
+  buySeed,
+  buyUpgrade,
 } from '../../src/engine/gameEngine';
 import { LAND_LEASE_FEE } from '../../src/engine/constants';
 import type { GameState } from '../../src/engine/types';
@@ -311,5 +314,129 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
     const { state: final } = processTurn(s, 'sunny');
 
     expect(final.peakBalance).toBe(108); // 108 > 100 initial peak
+  });
+});
+
+// ── computeSeedCost (US3) ─────────────────────────────────────────────────────
+
+describe('computeSeedCost', () => {
+  it('returns full base price at tier 0 (no discount)', () => {
+    expect(computeSeedCost('radish', 0)).toBe(5);
+    expect(computeSeedCost('parsnip', 0)).toBe(10);
+    expect(computeSeedCost('pumpkin', 0)).toBe(20);
+  });
+
+  it('applies 20% discount at tier 1 (floor-rounded)', () => {
+    // coins(baseSeedCost * (1 - 0.20))
+    expect(computeSeedCost('radish', 1)).toBe(4);   // floor(5 * 0.8) = 4
+    expect(computeSeedCost('parsnip', 1)).toBe(8);  // floor(10 * 0.8) = 8
+    expect(computeSeedCost('pumpkin', 1)).toBe(16); // floor(20 * 0.8) = 16
+  });
+
+  it('applies 40% discount at tier 2 (floor-rounded)', () => {
+    expect(computeSeedCost('radish', 2)).toBe(3);   // floor(5 * 0.6) = 3
+    expect(computeSeedCost('parsnip', 2)).toBe(6);  // floor(10 * 0.6) = 6
+    expect(computeSeedCost('pumpkin', 2)).toBe(12); // floor(20 * 0.6) = 12
+  });
+
+  it('applies 60% discount at tier 3 (floor-rounded)', () => {
+    expect(computeSeedCost('radish', 3)).toBe(2);   // floor(5 * 0.4) = 2
+    expect(computeSeedCost('parsnip', 3)).toBe(4);  // floor(10 * 0.4) = 4
+    expect(computeSeedCost('pumpkin', 3)).toBe(8);  // floor(20 * 0.4) = 8
+  });
+});
+
+// ── buySeed (US3) ─────────────────────────────────────────────────────────────
+
+describe('buySeed', () => {
+  it('deducts correct cost from balance and adds seeds to inventory', () => {
+    const state = initialGameState(); // 100 coins, tier 0
+    const result = buySeed(state, 'radish', 1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.coinBalance).toBe(95);        // 100 - 5
+    expect(result.state.seedInventory.radish).toBe(1);
+  });
+
+  it('can buy multiple seeds at once', () => {
+    const state = initialGameState(); // 100 coins
+    const result = buySeed(state, 'parsnip', 3);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.coinBalance).toBe(70);        // 100 - 3*10
+    expect(result.state.seedInventory.parsnip).toBe(3);
+  });
+
+  it('applies upgrade discount when buying seeds', () => {
+    const state = { ...initialGameState(), upgradeTier: 1 as const }; // 20% off
+    const result = buySeed(state, 'radish', 1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.coinBalance).toBe(96); // 100 - 4 (radish at tier 1)
+  });
+
+  it('returns insufficient_funds when balance is too low', () => {
+    const state = { ...initialGameState(), coinBalance: 4 }; // radish costs 5
+    const result = buySeed(state, 'radish', 1);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toBe('insufficient_funds');
+    expect(result.cost).toBe(5);
+    expect(result.balance).toBe(4);
+  });
+
+  it('does not mutate other seed counts when buying one type', () => {
+    const state = withSeeds(initialGameState(), { parsnip: 2 });
+    const result = buySeed(state, 'radish', 1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.seedInventory.parsnip).toBe(2); // unchanged
+  });
+});
+
+// ── buyUpgrade (US3) ──────────────────────────────────────────────────────────
+
+describe('buyUpgrade', () => {
+  it('increments upgradeTier and deducts cost for tier 0 → 1 (costs 50)', () => {
+    const state = initialGameState(); // 100 coins, tier 0
+    const result = buyUpgrade(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.upgradeTier).toBe(1);
+    expect(result.state.coinBalance).toBe(50); // 100 - 50
+  });
+
+  it('increments upgradeTier and deducts cost for tier 1 → 2 (costs 120)', () => {
+    const state = { ...initialGameState(), upgradeTier: 1 as const, coinBalance: 200 };
+    const result = buyUpgrade(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.upgradeTier).toBe(2);
+    expect(result.state.coinBalance).toBe(80); // 200 - 120
+  });
+
+  it('increments upgradeTier and deducts cost for tier 2 → 3 (costs 250)', () => {
+    const state = { ...initialGameState(), upgradeTier: 2 as const, coinBalance: 300 };
+    const result = buyUpgrade(state);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.upgradeTier).toBe(3);
+    expect(result.state.coinBalance).toBe(50); // 300 - 250
+  });
+
+  it('returns max_tier_reached when already at tier 3', () => {
+    const state = { ...initialGameState(), upgradeTier: 3 as const };
+    const result = buyUpgrade(state);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toBe('max_tier_reached');
+  });
+
+  it('returns insufficient_funds when balance < next tier cost', () => {
+    const state = { ...initialGameState(), coinBalance: 49 }; // tier 1 costs 50
+    const result = buyUpgrade(state);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toBe('insufficient_funds');
   });
 });

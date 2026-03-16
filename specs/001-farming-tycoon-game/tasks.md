@@ -113,18 +113,18 @@ seed appears in inventory, balance decreases by 20 coins, and plot can accept th
 
 ### Tests for User Story 3 (TDD — write BEFORE implementation) ⚠️
 
-- [ ] T026 [P] [US3] Write failing tests for `computeSeedCost()` (tier 0 = full price, tier 1 = −20%, tier 2 = −40%, tier 3 = −60%) in `tests/engine/gameEngine.test.ts`
-- [ ] T027 [P] [US3] Write failing tests for `buySeed()` (success, insufficient funds, balance decremented, inventory incremented) in `tests/engine/gameEngine.test.ts`
-- [ ] T028 [P] [US3] Write failing tests for `buyUpgrade()` (success, insufficient funds, max tier blocked) in `tests/engine/gameEngine.test.ts`
+- [x] T026 [P] [US3] Write failing tests for `computeSeedCost()` (tier 0 = full price, tier 1 = −20%, tier 2 = −40%, tier 3 = −60%) in `tests/engine/gameEngine.test.ts`
+- [x] T027 [P] [US3] Write failing tests for `buySeed()` (success, insufficient funds, balance decremented, inventory incremented) in `tests/engine/gameEngine.test.ts`
+- [x] T028 [P] [US3] Write failing tests for `buyUpgrade()` (success, insufficient funds, max tier blocked) in `tests/engine/gameEngine.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Implement `computeSeedCost()`, `buySeed()`, and `buyUpgrade()` pure functions in `src/engine/gameEngine.ts` (depends on T026–T028; make all three test suites pass)
-- [ ] T030 [US3] Add `buySeed()`, `buyUpgrade()`, `getSeedPrice()`, and `getNextUpgradeCost()` to `useGameEngine` hook in `src/engine/useGameEngine.ts` (depends on T029)
-- [ ] T031 [P] [US3] Create `SeedCard` component displaying seed name, growth duration, base yield, current price, seed-count badge, and Buy button (disabled + message when insufficient funds per FR-014) in `src/components/SeedCard.tsx`
-- [ ] T032 [P] [US3] Create `UpgradeCard` component displaying tier label, cost, cumulative discount, and Buy/Maxed button in `src/components/UpgradeCard.tsx`
-- [ ] T033 [US3] Create `Shop` persistent side-panel component composing three `SeedCard` instances and all three `UpgradeCard` tiers (purchased tiers styled as "Owned" and non-interactive; next purchasable tier shows cost; future tiers dimmed) in `src/components/Shop.tsx` (depends on T031, T032)
-- [ ] T034 [US3] Update `GameBoard` to include `<Shop>` as a persistent side-panel alongside `<FarmGrid>` per FR-010
+- [x] T029 [US3] Implement `computeSeedCost()`, `buySeed()`, and `buyUpgrade()` pure functions in `src/engine/gameEngine.ts` (depends on T026–T028; make all three test suites pass)
+- [x] T030 [US3] Add `buySeed()`, `buyUpgrade()`, `getSeedPrice()`, and `getNextUpgradeCost()` to `useGameEngine` hook in `src/engine/useGameEngine.ts` (depends on T029)
+- [x] T031 [P] [US3] Create `SeedCard` component displaying seed name, growth duration, base yield, current price, seed-count badge, and Buy button (disabled + message when insufficient funds per FR-014) in `src/components/SeedCard.tsx`
+- [x] T032 [P] [US3] Create `UpgradeCard` component displaying tier label, cost, cumulative discount, and Buy/Maxed button in `src/components/UpgradeCard.tsx`
+- [x] T033 [US3] Create `Shop` persistent side-panel component composing three `SeedCard` instances and all three `UpgradeCard` tiers (purchased tiers styled as "Owned" and non-interactive; next purchasable tier shows cost; future tiers dimmed) in `src/components/Shop.tsx` (depends on T031, T032)
+- [x] T034 [US3] Update `GameBoard` to include `<Shop>` as a persistent side-panel alongside `<FarmGrid>` per FR-010
 
 **Checkpoint**: Buy Radish seed → see it in inventory badge → plant → advance day → coins increase. Buy Tier 1 upgrade → verify all seed prices drop 20%.
 

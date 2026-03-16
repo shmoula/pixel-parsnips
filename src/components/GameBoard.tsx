@@ -2,44 +2,80 @@ import { useState } from 'react';
 import type { GameState, CropId } from '../engine/types';
 import { HUD } from './HUD';
 import { FarmGrid } from './FarmGrid';
+import { Shop } from './Shop';
 
 interface GameBoardProps {
   state: GameState;
   onNextDay: () => void;
   onPlantSeed: (plotId: number, cropId: CropId) => boolean;
+  onBuySeed: (cropId: CropId) => void;
+  onBuyUpgrade: () => void;
+  getSeedPrice: (cropId: CropId) => number;
+  getNextUpgradeCost: () => number | null;
 }
 
-export function GameBoard({ state, onNextDay, onPlantSeed }: GameBoardProps) {
+export function GameBoard({
+  state,
+  onNextDay,
+  onPlantSeed,
+  onBuySeed,
+  onBuyUpgrade,
+  getSeedPrice,
+  getNextUpgradeCost,
+}: GameBoardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedCrop] = useState<CropId | null>(null);
+  const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
 
   function handleNextDay() {
     if (isProcessing) return;
     setIsProcessing(true);
-    // Slight async tick so the disabled state renders before processing
     setTimeout(() => {
       onNextDay();
       setIsProcessing(false);
     }, 0);
   }
 
-  function handlePlant(plotId: number) {
-    if (selectedCrop) {
-      onPlantSeed(plotId, selectedCrop);
-    }
+  function handlePlot(plotId: number) {
+    if (!selectedCrop) return;
+    const planted = onPlantSeed(plotId, selectedCrop);
+    if (planted) setSelectedCrop(null); // deselect after successful plant
+  }
+
+  function handleBuySeed(cropId: CropId) {
+    onBuySeed(cropId);
+    setSelectedCrop(cropId); // auto-select the just-bought crop
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 min-h-screen bg-farm-parchment">
+    <div className="flex flex-col min-h-screen bg-farm-parchment">
       <HUD currentDay={state.currentDay} coinBalance={state.coinBalance} />
 
-      <main className="flex flex-col gap-4 flex-1">
-        <FarmGrid
-          plots={state.plots}
-          onPlant={handlePlant}
-          selectedCrop={selectedCrop}
+      <div className="flex flex-1 gap-4 p-4 overflow-hidden">
+        {/* Farm grid — main area */}
+        <main className="flex flex-col gap-4 flex-1 min-w-0">
+          {selectedCrop && (
+            <p className="font-pixel text-xs text-farm-ink bg-farm-gold/30 px-3 py-2 rounded">
+              Planting: {selectedCrop} — click an empty plot
+            </p>
+          )}
+          <FarmGrid
+            plots={state.plots}
+            onPlant={handlePlot}
+            selectedCrop={selectedCrop}
+          />
+        </main>
+
+        {/* Shop — persistent side-panel (FR-010) */}
+        <Shop
+          coinBalance={state.coinBalance}
+          upgradeTier={state.upgradeTier}
+          seedInventory={state.seedInventory}
+          getSeedPrice={getSeedPrice}
+          onBuySeed={handleBuySeed}
+          onBuyUpgrade={onBuyUpgrade}
+          getNextUpgradeCost={getNextUpgradeCost}
         />
-      </main>
+      </div>
 
       <footer className="flex justify-center py-4">
         <button
