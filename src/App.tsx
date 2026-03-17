@@ -5,6 +5,7 @@ import { BankruptcyScreen } from './components/BankruptcyScreen';
 function App() {
   const {
     state,
+    lastDailyLog,
     nextDay,
     plantSeed,
     buySeed,
@@ -27,6 +28,7 @@ function App() {
   return (
     <GameBoard
       state={state}
+      lastDailyLog={lastDailyLog}
       onNextDay={nextDay}
       onPlantSeed={plantSeed}
       onBuySeed={cropId => buySeed(cropId, 1)}

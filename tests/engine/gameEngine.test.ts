@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   initialGameState,
   plantSeed,
@@ -163,10 +163,10 @@ describe('processTurn — crop growth and harvest (US1, sunny)', () => {
 
   it('harvests multiple plots in the same turn and accumulates income', () => {
     const state = withSeeds(initialGameState(), { radish: 2 });
-    let s = plantSeed(state, 0, 'radish');
+    const s = plantSeed(state, 0, 'radish');
     expect(s.ok).toBe(true);
     if (!s.ok) return;
-    let s2 = plantSeed(s.state, 1, 'radish');
+    const s2 = plantSeed(s.state, 1, 'radish');
     expect(s2.ok).toBe(true);
     if (!s2.ok) return;
 
@@ -317,6 +317,127 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
   });
 });
 
+// ── processTurn — weather yield multiplier (US4, T035) ────────────────────────
+
+describe('processTurn — weather yield multiplier (US4)', () => {
+  function stateWithRadish(): GameState {
+    const s = withSeeds(initialGameState(), { radish: 1 });
+    const r = plantSeed(s, 0, 'radish');
+    if (!r.ok) throw new Error('plant failed');
+    return r.state;
+  }
+
+  it('applies drought multiplier (0.5×): radish yields floor(12 × 0.5) = 6', () => {
+    const { log } = processTurn(stateWithRadish(), 'drought');
+    expect(log.harvests[0].adjustedYield).toBe(6);
+    expect(log.totalHarvestIncome).toBe(6);
+  });
+
+  it('applies overcast multiplier (0.8×): radish yields floor(12 × 0.8) = 9', () => {
+    const { log } = processTurn(stateWithRadish(), 'overcast');
+    expect(log.harvests[0].adjustedYield).toBe(9);
+  });
+
+  it('applies warm_breeze multiplier (1.2×): radish yields floor(12 × 1.2) = 14', () => {
+    const { log } = processTurn(stateWithRadish(), 'warm_breeze');
+    expect(log.harvests[0].adjustedYield).toBe(14);
+  });
+
+  it('applies perfect_sun multiplier (1.5×): radish yields floor(12 × 1.5) = 18', () => {
+    const { log } = processTurn(stateWithRadish(), 'perfect_sun');
+    expect(log.harvests[0].adjustedYield).toBe(18);
+  });
+
+  it('applies drought on pumpkin: floor(65 × 0.5) = 32', () => {
+    let state = withSeeds(initialGameState(), { pumpkin: 1 });
+    const planted = plantSeed(state, 0, 'pumpkin');
+    if (!planted.ok) throw new Error('plant failed');
+    state = planted.state;
+    state = processTurn(state, 'sunny').state;
+    state = processTurn(state, 'sunny').state;
+    const { log } = processTurn(state, 'drought');
+    expect(log.harvests[0].adjustedYield).toBe(32);
+    expect(log.totalHarvestIncome).toBe(32);
+  });
+
+  it('applies perfect_sun on pumpkin: floor(65 × 1.5) = 97', () => {
+    let state = withSeeds(initialGameState(), { pumpkin: 1 });
+    const planted = plantSeed(state, 0, 'pumpkin');
+    if (!planted.ok) throw new Error('plant failed');
+    state = planted.state;
+    state = processTurn(state, 'sunny').state;
+    state = processTurn(state, 'sunny').state;
+    const { log } = processTurn(state, 'perfect_sun');
+    expect(log.harvests[0].adjustedYield).toBe(97);
+  });
+});
+
+// ── processTurn — DailyLogEntry accounting fields (US4, T036) ─────────────────
+
+describe('processTurn — DailyLogEntry accounting fields (US4)', () => {
+  it('sets weatherId and weatherMultiplier from injected roll', () => {
+    const { log } = processTurn(initialGameState(), 'warm_breeze');
+    expect(log.weatherId).toBe('warm_breeze');
+    expect(log.weatherMultiplier).toBe(1.2);
+  });
+
+  it('drought harvest: correct totalHarvestIncome, taxDeducted, netChange, closingBalance', () => {
+    // drought radish: floor(12 × 0.5) = 6 coins
+    // 100 + 6 = 106 → −15 lease = 91 → tax = floor(91 × 0.05) = 4
+    // net = 6 − 15 − 4 = −13, closing = 87
+    const state = withSeeds(initialGameState(), { radish: 1 });
+    const planted = plantSeed(state, 0, 'radish');
+    if (!planted.ok) throw new Error('plant failed');
+    const { log } = processTurn(planted.state, 'drought');
+    expect(log.totalHarvestIncome).toBe(6);
+    expect(log.taxDeducted).toBe(4);
+    expect(log.netChange).toBe(-13);
+    expect(log.closingBalance).toBe(87);
+  });
+
+  it('perfect_sun harvest: correct totalHarvestIncome, taxDeducted, netChange, closingBalance', () => {
+    // perfect_sun radish: floor(12 × 1.5) = 18 coins
+    // 100 + 18 = 118 → −15 = 103 → tax = floor(103 × 0.05) = 5
+    // net = 18 − 15 − 5 = −2, closing = 98
+    const state = withSeeds(initialGameState(), { radish: 1 });
+    const planted = plantSeed(state, 0, 'radish');
+    if (!planted.ok) throw new Error('plant failed');
+    const { log } = processTurn(planted.state, 'perfect_sun');
+    expect(log.totalHarvestIncome).toBe(18);
+    expect(log.taxDeducted).toBe(5);
+    expect(log.netChange).toBe(-2);
+    expect(log.closingBalance).toBe(98);
+  });
+});
+
+// ── processTurn — uniform random weather when no weatherRoll (US4, T037) ──────
+
+describe('processTurn — uniform random weather selection (US4)', () => {
+  it('uses Math.random to select weather when no weatherRoll is injected', () => {
+    // WEATHER_IDS = ['drought','overcast','sunny','warm_breeze','perfect_sun']
+    // Math.random() = 0.0 → floor(0.0 × 5) = 0 → 'drought'
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.0);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('drought');
+    spy.mockRestore();
+  });
+
+  it('selects perfect_sun when Math.random returns 0.8', () => {
+    // floor(0.8 × 5) = floor(4.0) = 4 → 'perfect_sun'
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.8);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('perfect_sun');
+    spy.mockRestore();
+  });
+
+  it('injected weatherRoll still overrides random selection', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.0); // would give 'drought'
+    const { log } = processTurn(initialGameState(), 'warm_breeze');
+    expect(log.weatherId).toBe('warm_breeze');
+    spy.mockRestore();
+  });
+});
+
 // ── computeSeedCost (US3) ─────────────────────────────────────────────────────
 
 describe('computeSeedCost', () => {
@@ -438,5 +559,62 @@ describe('buyUpgrade', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toBe('insufficient_funds');
+  });
+});
+
+// ── T044: 100-turn automated stress test (SC-002, SC-003) ─────────────────────
+
+describe('processTurn — 100-turn stress test (T044)', () => {
+  it('runs 100 turns without exceptions and produces integer coin values', () => {
+    const WEATHER_CYCLE: import('../../src/engine/types').WeatherId[] = [
+      'sunny', 'drought', 'overcast', 'warm_breeze', 'perfect_sun',
+    ];
+
+    let state = initialGameState();
+
+    for (let turn = 0; turn < 100; turn++) {
+      if (state.phase === 'bankrupt') break; // game over — stop early
+
+      const weatherRoll = WEATHER_CYCLE[turn % WEATHER_CYCLE.length];
+      const result = processTurn(state, weatherRoll);
+      const next = result.state;
+
+      // Coin values must always be integers (no floating-point drift)
+      expect(Number.isInteger(next.coinBalance)).toBe(true);
+      expect(Number.isInteger(next.peakBalance)).toBe(true);
+
+      if (result.log) {
+        expect(Number.isInteger(result.log.totalHarvestIncome)).toBe(true);
+        expect(Number.isInteger(result.log.landLeaseDeducted)).toBe(true);
+        expect(Number.isInteger(result.log.taxDeducted)).toBe(true);
+        expect(Number.isInteger(result.log.netChange)).toBe(true);
+
+        // Closing balance in log must match actual coin balance
+        if (next.phase !== 'bankrupt') {
+          expect(result.log.closingBalance).toBe(next.coinBalance);
+        }
+
+        // Each harvest yield must also be an integer
+        for (const h of result.log.harvests) {
+          expect(Number.isInteger(h.adjustedYield)).toBe(true);
+        }
+      }
+
+      state = next;
+    }
+  });
+
+  it('processTurn never throws even when state has edge-case balances', () => {
+    // State right at the boundary — coinBalance just enough for lease
+    const edgeState: GameState = {
+      ...initialGameState(),
+      coinBalance: 15, // exactly LAND_LEASE_FEE
+    };
+    expect(() => processTurn(edgeState, 'sunny')).not.toThrow();
+
+    // State with zero balance — should go bankrupt cleanly
+    const zeroState: GameState = { ...initialGameState(), coinBalance: 0 };
+    expect(() => processTurn(zeroState, 'sunny')).not.toThrow();
+    expect(processTurn(zeroState, 'sunny').state.phase).toBe('bankrupt');
   });
 });

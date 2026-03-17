@@ -6,6 +6,7 @@ import {
   MAX_UPGRADE_TIER,
   CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
+  WEATHER_IDS,
   UPGRADE_TIER_DEFINITIONS,
   TAX_RATE,
   coins,
@@ -168,7 +169,7 @@ export function buyUpgrade(state: GameState): UpgradeResult {
  */
 export function processTurn(
   state: GameState,
-  weatherRoll: WeatherId = 'sunny'
+  weatherRoll?: WeatherId
 ): TurnResult {
   // Step 1: Decrement daysRemaining on all occupied plots
   const plots = state.plots.map(plot => {
@@ -176,8 +177,9 @@ export function processTurn(
     return { ...plot, daysRemaining: plot.daysRemaining - 1 };
   });
 
-  // Step 2: Resolve weather (uniform random added in T037; deterministic via weatherRoll)
-  const weatherId = weatherRoll;
+  // Step 2: Resolve weather — inject via weatherRoll for tests, else uniform random
+  const weatherId: WeatherId =
+    weatherRoll ?? WEATHER_IDS[Math.floor(Math.random() * WEATHER_IDS.length)];
   const weather = WEATHER_DEFINITIONS[weatherId];
 
   // Step 3: Harvest all plots where daysRemaining === 0

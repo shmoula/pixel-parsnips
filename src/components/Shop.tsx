@@ -29,10 +29,7 @@ export function Shop({
   return (
     <aside
       aria-label="Shop"
-      className="
-        flex flex-col gap-4 p-4 w-56 shrink-0
-        bg-farm-soil rounded-lg
-      "
+      className="flex flex-col gap-4 p-4 bg-farm-soil rounded-lg"
     >
       <h2 className="font-pixel text-xs text-farm-gold">Shop</h2>
 

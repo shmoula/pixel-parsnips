@@ -138,16 +138,16 @@ seed appears in inventory, balance decreases by 20 coins, and plot can accept th
 
 ### Tests for User Story 4 (TDD — write BEFORE implementation) ⚠️
 
-- [ ] T035 [P] [US4] Write failing tests for `processTurn()` uniform weather selection (all 5 events reachable via `weatherRoll` injection) and yield multiplier application in `tests/engine/gameEngine.test.ts`
-- [ ] T036 [P] [US4] Write failing tests for `DailyLogEntry` construction: correct `totalHarvestIncome`, `taxDeducted`, `netChange`, and `closingBalance` values in `tests/engine/gameEngine.test.ts`
+- [x] T035 [P] [US4] Write failing tests for `processTurn()` uniform weather selection (all 5 events reachable via `weatherRoll` injection) and yield multiplier application in `tests/engine/gameEngine.test.ts`
+- [x] T036 [P] [US4] Write failing tests for `DailyLogEntry` construction: correct `totalHarvestIncome`, `taxDeducted`, `netChange`, and `closingBalance` values in `tests/engine/gameEngine.test.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T037 [US4] Extend `processTurn()` to add step 2 of FR-002: uniform random weather selection (or injected `weatherRoll`) in `src/engine/gameEngine.ts` (depends on T035)
-- [ ] T038 [US4] Extend `processTurn()` to apply weather multiplier during harvest step and build complete `DailyLogEntry` including all accounting fields in `src/engine/gameEngine.ts` (depends on T036, T037)
-- [ ] T039 [US4] Expose `lastDailyLog` from `useGameEngine` hook in `src/engine/useGameEngine.ts`
-- [ ] T040 [P] [US4] Create `DailyLog` component with `aria-label="Daily summary"` section displaying weather badge, harvest line-items, lease row, tax row, and net-change row in `src/components/DailyLog.tsx`
-- [ ] T041 [US4] Update `GameBoard` to include `<DailyLog>` panel (renders null when `lastDailyLog` is null on Day 1) in `src/components/GameBoard.tsx`
+- [x] T037 [US4] Extend `processTurn()` to add step 2 of FR-002: uniform random weather selection (or injected `weatherRoll`) in `src/engine/gameEngine.ts` (depends on T035)
+- [x] T038 [US4] Extend `processTurn()` to apply weather multiplier during harvest step and build complete `DailyLogEntry` including all accounting fields in `src/engine/gameEngine.ts` (depends on T036, T037)
+- [x] T039 [US4] Expose `lastDailyLog` from `useGameEngine` hook in `src/engine/useGameEngine.ts`
+- [x] T040 [P] [US4] Create `DailyLog` component with `aria-label="Daily summary"` section displaying weather badge, harvest line-items, lease row, tax row, and net-change row in `src/components/DailyLog.tsx`
+- [x] T041 [US4] Update `GameBoard` to include `<DailyLog>` panel (renders null when `lastDailyLog` is null on Day 1) in `src/components/GameBoard.tsx`
 
 **Checkpoint**: Inject `'drought'` weather via test, harvest one Pumpkin (65 × 0.5 = 32 coins floor), daily log shows "Drought ×0.5", adjusted yield 32, correct lease and tax rows.
 
@@ -159,11 +159,11 @@ seed appears in inventory, balance decreases by 20 coins, and plot can accept th
 
 ### Tests for Persistence (TDD — write BEFORE implementation) ⚠️
 
-- [ ] T042 [P] Write failing tests for `useGameEngine` localStorage save (state written after `nextDay`, `plantSeed`, `buySeed`, `buyUpgrade`, `restart`) and load on mount (valid save restored; schema-mismatch starts fresh) in `tests/engine/useGameEngine.test.ts`
+- [x] T042 [P] Write failing tests for `useGameEngine` localStorage save (state written after `nextDay`, `plantSeed`, `buySeed`, `buyUpgrade`, `restart`) and load on mount (valid save restored; schema-mismatch starts fresh) in `tests/engine/useGameEngine.test.ts`
 
 ### Implementation
 
-- [ ] T043 Implement localStorage persistence in `useGameEngine.ts`: save to `pixel-parsnips-state` key after every action; restore on mount with `SCHEMA_VERSION` guard; log console notice on schema mismatch (depends on T042; make T042 tests pass)
+- [x] T043 Implement localStorage persistence in `useGameEngine.ts`: save to `pixel-parsnips-state` key after every action; restore on mount with `SCHEMA_VERSION` guard; log console notice on schema mismatch (depends on T042; make T042 tests pass)
 
 **Checkpoint**: Plant a crop and refresh the browser; verify the crop is still visible and balance unchanged.
 
@@ -173,15 +173,15 @@ seed appears in inventory, balance decreases by 20 coins, and plot can accept th
 
 **Purpose**: HUD completeness, accessibility, coverage gate, build verification.
 
-- [ ] T044 [P] Write 100-turn automated stress test: loop `processTurn` 100 times from `initialGameState`, assert no exceptions thrown, coin values are integers (no floating point), and displayed balance matches daily log closing balance on every turn (SC-002, SC-003) in `tests/engine/gameEngine.test.ts`
-- [ ] T045 [P] Add `aria-label` attributes to all interactive elements: "Next Day" button, all Buy buttons, PlotCard click targets, Restart button for WCAG 2.1 AA in relevant component files
-- [ ] T046 [P] Write hook integration tests covering full turn sequence (plant → nextDay → harvest income → lease → tax → updated balance) in `tests/engine/useGameEngine.test.ts`
-- [ ] T047 [P] Write smoke tests verifying `GameBoard` renders HUD, FarmGrid, Shop panel, and DailyLog without crashing, and assert `expect(container).toHaveNoViolations()` (via `vitest-axe`) to enforce WCAG 2.1 AA gate per constitution §III in `tests/components/GameBoard.test.tsx`
-- [ ] T048 Run Vitest coverage (`npm run test -- --coverage`); fix gaps until `src/engine/` ≥ 95% line coverage and overall ≥ 80%
-- [ ] T049 Run ESLint (`npx eslint src tests`) and fix all reported errors
-- [ ] T050 Run TypeScript check (`npx tsc --noEmit`) and resolve any type errors
-- [ ] T051 Run production build (`npm run build`); verify `dist/` is generated without errors and bundle is < 200 KB
-- [ ] T052 Create `.github/workflows/ci.yml` running Vitest + ESLint + TypeScript check + Lighthouse CI on every PR; record initial performance baseline (TTI target < 2 s; > 10% regression blocks merge per constitution §IV)
+- [x] T044 [P] Write 100-turn automated stress test: loop `processTurn` 100 times from `initialGameState`, assert no exceptions thrown, coin values are integers (no floating point), and displayed balance matches daily log closing balance on every turn (SC-002, SC-003) in `tests/engine/gameEngine.test.ts`
+- [x] T045 [P] Add `aria-label` attributes to all interactive elements: "Next Day" button, all Buy buttons, PlotCard click targets, Restart button for WCAG 2.1 AA in relevant component files
+- [x] T046 [P] Write hook integration tests covering full turn sequence (plant → nextDay → harvest income → lease → tax → updated balance) in `tests/engine/useGameEngine.test.ts`
+- [x] T047 [P] Write smoke tests verifying `GameBoard` renders HUD, FarmGrid, Shop panel, and DailyLog without crashing, and assert `expect(container).toHaveNoViolations()` (via `vitest-axe`) to enforce WCAG 2.1 AA gate per constitution §III in `tests/components/GameBoard.test.tsx`
+- [x] T048 Run Vitest coverage (`npm run test -- --coverage`); fix gaps until `src/engine/` ≥ 95% line coverage and overall ≥ 80%
+- [x] T049 Run ESLint (`npx eslint src tests`) and fix all reported errors
+- [x] T050 Run TypeScript check (`npx tsc --noEmit`) and resolve any type errors
+- [x] T051 Run production build (`npm run build`); verify `dist/` is generated without errors and bundle is < 200 KB
+- [x] T052 Create `.github/workflows/ci.yml` running Vitest + ESLint + TypeScript check + Lighthouse CI on every PR; record initial performance baseline (TTI target < 2 s; > 10% regression blocks merge per constitution §IV)
 
 ---
 

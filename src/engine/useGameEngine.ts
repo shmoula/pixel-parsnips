@@ -7,11 +7,35 @@ import {
   buyUpgrade as engineBuyUpgrade,
   computeSeedCost,
 } from './gameEngine';
-import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER } from './constants';
-import type { GameState, CropId } from './types';
+import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
+import type { GameState, CropId, DailyLogEntry } from './types';
+
+const STORAGE_KEY = 'pixel-parsnips-state';
+
+function loadState(): GameState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return initialGameState();
+    const parsed = JSON.parse(raw);
+    if (parsed?.schemaVersion !== SCHEMA_VERSION) {
+      console.warn(
+        `[Pixel Parsnips] Save schema v${parsed?.schemaVersion} does not match current v${SCHEMA_VERSION} — starting fresh.`
+      );
+      return initialGameState();
+    }
+    return parsed.state as GameState;
+  } catch {
+    return initialGameState();
+  }
+}
+
+function saveState(state: GameState): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state }));
+}
 
 export interface GameEngineHook {
   state: GameState;
+  lastDailyLog: DailyLogEntry | null;
   nextDay: () => void;
   plantSeed: (plotId: number, cropId: CropId) => boolean;
   buySeed: (cropId: CropId, quantity: number) => boolean;
@@ -23,17 +47,21 @@ export interface GameEngineHook {
 }
 
 export function useGameEngine(): GameEngineHook {
-  const [state, setState] = useState<GameState>(() => initialGameState());
+  const [state, setState] = useState<GameState>(() => loadState());
 
   const nextDay = useCallback(() => {
-    setState(prev => processTurn(prev).state);
+    setState(prev => {
+      const next = processTurn(prev).state;
+      saveState(next);
+      return next;
+    });
   }, []);
 
   const plant = useCallback((plotId: number, cropId: CropId): boolean => {
     let success = false;
     setState(prev => {
       const result = plantSeed(prev, plotId, cropId);
-      if (result.ok) { success = true; return result.state; }
+      if (result.ok) { success = true; saveState(result.state); return result.state; }
       return prev;
     });
     return success;
@@ -43,7 +71,7 @@ export function useGameEngine(): GameEngineHook {
     let success = false;
     setState(prev => {
       const result = engineBuySeed(prev, cropId, quantity);
-      if (result.ok) { success = true; return result.state; }
+      if (result.ok) { success = true; saveState(result.state); return result.state; }
       return prev;
     });
     return success;
@@ -53,14 +81,16 @@ export function useGameEngine(): GameEngineHook {
     let success = false;
     setState(prev => {
       const result = engineBuyUpgrade(prev);
-      if (result.ok) { success = true; return result.state; }
+      if (result.ok) { success = true; saveState(result.state); return result.state; }
       return prev;
     });
     return success;
   }, []);
 
   const restart = useCallback(() => {
-    setState(initialGameState());
+    const fresh = initialGameState();
+    saveState(fresh);
+    setState(fresh);
   }, []);
 
   const getSeedPrice = useCallback(
@@ -80,6 +110,7 @@ export function useGameEngine(): GameEngineHook {
 
   return {
     state,
+    lastDailyLog: state.lastDailyLog,
     nextDay,
     plantSeed: plant,
     buySeed,

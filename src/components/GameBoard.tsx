@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import type { GameState, CropId } from '../engine/types';
+import type { GameState, CropId, DailyLogEntry } from '../engine/types';
 import { HUD } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
+import { DailyLog } from './DailyLog';
 
 interface GameBoardProps {
   state: GameState;
+  lastDailyLog: DailyLogEntry | null;
   onNextDay: () => void;
   onPlantSeed: (plotId: number, cropId: CropId) => boolean;
   onBuySeed: (cropId: CropId) => void;
@@ -16,6 +18,7 @@ interface GameBoardProps {
 
 export function GameBoard({
   state,
+  lastDailyLog,
   onNextDay,
   onPlantSeed,
   onBuySeed,
@@ -65,16 +68,21 @@ export function GameBoard({
           />
         </main>
 
-        {/* Shop — persistent side-panel (FR-010) */}
-        <Shop
-          coinBalance={state.coinBalance}
-          upgradeTier={state.upgradeTier}
-          seedInventory={state.seedInventory}
-          getSeedPrice={getSeedPrice}
-          onBuySeed={handleBuySeed}
-          onBuyUpgrade={onBuyUpgrade}
-          getNextUpgradeCost={getNextUpgradeCost}
-        />
+        {/* Right column: Shop + Daily Log */}
+        <div className="flex flex-col gap-4 w-56 shrink-0">
+          <Shop
+            coinBalance={state.coinBalance}
+            upgradeTier={state.upgradeTier}
+            seedInventory={state.seedInventory}
+            getSeedPrice={getSeedPrice}
+            onBuySeed={handleBuySeed}
+            onBuyUpgrade={onBuyUpgrade}
+            getNextUpgradeCost={getNextUpgradeCost}
+          />
+
+          {/* Daily Log — null on Day 1 before any turn */}
+          {lastDailyLog && <DailyLog log={lastDailyLog} />}
+        </div>
       </div>
 
       <footer className="flex justify-center py-4">
