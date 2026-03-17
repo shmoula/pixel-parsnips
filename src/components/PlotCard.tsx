@@ -18,6 +18,27 @@ interface PlotCardProps {
 }
 
 export function PlotCard({ plot, onPlant }: PlotCardProps) {
+  if (plot.exhaustedSinceDay !== null) {
+    return (
+      <div
+        role="img"
+        aria-label={`Plot ${plot.id + 1}: Exhausted — cannot plant`}
+        className="
+          flex flex-col items-center justify-center
+          w-full aspect-square rounded-lg border-2
+          border-farm-stone bg-farm-parchment
+          select-none
+        "
+      >
+        <span className="text-2xl">🪨</span>
+        <span className="text-xs font-pixel text-farm-stone mt-1">Exhausted</span>
+        <span className="text-xs text-farm-stone mt-0.5 text-center px-1">
+          Wait or buy Fertilizer in the shop
+        </span>
+      </div>
+    );
+  }
+
   const isEmpty = plot.cropId === null;
 
   if (isEmpty) {

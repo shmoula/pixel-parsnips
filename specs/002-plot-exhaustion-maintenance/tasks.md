@@ -67,16 +67,16 @@ on plot 0 must return `{ ok: false, error: 'plot_exhausted' }`. Advance 3 more d
 
 ### Tests for User Story 1 ⚠️ Write FIRST — confirm FAIL before T008
 
-- [ ] T005 Write failing unit tests for `processTurn` exhaustion trigger (sub-steps 3a/3b): test that `consecutiveHarvests` increments on each harvest, that the 3rd harvest sets `exhaustedSinceDay`, resets `consecutiveHarvests` to 0, and populates `exhaustedPlots[]` in the log in `tests/engine/gameEngine.test.ts`
-- [ ] T006 Write failing unit tests for `processTurn` natural recovery (step 8.5): test that an exhausted plot clears after exactly `EXHAUSTION_RECOVERY_DAYS` turns, and not before, in `tests/engine/gameEngine.test.ts`
-- [ ] T007 Write failing unit test for `plantSeed` returning `{ ok: false, error: 'plot_exhausted' }` when target plot has `exhaustedSinceDay !== null` in `tests/engine/gameEngine.test.ts`
+- [x] T005 Write failing unit tests for `processTurn` exhaustion trigger (sub-steps 3a/3b): test that `consecutiveHarvests` increments on each harvest, that the 3rd harvest sets `exhaustedSinceDay`, resets `consecutiveHarvests` to 0, and populates `exhaustedPlots[]` in the log in `tests/engine/gameEngine.test.ts`
+- [x] T006 Write failing unit tests for `processTurn` natural recovery (step 8.5): test that an exhausted plot clears after exactly `EXHAUSTION_RECOVERY_DAYS` turns, and not before, in `tests/engine/gameEngine.test.ts`
+- [x] T007 Write failing unit test for `plantSeed` returning `{ ok: false, error: 'plot_exhausted' }` when target plot has `exhaustedSinceDay !== null` in `tests/engine/gameEngine.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T008 Extend `processTurn` in `src/engine/gameEngine.ts` with sub-step 3a (increment `consecutiveHarvests` per harvested plot) and sub-step 3b (when `consecutiveHarvests >= EXHAUSTION_THRESHOLD`: set `exhaustedSinceDay = state.currentDay + 1`, reset `consecutiveHarvests = 0`, append `plotId` to `exhaustedPlots[]`) — makes T005 GREEN
-- [ ] T009 Extend `processTurn` in `src/engine/gameEngine.ts` with step 8.5 (after day increment: for each exhausted plot, clear `exhaustedSinceDay` and `consecutiveHarvests` when `currentDay - exhaustedSinceDay >= EXHAUSTION_RECOVERY_DAYS`) — makes T006 GREEN
-- [ ] T010 Extend `plantSeed` in `src/engine/gameEngine.ts` to return `{ ok: false, error: 'plot_exhausted' }` when the target plot has `exhaustedSinceDay !== null`; evaluate this guard after `plot_occupied` and before `no_seed` in `src/engine/gameEngine.ts` — makes T007 GREEN
-- [ ] T011 Update `PlotCard.tsx` in `src/components/PlotCard.tsx` to render an "Exhausted" state when `plot.exhaustedSinceDay !== null`: hide the plant-seed button, display an "Exhausted" label with a "Wait or buy Fertilizer in the shop" hint message
+- [x] T008 Extend `processTurn` in `src/engine/gameEngine.ts` with sub-step 3a (increment `consecutiveHarvests` per harvested plot) and sub-step 3b (when `consecutiveHarvests >= EXHAUSTION_THRESHOLD`: set `exhaustedSinceDay = state.currentDay + 1`, reset `consecutiveHarvests = 0`, append `plotId` to `exhaustedPlots[]`) — makes T005 GREEN
+- [x] T009 Extend `processTurn` in `src/engine/gameEngine.ts` with step 8.5 (after day increment: for each exhausted plot, clear `exhaustedSinceDay` and `consecutiveHarvests` when `currentDay - exhaustedSinceDay >= EXHAUSTION_RECOVERY_DAYS`) — makes T006 GREEN
+- [x] T010 Extend `plantSeed` in `src/engine/gameEngine.ts` to return `{ ok: false, error: 'plot_exhausted' }` when the target plot has `exhaustedSinceDay !== null`; evaluate this guard after `plot_occupied` and before `no_seed` in `src/engine/gameEngine.ts` — makes T007 GREEN
+- [x] T011 Update `PlotCard.tsx` in `src/components/PlotCard.tsx` to render an "Exhausted" state when `plot.exhaustedSinceDay !== null`: hide the plant-seed button, display an "Exhausted" label with a "Wait or buy Fertilizer in the shop" hint message
 
 **Checkpoint**: T005–T007 tests all GREEN. In the browser: plant Radish 3× on one plot, clicking
 "Next Day" each time — on the 4th planting attempt the plot shows "Exhausted" and blocks input.

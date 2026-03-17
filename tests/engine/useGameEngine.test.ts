@@ -46,7 +46,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
   });
 
   it('logs a console notice when schema version mismatches', () => {
-    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ schemaVersion: 999, state: {} })

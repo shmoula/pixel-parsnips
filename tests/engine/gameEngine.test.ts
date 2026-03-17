@@ -7,7 +7,7 @@ import {
   buySeed,
   buyUpgrade,
 } from '../../src/engine/gameEngine';
-import { LAND_LEASE_FEE } from '../../src/engine/constants';
+import { LAND_LEASE_FEE, EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS } from '../../src/engine/constants';
 import type { GameState } from '../../src/engine/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -616,5 +616,174 @@ describe('processTurn — 100-turn stress test (T044)', () => {
     const zeroState: GameState = { ...initialGameState(), coinBalance: 0 };
     expect(() => processTurn(zeroState, 'sunny')).not.toThrow();
     expect(processTurn(zeroState, 'sunny').state.phase).toBe('bankrupt');
+  });
+});
+
+// ── Helpers for exhaustion tests ──────────────────────────────────────────────
+
+/** Plants a radish and advances one day (harvests it). Requires radish in inventory. */
+function harvestOnce(state: GameState, plotId: number): GameState {
+  const withSeed = withSeeds(state, { radish: 1 });
+  const planted = plantSeed(withSeed, plotId, 'radish');
+  if (!planted.ok) throw new Error(`plantSeed failed: ${planted.error}`);
+  return processTurn(planted.state, 'sunny').state;
+}
+
+/** Returns a state where plot 0 has been exhausted (3 consecutive harvests). */
+function exhaustedState(): GameState {
+  let state = withSeeds(initialGameState(), { radish: 0 });
+  // Give enough balance to survive 3 turns of lease+tax
+  state = { ...state, coinBalance: 500 };
+  for (let i = 0; i < EXHAUSTION_THRESHOLD; i++) {
+    state = harvestOnce(state, 0);
+  }
+  return state;
+}
+
+// ── T005: processTurn — exhaustion trigger ────────────────────────────────────
+
+describe('processTurn — exhaustion trigger (T005, US1)', () => {
+  it('consecutiveHarvests increments to 1 after first harvest', () => {
+    const state = { ...initialGameState(), coinBalance: 500 };
+    const afterFirst = harvestOnce(state, 0);
+    expect(afterFirst.plots[0].consecutiveHarvests).toBe(1);
+  });
+
+  it('consecutiveHarvests increments to 2 after second consecutive harvest', () => {
+    const state = { ...initialGameState(), coinBalance: 500 };
+    const afterSecond = harvestOnce(harvestOnce(state, 0), 0);
+    expect(afterSecond.plots[0].consecutiveHarvests).toBe(2);
+  });
+
+  it('3rd harvest sets exhaustedSinceDay to the new currentDay (post-increment)', () => {
+    const s = exhaustedState();
+    expect(s.plots[0].exhaustedSinceDay).not.toBeNull();
+  });
+
+  it('3rd harvest resets consecutiveHarvests to 0', () => {
+    const s = exhaustedState();
+    expect(s.plots[0].consecutiveHarvests).toBe(0);
+  });
+
+  it('exhaustedSinceDay equals currentDay after exhaustion trigger', () => {
+    const s = exhaustedState();
+    // exhaustedSinceDay is set to the post-increment currentDay
+    expect(s.plots[0].exhaustedSinceDay).toBe(s.currentDay);
+  });
+
+  it('log.exhaustedPlots contains the exhausted plotId on the triggering turn', () => {
+    let state = { ...initialGameState(), coinBalance: 500 };
+    // First two harvests — not yet exhausted
+    state = harvestOnce(state, 0);
+    state = harvestOnce(state, 0);
+    // Third harvest — exhaustion triggers
+    const withSeed = withSeeds(state, { radish: 1 });
+    const planted = plantSeed(withSeed, 0, 'radish');
+    if (!planted.ok) throw new Error('plant failed');
+    const result = processTurn(planted.state, 'sunny');
+    expect(result.log.exhaustedPlots).toContain(0);
+  });
+
+  it('non-harvested plots are not added to exhaustedPlots', () => {
+    let state = { ...initialGameState(), coinBalance: 500 };
+    state = harvestOnce(state, 0);
+    state = harvestOnce(state, 0);
+    const withSeed = withSeeds(state, { radish: 1 });
+    const planted = plantSeed(withSeed, 0, 'radish');
+    if (!planted.ok) throw new Error('plant failed');
+    const result = processTurn(planted.state, 'sunny');
+    // Plot 1 (not harvested this turn) should not be in exhaustedPlots
+    expect(result.log.exhaustedPlots).not.toContain(1);
+  });
+
+  it('consecutiveHarvests on OTHER plots is unaffected by one plot exhausting', () => {
+    let state = { ...initialGameState(), coinBalance: 500 };
+    // Harvest plot 1 once
+    state = harvestOnce(state, 1);
+    expect(state.plots[1].consecutiveHarvests).toBe(1);
+    // Now exhaust plot 0 (3 harvests)
+    state = harvestOnce(state, 0);
+    state = harvestOnce(state, 0);
+    state = harvestOnce(state, 0);
+    // Plot 1 counter should still be 1 (only harvested once, no change since)
+    expect(state.plots[1].consecutiveHarvests).toBe(1);
+  });
+});
+
+// ── T006: processTurn — natural recovery ──────────────────────────────────────
+
+describe('processTurn — natural recovery (T006, US1)', () => {
+  it('plot remains exhausted 1 day after exhaustion', () => {
+    let s = exhaustedState();
+    s = processTurn(s, 'sunny').state;
+    expect(s.plots[0].exhaustedSinceDay).not.toBeNull();
+  });
+
+  it('plot remains exhausted 2 days after exhaustion', () => {
+    let s = exhaustedState();
+    s = processTurn(s, 'sunny').state;
+    s = processTurn(s, 'sunny').state;
+    expect(s.plots[0].exhaustedSinceDay).not.toBeNull();
+  });
+
+  it(`plot recovers after exactly ${EXHAUSTION_RECOVERY_DAYS} days`, () => {
+    let s = exhaustedState();
+    for (let i = 0; i < EXHAUSTION_RECOVERY_DAYS; i++) {
+      s = processTurn(s, 'sunny').state;
+    }
+    expect(s.plots[0].exhaustedSinceDay).toBeNull();
+  });
+
+  it('consecutiveHarvests resets to 0 after natural recovery', () => {
+    let s = exhaustedState();
+    for (let i = 0; i < EXHAUSTION_RECOVERY_DAYS; i++) {
+      s = processTurn(s, 'sunny').state;
+    }
+    expect(s.plots[0].consecutiveHarvests).toBe(0);
+  });
+
+  it('plot can be planted again after natural recovery', () => {
+    let s = exhaustedState();
+    for (let i = 0; i < EXHAUSTION_RECOVERY_DAYS; i++) {
+      s = processTurn(s, 'sunny').state;
+    }
+    const withSeed = withSeeds(s, { radish: 1 });
+    const result = plantSeed(withSeed, 0, 'radish');
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ── T007: plantSeed — plot_exhausted error ────────────────────────────────────
+
+describe('plantSeed — plot_exhausted error (T007, US1)', () => {
+  it('returns plot_exhausted when target plot has exhaustedSinceDay !== null', () => {
+    const s = exhaustedState();
+    const withSeed = withSeeds(s, { radish: 1 });
+    const result = plantSeed(withSeed, 0, 'radish');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('plot_exhausted');
+  });
+
+  it('does not deduct a seed when plot_exhausted', () => {
+    const s = exhaustedState();
+    const withSeed = withSeeds(s, { radish: 3 });
+    plantSeed(withSeed, 0, 'radish');
+    expect(withSeed.seedInventory.radish).toBe(3);
+  });
+
+  it('non-exhausted plots are still plantable in the same state', () => {
+    const s = exhaustedState();
+    const withSeed = withSeeds(s, { radish: 1 });
+    const result = plantSeed(withSeed, 1, 'radish'); // plot 1 is not exhausted
+    expect(result.ok).toBe(true);
+  });
+
+  it('plot_exhausted guard fires even when no seeds available', () => {
+    // exhaustedSinceDay check must be evaluated before no_seed check
+    const s = exhaustedState(); // no radish seeds
+    expect(s.seedInventory.radish).toBe(0);
+    const result = plantSeed(s, 0, 'radish');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('plot_exhausted');
   });
 });
