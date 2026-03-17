@@ -5,6 +5,8 @@ import {
   processTurn,
   buySeed as engineBuySeed,
   buyUpgrade as engineBuyUpgrade,
+  buyFertilizer as engineBuyFertilizer,
+  applyFertilizer as engineApplyFertilizer,
   computeSeedCost,
 } from './gameEngine';
 import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
@@ -40,6 +42,9 @@ export interface GameEngineHook {
   plantSeed: (plotId: number, cropId: CropId) => boolean;
   buySeed: (cropId: CropId, quantity: number) => boolean;
   buyUpgrade: () => boolean;
+  buyFertilizer: (quantity: number) => boolean;
+  applyFertilizer: (plotId: number) => boolean;
+  getFertilizerCount: () => number;
   restart: () => void;
   getSeedPrice: (cropId: CropId) => number;
   getNextUpgradeCost: () => number | null;
@@ -87,6 +92,26 @@ export function useGameEngine(): GameEngineHook {
     return success;
   }, []);
 
+  const buyFertilizer = useCallback((quantity: number): boolean => {
+    let success = false;
+    setState(prev => {
+      const result = engineBuyFertilizer(prev, quantity);
+      if (result.ok) { success = true; saveState(result.state); return result.state; }
+      return prev;
+    });
+    return success;
+  }, []);
+
+  const applyFertilizer = useCallback((plotId: number): boolean => {
+    let success = false;
+    setState(prev => {
+      const result = engineApplyFertilizer(prev, plotId);
+      if (result.ok) { success = true; saveState(result.state); return result.state; }
+      return prev;
+    });
+    return success;
+  }, []);
+
   const restart = useCallback(() => {
     const fresh = initialGameState();
     saveState(fresh);
@@ -108,6 +133,11 @@ export function useGameEngine(): GameEngineHook {
     [state.plots]
   );
 
+  const getFertilizerCount = useCallback(
+    () => state.fertilizerInventory,
+    [state.fertilizerInventory]
+  );
+
   return {
     state,
     lastDailyLog: state.lastDailyLog,
@@ -115,6 +145,9 @@ export function useGameEngine(): GameEngineHook {
     plantSeed: plant,
     buySeed,
     buyUpgrade,
+    buyFertilizer,
+    applyFertilizer,
+    getFertilizerCount,
     restart,
     getSeedPrice,
     getNextUpgradeCost,

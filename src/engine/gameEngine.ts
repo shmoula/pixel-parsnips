@@ -11,6 +11,7 @@ import {
   TAX_RATE,
   EXHAUSTION_THRESHOLD,
   EXHAUSTION_RECOVERY_DAYS,
+  FERTILIZER_COST,
   coins,
 } from './constants';
 import type {
@@ -22,6 +23,7 @@ import type {
   PlantResult,
   BuyResult,
   UpgradeResult,
+  FertilizerResult,
   TurnResult,
   DailyLogEntry,
   HarvestEvent,
@@ -314,4 +316,65 @@ export function processTurn(
   };
 
   return { state: nextState, log, isBankrupt: false };
+}
+
+// ── T014: buyFertilizer ───────────────────────────────────────────────────────
+
+/** Purchases fertilizer from the shop. Pure — no mutations. */
+export function buyFertilizer(state: GameState, quantity: number): BuyResult {
+  const totalCost = FERTILIZER_COST * quantity;
+
+  if (state.coinBalance < totalCost) {
+    return {
+      ok: false,
+      error: 'insufficient_funds',
+      cost: totalCost,
+      balance: state.coinBalance,
+    };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      coinBalance: state.coinBalance - totalCost,
+      fertilizerInventory: state.fertilizerInventory + quantity,
+    },
+  };
+}
+
+// ── T015: applyFertilizer ─────────────────────────────────────────────────────
+
+/** Applies fertilizer to an exhausted plot, immediately restoring it. Pure — no mutations. */
+export function applyFertilizer(state: GameState, plotId: number): FertilizerResult {
+  if (plotId < 0 || plotId >= PLOT_COUNT) {
+    return { ok: false, error: 'invalid_plot' };
+  }
+
+  const plot = state.plots[plotId];
+  if (plot.exhaustedSinceDay === null) {
+    return { ok: false, error: 'plot_not_exhausted' };
+  }
+
+  if (state.fertilizerInventory === 0) {
+    return { ok: false, error: 'no_fertilizer' };
+  }
+
+  const restoredPlot: PlotState = {
+    ...plot,
+    exhaustedSinceDay: null,
+    consecutiveHarvests: 0,
+    cropId: null,
+    dayPlanted: null,
+    daysRemaining: null,
+  };
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      plots: state.plots.map(p => (p.id === plotId ? restoredPlot : p)),
+      fertilizerInventory: state.fertilizerInventory - 1,
+    },
+  };
 }

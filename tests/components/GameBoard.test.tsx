@@ -52,6 +52,9 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null } =
     onPlantSeed: vi.fn().mockReturnValue(false),
     onBuySeed: vi.fn(),
     onBuyUpgrade: vi.fn(),
+    onBuyFertilizer: vi.fn(),
+    onApplyFertilizer: vi.fn(),
+    getFertilizerCount: () => 0,
     getSeedPrice: () => 5,
     getNextUpgradeCost: () => 50 as number | null,
   };
@@ -69,6 +72,7 @@ const sampleLog: DailyLogEntry = {
   taxRate: 0.05,
   netChange: -19,
   closingBalance: 81,
+  exhaustedPlots: [],
 };
 
 describe('GameBoard — smoke tests (T047)', () => {

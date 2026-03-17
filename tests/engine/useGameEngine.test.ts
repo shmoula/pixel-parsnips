@@ -271,3 +271,79 @@ describe('useGameEngine — branch coverage completions (T048)', () => {
     expect(result.current.getOccupiedPlotCount()).toBe(1);
   });
 });
+
+// ── T016: buyFertilizer + applyFertilizer hook integration ────────────────────
+
+describe('useGameEngine — fertilizer hook integration (T016, US2)', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('buyFertilizer updates fertilizerInventory in React state', () => {
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.buyFertilizer(1); });
+    expect(result.current.getFertilizerCount()).toBe(1);
+    expect(result.current.state.coinBalance).toBe(70); // 100 - 30
+  });
+
+  it('buyFertilizer persists fertilizerInventory to localStorage', () => {
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.buyFertilizer(1); });
+    const saved = JSON.parse(localStorage.getItem('pixel-parsnips-state')!);
+    expect(saved.state.fertilizerInventory).toBe(1);
+  });
+
+  it('buyFertilizer returns false when insufficient funds', () => {
+    const { result } = renderHook(() => useGameEngine());
+    let ok = true;
+    act(() => { ok = result.current.buyFertilizer(10); }); // 300 coins needed
+    expect(ok).toBe(false);
+    expect(result.current.getFertilizerCount()).toBe(0);
+  });
+
+  it('applyFertilizer clears exhausted plot in React state', () => {
+    // Inject an exhausted state with 1 fertilizer
+    const exhausted = {
+      ...initialGameState(),
+      coinBalance: 500,
+      fertilizerInventory: 1,
+      plots: initialGameState().plots.map((p, i) =>
+        i === 0 ? { ...p, exhaustedSinceDay: 4, consecutiveHarvests: 0 } : p
+      ),
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: exhausted }));
+    const { result } = renderHook(() => useGameEngine());
+
+    act(() => { result.current.applyFertilizer(0); });
+    expect(result.current.state.plots[0].exhaustedSinceDay).toBeNull();
+    expect(result.current.getFertilizerCount()).toBe(0);
+  });
+
+  it('applyFertilizer persists cleared plot to localStorage', () => {
+    const exhausted = {
+      ...initialGameState(),
+      coinBalance: 500,
+      fertilizerInventory: 1,
+      plots: initialGameState().plots.map((p, i) =>
+        i === 0 ? { ...p, exhaustedSinceDay: 4, consecutiveHarvests: 0 } : p
+      ),
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: exhausted }));
+    const { result } = renderHook(() => useGameEngine());
+
+    act(() => { result.current.applyFertilizer(0); });
+    const saved = JSON.parse(localStorage.getItem('pixel-parsnips-state')!);
+    expect(saved.state.plots[0].exhaustedSinceDay).toBeNull();
+    expect(saved.state.fertilizerInventory).toBe(0);
+  });
+
+  it('applyFertilizer returns false when no fertilizer in inventory', () => {
+    const { result } = renderHook(() => useGameEngine());
+    let ok = true;
+    act(() => { ok = result.current.applyFertilizer(0); });
+    expect(ok).toBe(false);
+  });
+
+  it('getFertilizerCount returns 0 on fresh state', () => {
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.getFertilizerCount()).toBe(0);
+  });
+});

@@ -6,8 +6,10 @@ import {
   computeSeedCost,
   buySeed,
   buyUpgrade,
+  buyFertilizer,
+  applyFertilizer,
 } from '../../src/engine/gameEngine';
-import { LAND_LEASE_FEE, EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS } from '../../src/engine/constants';
+import { LAND_LEASE_FEE, EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST } from '../../src/engine/constants';
 import type { GameState } from '../../src/engine/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -785,5 +787,128 @@ describe('plantSeed — plot_exhausted error (T007, US1)', () => {
     const result = plantSeed(s, 0, 'radish');
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe('plot_exhausted');
+  });
+});
+
+// ── T012: buyFertilizer ───────────────────────────────────────────────────────
+
+describe('buyFertilizer (T012, US2)', () => {
+  it('deducts FERTILIZER_COST from coinBalance on success', () => {
+    const state = { ...initialGameState(), coinBalance: 100 };
+    const result = buyFertilizer(state, 1);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.state.coinBalance).toBe(100 - FERTILIZER_COST);
+  });
+
+  it('increments fertilizerInventory by 1 on success', () => {
+    const state = { ...initialGameState(), coinBalance: 100 };
+    const result = buyFertilizer(state, 1);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.state.fertilizerInventory).toBe(1);
+  });
+
+  it('returns insufficient_funds when balance too low', () => {
+    const state = { ...initialGameState(), coinBalance: FERTILIZER_COST - 1 };
+    const result = buyFertilizer(state, 1);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('insufficient_funds');
+  });
+
+  it('does not mutate state on failure', () => {
+    const state = { ...initialGameState(), coinBalance: 10 };
+    buyFertilizer(state, 1);
+    expect(state.coinBalance).toBe(10);
+    expect(state.fertilizerInventory).toBe(0);
+  });
+
+  it('handles quantity > 1: deducts FERTILIZER_COST * quantity', () => {
+    const state = { ...initialGameState(), coinBalance: 200 };
+    const result = buyFertilizer(state, 3);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.state.coinBalance).toBe(200 - FERTILIZER_COST * 3);
+      expect(result.state.fertilizerInventory).toBe(3);
+    }
+  });
+
+  it('returns insufficient_funds for quantity > 1 when balance too low', () => {
+    const state = { ...initialGameState(), coinBalance: FERTILIZER_COST * 2 - 1 };
+    const result = buyFertilizer(state, 2);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('insufficient_funds');
+  });
+});
+
+// ── T013: applyFertilizer ─────────────────────────────────────────────────────
+
+describe('applyFertilizer (T013, US2)', () => {
+  it('clears exhaustedSinceDay on success', () => {
+    const s = { ...exhaustedState(), fertilizerInventory: 1 };
+    const result = applyFertilizer(s, 0);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.state.plots[0].exhaustedSinceDay).toBeNull();
+  });
+
+  it('resets consecutiveHarvests to 0 on success', () => {
+    const s = { ...exhaustedState(), fertilizerInventory: 1 };
+    const result = applyFertilizer(s, 0);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.state.plots[0].consecutiveHarvests).toBe(0);
+  });
+
+  it('decrements fertilizerInventory by 1 on success', () => {
+    const s = { ...exhaustedState(), fertilizerInventory: 2 };
+    const result = applyFertilizer(s, 0);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.state.fertilizerInventory).toBe(1);
+  });
+
+  it('plot is immediately plantable after apply', () => {
+    const s = { ...exhaustedState(), fertilizerInventory: 1 };
+    const applied = applyFertilizer(s, 0);
+    expect(applied.ok).toBe(true);
+    if (applied.ok) {
+      const withSeed = withSeeds(applied.state, { radish: 1 });
+      expect(plantSeed(withSeed, 0, 'radish').ok).toBe(true);
+    }
+  });
+
+  it('returns no_fertilizer when fertilizerInventory === 0', () => {
+    const s = { ...exhaustedState(), fertilizerInventory: 0 };
+    const result = applyFertilizer(s, 0);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('no_fertilizer');
+  });
+
+  it('returns plot_not_exhausted when plot is not exhausted', () => {
+    const s = { ...initialGameState(), fertilizerInventory: 1 };
+    const result = applyFertilizer(s, 0);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('plot_not_exhausted');
+  });
+
+  it('returns invalid_plot for out-of-range plotId', () => {
+    const s = { ...exhaustedState(), fertilizerInventory: 1 };
+    const result = applyFertilizer(s, 999);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_plot');
+  });
+
+  it('invalid_plot takes priority over plot_not_exhausted and no_fertilizer', () => {
+    const s = { ...initialGameState(), fertilizerInventory: 0 };
+    const result = applyFertilizer(s, -1);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_plot');
+  });
+
+  it('clears cropId, dayPlanted, daysRemaining fields on success', () => {
+    const s = { ...exhaustedState(), fertilizerInventory: 1 };
+    const result = applyFertilizer(s, 0);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.state.plots[0].cropId).toBeNull();
+      expect(result.state.plots[0].dayPlanted).toBeNull();
+      expect(result.state.plots[0].daysRemaining).toBeNull();
+    }
   });
 });
