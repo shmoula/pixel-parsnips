@@ -42,6 +42,8 @@ export interface PlotState {
   cropId: CropId | null;
   dayPlanted: number | null;
   daysRemaining: number | null;
+  consecutiveHarvests: number;
+  exhaustedSinceDay: number | null;
 }
 
 export interface SeedInventory {
@@ -70,6 +72,7 @@ export interface DailyLogEntry {
   taxDeducted: number;
   netChange: number;
   closingBalance: number;
+  exhaustedPlots: number[];
 }
 
 export interface GameState {
@@ -82,13 +85,18 @@ export interface GameState {
   lastDailyLog: DailyLogEntry | null;
   phase: 'playing' | 'bankrupt';
   peakBalance: number;
+  fertilizerInventory: number;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────
 
 export type PlantResult =
   | { ok: true; state: GameState }
-  | { ok: false; error: 'no_seed' | 'plot_occupied' | 'invalid_plot' };
+  | { ok: false; error: 'no_seed' | 'plot_occupied' | 'plot_exhausted' | 'invalid_plot' };
+
+export type FertilizerResult =
+  | { ok: true; state: GameState }
+  | { ok: false; error: 'no_fertilizer' | 'plot_not_exhausted' | 'invalid_plot' };
 
 export type BuyResult =
   | { ok: true; state: GameState }

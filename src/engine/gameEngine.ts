@@ -9,6 +9,9 @@ import {
   WEATHER_IDS,
   UPGRADE_TIER_DEFINITIONS,
   TAX_RATE,
+  EXHAUSTION_THRESHOLD,
+  EXHAUSTION_RECOVERY_DAYS,
+  FERTILIZER_COST,
   coins,
 } from './constants';
 import type {
@@ -20,6 +23,7 @@ import type {
   PlantResult,
   BuyResult,
   UpgradeResult,
+  FertilizerResult,
   TurnResult,
   DailyLogEntry,
   HarvestEvent,
@@ -34,6 +38,8 @@ export function initialGameState(): GameState {
     cropId: null,
     dayPlanted: null,
     daysRemaining: null,
+    consecutiveHarvests: 0,
+    exhaustedSinceDay: null,
   }));
 
   return {
@@ -46,10 +52,11 @@ export function initialGameState(): GameState {
     lastDailyLog: null,
     phase: 'playing',
     peakBalance: STARTING_BALANCE,
+    fertilizerInventory: 0,
   };
 }
 
-// ── T012: plantSeed ───────────────────────────────────────────────────────────
+// ── T010: plantSeed ───────────────────────────────────────────────────────────
 
 /** Plants one seed from inventory into an empty plot. Pure — no mutations. */
 export function plantSeed(
@@ -61,13 +68,18 @@ export function plantSeed(
     return { ok: false, error: 'invalid_plot' };
   }
 
-  if (state.seedInventory[cropId] === 0) {
-    return { ok: false, error: 'no_seed' };
-  }
-
   const plot = state.plots[plotId];
   if (plot.cropId !== null) {
     return { ok: false, error: 'plot_occupied' };
+  }
+
+  // T010: guard after plot_occupied, before no_seed
+  if (plot.exhaustedSinceDay !== null) {
+    return { ok: false, error: 'plot_exhausted' };
+  }
+
+  if (state.seedInventory[cropId] === 0) {
+    return { ok: false, error: 'no_seed' };
   }
 
   const crop = CROP_DEFINITIONS[cropId];
@@ -160,12 +172,12 @@ export function buyUpgrade(state: GameState): UpgradeResult {
   };
 }
 
-// ── T013/T021: processTurn (FR-002 full 10-step sequence) ────────────────────
+// ── T008/T009: processTurn (FR-002 full 10-step sequence + 3a/3b/8.5) ────────
 
 /**
  * Executes the full end-of-turn sequence (FR-002).
  * Pass `weatherRoll` in tests for deterministic results; omit in production
- * to use uniform-random weather selection (added in T037, Phase 6).
+ * to use uniform-random weather selection.
  */
 export function processTurn(
   state: GameState,
@@ -183,7 +195,10 @@ export function processTurn(
   const weather = WEATHER_DEFINITIONS[weatherId];
 
   // Step 3: Harvest all plots where daysRemaining === 0
+  // Sub-step 3a: increment consecutiveHarvests per harvested plot
+  // Sub-step 3b: trigger exhaustion when consecutiveHarvests >= EXHAUSTION_THRESHOLD
   const harvests: HarvestEvent[] = [];
+  const exhaustedPlots: number[] = [];
   const harvestedPlots = plots.map(plot => {
     if (plot.cropId === null || plot.daysRemaining !== 0) return plot;
     const crop = CROP_DEFINITIONS[plot.cropId];
@@ -195,7 +210,27 @@ export function processTurn(
       weatherMultiplier: weather.multiplier,
       adjustedYield,
     });
-    return { ...plot, cropId: null, dayPlanted: null, daysRemaining: null };
+    // Sub-step 3a: increment counter
+    const newConsecutiveHarvests = plot.consecutiveHarvests + 1;
+    // Sub-step 3b: trigger exhaustion if threshold reached
+    if (newConsecutiveHarvests >= EXHAUSTION_THRESHOLD) {
+      exhaustedPlots.push(plot.id);
+      return {
+        ...plot,
+        cropId: null,
+        dayPlanted: null,
+        daysRemaining: null,
+        consecutiveHarvests: 0,
+        exhaustedSinceDay: state.currentDay + 1, // post-increment day
+      };
+    }
+    return {
+      ...plot,
+      cropId: null,
+      dayPlanted: null,
+      daysRemaining: null,
+      consecutiveHarvests: newConsecutiveHarvests,
+    };
   });
 
   // Step 4: Add harvest income to balance
@@ -220,6 +255,7 @@ export function processTurn(
       taxDeducted: 0,
       netChange: totalHarvestIncome,
       closingBalance: coinBalance,
+      exhaustedPlots,
     };
     const bankruptState: GameState = {
       ...state,
@@ -242,6 +278,15 @@ export function processTurn(
   // Step 8: Increment currentDay
   const currentDay = state.currentDay + 1;
 
+  // Step 8.5: Natural recovery — clear exhaustion after EXHAUSTION_RECOVERY_DAYS turns
+  const recoveredPlots = harvestedPlots.map(plot => {
+    if (plot.exhaustedSinceDay === null) return plot;
+    if (currentDay - plot.exhaustedSinceDay >= EXHAUSTION_RECOVERY_DAYS) {
+      return { ...plot, exhaustedSinceDay: null, consecutiveHarvests: 0 };
+    }
+    return plot;
+  });
+
   // Step 9: Update peakBalance
   const peakBalance = Math.max(state.peakBalance, coinBalance);
 
@@ -258,11 +303,12 @@ export function processTurn(
     taxDeducted,
     netChange: totalHarvestIncome - landLeaseDeducted - taxDeducted,
     closingBalance: coinBalance,
+    exhaustedPlots,
   };
 
   const nextState: GameState = {
     ...state,
-    plots: harvestedPlots,
+    plots: recoveredPlots,
     coinBalance,
     currentDay,
     peakBalance,
@@ -270,4 +316,65 @@ export function processTurn(
   };
 
   return { state: nextState, log, isBankrupt: false };
+}
+
+// ── T014: buyFertilizer ───────────────────────────────────────────────────────
+
+/** Purchases fertilizer from the shop. Pure — no mutations. */
+export function buyFertilizer(state: GameState, quantity: number): BuyResult {
+  const totalCost = FERTILIZER_COST * quantity;
+
+  if (state.coinBalance < totalCost) {
+    return {
+      ok: false,
+      error: 'insufficient_funds',
+      cost: totalCost,
+      balance: state.coinBalance,
+    };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      coinBalance: state.coinBalance - totalCost,
+      fertilizerInventory: state.fertilizerInventory + quantity,
+    },
+  };
+}
+
+// ── T015: applyFertilizer ─────────────────────────────────────────────────────
+
+/** Applies fertilizer to an exhausted plot, immediately restoring it. Pure — no mutations. */
+export function applyFertilizer(state: GameState, plotId: number): FertilizerResult {
+  if (plotId < 0 || plotId >= PLOT_COUNT) {
+    return { ok: false, error: 'invalid_plot' };
+  }
+
+  const plot = state.plots[plotId];
+  if (plot.exhaustedSinceDay === null) {
+    return { ok: false, error: 'plot_not_exhausted' };
+  }
+
+  if (state.fertilizerInventory === 0) {
+    return { ok: false, error: 'no_fertilizer' };
+  }
+
+  const restoredPlot: PlotState = {
+    ...plot,
+    exhaustedSinceDay: null,
+    consecutiveHarvests: 0,
+    cropId: null,
+    dayPlanted: null,
+    daysRemaining: null,
+  };
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      plots: state.plots.map(p => (p.id === plotId ? restoredPlot : p)),
+      fertilizerInventory: state.fertilizerInventory - 1,
+    },
+  };
 }

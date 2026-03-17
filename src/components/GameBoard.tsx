@@ -12,6 +12,9 @@ interface GameBoardProps {
   onPlantSeed: (plotId: number, cropId: CropId) => boolean;
   onBuySeed: (cropId: CropId) => void;
   onBuyUpgrade: () => void;
+  onBuyFertilizer: () => void;
+  onApplyFertilizer: (plotId: number) => void;
+  getFertilizerCount: () => number;
   getSeedPrice: (cropId: CropId) => number;
   getNextUpgradeCost: () => number | null;
 }
@@ -23,6 +26,9 @@ export function GameBoard({
   onPlantSeed,
   onBuySeed,
   onBuyUpgrade,
+  onBuyFertilizer,
+  onApplyFertilizer,
+  getFertilizerCount,
   getSeedPrice,
   getNextUpgradeCost,
 }: GameBoardProps) {
@@ -63,7 +69,10 @@ export function GameBoard({
           )}
           <FarmGrid
             plots={state.plots}
+            currentDay={state.currentDay}
+            fertilizerInventory={getFertilizerCount()}
             onPlant={handlePlot}
+            onApplyFertilizer={onApplyFertilizer}
             selectedCrop={selectedCrop}
           />
         </main>
@@ -74,9 +83,13 @@ export function GameBoard({
             coinBalance={state.coinBalance}
             upgradeTier={state.upgradeTier}
             seedInventory={state.seedInventory}
+            fertilizerInventory={getFertilizerCount()}
+            selectedCrop={selectedCrop}
             getSeedPrice={getSeedPrice}
             onBuySeed={handleBuySeed}
+            onSelectCrop={setSelectedCrop}
             onBuyUpgrade={onBuyUpgrade}
+            onBuyFertilizer={onBuyFertilizer}
             getNextUpgradeCost={getNextUpgradeCost}
           />
 

@@ -10,6 +10,9 @@ function App() {
     plantSeed,
     buySeed,
     buyUpgrade,
+    buyFertilizer,
+    applyFertilizer,
+    getFertilizerCount,
     restart,
     getSeedPrice,
     getNextUpgradeCost,
@@ -33,6 +36,9 @@ function App() {
       onPlantSeed={plantSeed}
       onBuySeed={cropId => buySeed(cropId, 1)}
       onBuyUpgrade={buyUpgrade}
+      onBuyFertilizer={() => buyFertilizer(1)}
+      onApplyFertilizer={applyFertilizer}
+      getFertilizerCount={getFertilizerCount}
       getSeedPrice={getSeedPrice}
       getNextUpgradeCost={getNextUpgradeCost}
     />

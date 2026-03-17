@@ -1,192 +1,124 @@
 <!--
-SYNC IMPACT REPORT
-==================
-Version change: [TEMPLATE] → 1.0.0 (initial ratification)
+## Sync Impact Report
 
-Principles established:
-  [PRINCIPLE_1_NAME] → I. Code Quality
-  [PRINCIPLE_2_NAME] → II. Testing Standards
-  [PRINCIPLE_3_NAME] → III. UX Consistency
-  [PRINCIPLE_4_NAME] → IV. Performance Requirements
-  (PRINCIPLE_5 slot removed — user specified 4 principles)
+**Version change**: N/A (template placeholders) → 1.0.0
+**Bump rationale**: MAJOR — initial ratification; all placeholder tokens replaced with concrete values.
 
-Sections established:
-  [SECTION_2_NAME] → Development Workflow
-  [SECTION_3_NAME] → Quality Gates
+### Modified Principles
+- N/A (first ratification; no prior principles existed)
 
-Templates requiring updates:
-  ✅ .specify/memory/constitution.md — this file (written now)
-  ⚠ .specify/templates/plan-template.md — Constitution Check section refers to
-      generic "[Gates determined based on constitution file]"; no principle
-      names hardcoded, so no structural change needed. Agents filling plan.md
-      MUST reference the four principles by name when evaluating gates.
-  ✅ .specify/templates/spec-template.md — Success Criteria section already
-      includes measurable performance metrics (SC-002). No structural change
-      needed; agents MUST ensure at least one SC maps to each active principle.
-  ✅ .specify/templates/tasks-template.md — Phase N (Polish) already contains
-      "Performance optimization" and "Security hardening" task slots consistent
-      with the new principles. No structural change needed.
+### Added Sections
+- Core Principles (I–V)
+- Development Standards
+- Review & Quality
+- Governance
 
-Deferred TODOs:
-  None — all placeholders resolved.
+### Removed Sections
+- None
+
+### Templates Reviewed
+- `.specify/templates/plan-template.md` ✅ — Constitution Check section references constitution gates; aligns with Principle III gates below.
+- `.specify/templates/spec-template.md` ✅ — No constitution-specific references; structure compatible.
+- `.specify/templates/tasks-template.md` ✅ — Tests marked OPTIONAL; aligns with Principle III (tests required when declared in spec, optional otherwise).
+- `.claude/commands/speckit.plan.md` ✅ — Reads `constitution.md` for gates; no outdated agent-specific language.
+- `.claude/commands/speckit.tasks.md` ✅ — Optional tests rule does not contradict constitution.
+- `.claude/commands/speckit.specify.md` — Not read; no constitution references expected.
+- `.claude/commands/speckit.implement.md` — Not read; no constitution references expected.
+- `.claude/commands/speckit.analyze.md` — Not read; no constitution references expected.
+
+### Deferred TODOs
+- TODO(RATIFICATION_DATE): Date set to 2026-03-16 (first authoring). If a prior decision date exists, update manually.
+- TODO(PROJECT_PURPOSE): Project purpose inferred from name only — no README or source code available yet. Revise principles once project domain is established.
 -->
 
-# Pixel Parsnips Constitution
+# pixel-parsnips Constitution
 
 ## Core Principles
 
-### I. Code Quality
+### I. Specification-First
 
-Every line of code MUST be readable, reviewable, and maintainable by any
-contributor to the project.
+Every feature MUST begin with a written specification (`spec.md`) before any implementation work starts.
+Specifications MUST include user stories with explicit priorities (P1, P2, P3…) and independently
+testable acceptance scenarios. Implementation without an approved spec is a constitution violation.
 
-- Code MUST pass automated linting and static analysis checks before merging.
-- Functions and modules MUST have a single, well-defined responsibility
-  (Single Responsibility Principle).
-- Cyclomatic complexity per function MUST NOT exceed 10 without documented
-  justification.
-- Magic numbers and unexplained constants MUST NOT appear in production code;
-  use named constants or configuration.
-- Pull requests MUST be small enough to review in under 30 minutes; large
-  changes MUST be split into independently reviewable commits.
-- Dead code MUST be deleted, not commented out.
+**Rationale**: Unspecified features accumulate hidden assumptions that compound into rework. A spec
+forces alignment before code is written.
 
-**Rationale**: Unreadable code accumulates hidden cost. Every review cycle
-spent deciphering intent is engineering time that does not ship value.
+### II. Incremental & Independent Delivery
 
-### II. Testing Standards
+Each user story MUST be independently implementable, testable, and demonstrable without requiring
+other stories to be complete. Stories MUST be ordered by priority and delivered as successive MVP
+increments. No story may introduce a breaking dependency on an incomplete story.
 
-Automated tests are a first-class deliverable — not an optional afterthought.
+**Rationale**: Incremental delivery reduces integration risk and allows the project to ship value
+at every checkpoint rather than waiting for a "big bang" release.
 
-- Unit tests MUST be written for all non-trivial business logic before
-  implementation (TDD Red-Green-Refactor cycle).
-- Integration tests MUST cover every public API contract and every cross-service
-  boundary.
-- Test coverage for new code MUST NOT fall below 80% line coverage; critical
-  paths (auth, payments, data mutations) MUST reach 95%.
-- Tests MUST be deterministic: flaky tests MUST be fixed or quarantined within
-  one sprint of detection.
-- Tests MUST run in under 5 minutes on a standard CI runner; long-running
-  suites MUST be split into fast (< 1 min) and slow tiers.
-- Mocking external services is permitted in unit tests; integration tests MUST
-  hit real or contract-verified test doubles.
+### III. Quality Gates
 
-**Rationale**: Tests are the only reliable specification of system behaviour
-over time. A codebase without tests is a codebase that cannot be safely changed.
+All features MUST pass a Constitution Check in the implementation plan before Phase 0 research
+begins, and again after Phase 1 design. When a feature spec explicitly requests tests, those tests
+MUST be written and confirmed to fail before the corresponding implementation is written
+(Red–Green–Refactor). Gate violations MUST be documented with justification in the Complexity
+Tracking table; unjustified violations block merge.
 
-### III. UX Consistency
+**Rationale**: Explicit gates prevent quality debt from accumulating silently across features.
 
-Users MUST encounter coherent, predictable experiences across every surface of
-the product.
+### IV. Simplicity (YAGNI)
 
-- All UI components MUST conform to the established design system; ad-hoc
-  styling MUST NOT be introduced without design review.
-- Interaction patterns (navigation, feedback, error states) MUST be consistent
-  across flows — no feature may invent its own idiom without cross-team approval.
-- Error messages presented to users MUST be written in plain language, state
-  what went wrong, and offer a recovery action.
-- Accessibility: all user-facing interfaces MUST meet WCAG 2.1 AA as a
-  minimum; AA compliance is verified via automated tooling on every build.
-- Feature work that touches multiple screens MUST include a UX review checkpoint
-  before implementation begins (as part of the spec/plan phase).
+Code MUST solve the stated requirement and nothing more. Abstractions, helpers, and generalization
+MUST NOT be introduced unless a second concrete use case already exists in the codebase. Complexity
+MUST be justified; if a simpler alternative exists it MUST be used. Over-engineering a solution
+when three similar lines would suffice is a violation of this principle.
 
-**Rationale**: Inconsistency erodes user trust and increases support burden.
-Users who cannot predict the product's behaviour stop using it.
+**Rationale**: Premature abstractions are harder to remove than they were to add. Keeping code
+simple keeps it maintainable and reviewable.
 
-### IV. Performance Requirements
+### V. Observability
 
-The product MUST remain fast under realistic load; performance is a feature, not
-a post-launch concern.
+All user-facing operations and external integrations MUST emit structured log entries sufficient to
+diagnose failures without attaching a debugger. Log levels (DEBUG / INFO / WARN / ERROR) MUST be
+used consistently. Silent failures — operations that return success without producing any
+observable signal — are prohibited.
 
-- Page/screen load time (Time to Interactive) MUST NOT exceed 2 seconds on a
-  median mobile connection (4G, ~20 Mbps).
-- API endpoints MUST respond within 200 ms at the 95th percentile under expected
-  peak load.
-- Background jobs and batch operations MUST define explicit SLAs in their
-  feature specification; SLAs MUST be validated in load tests before release.
-- Performance regressions detected in CI (> 10% degradation vs. baseline) MUST
-  block merges until resolved or explicitly accepted with a documented trade-off.
-- Memory and CPU budgets MUST be defined per service/module and reviewed at plan
-  time; unbounded resource consumption MUST NOT reach production.
+**Rationale**: Code that cannot be observed in production cannot be maintained reliably.
 
-**Rationale**: Performance problems compound over time and are expensive to
-retrofit. Treating latency and throughput as explicit requirements from day one
-prevents the "it was fast before" trap.
+## Development Standards
 
-## Development Workflow
+- **Language & toolchain**: Determined per feature in `plan.md` Technical Context. Unknowns MUST
+  be resolved in `research.md` before Phase 1 design begins.
+- **Project structure**: Follows the layout declared in `plan.md`. Deviations require an updated
+  plan before implementation proceeds.
+- **Dependencies**: Third-party dependencies MUST be justified in `research.md` with alternatives
+  considered. Unused dependencies MUST be removed.
+- **Documentation**: Public interfaces and non-obvious logic MUST be documented inline. A
+  `quickstart.md` MUST be produced in Phase 1 for any feature that exposes an external interface.
 
-Every feature follows a structured lifecycle aligned to the principle gates
-above.
+## Review & Quality
 
-1. **Specify** — author a `spec.md` capturing user stories, functional
-   requirements, and measurable success criteria (including performance SLAs and
-   UX consistency checkpoints).
-2. **Plan** — produce a `plan.md` completing the Constitution Check gate against
-   all four principles before implementation begins.
-3. **Tasks** — generate a dependency-ordered `tasks.md`; tests MUST appear as
-   tasks and MUST be scheduled before the implementation tasks they cover.
-4. **Implement** — execute tasks in order; no task is marked complete until its
-   acceptance criteria (including test passage) are verified.
-5. **Review** — every PR must be reviewed by at least one peer; the reviewer is
-   responsible for checking principle compliance, not just correctness.
-6. **Release** — features are only eligible for release after all automated
-   quality gates pass (tests, linting, performance, accessibility).
-
-Hotfixes may compress steps 1–3 but MUST NOT skip the review or quality gate
-steps.
-
-## Quality Gates
-
-The following automated gates MUST pass on every pull request. Bypassing a gate
-requires explicit written justification in the PR description and sign-off from
-a project maintainer.
-
-| Gate | Tool / Signal | Threshold |
-|------|--------------|-----------|
-| Linting & static analysis | Project linter | Zero errors |
-| Unit test suite | Test runner | All passing, ≥ 80% line coverage |
-| Integration test suite | Test runner | All passing |
-| Performance benchmark | CI perf job | No regression > 10% vs. baseline |
-| Accessibility scan | Automated a11y tool | Zero WCAG 2.1 AA violations |
-| Complexity check | Static analysis | Cyclomatic complexity ≤ 10 per function |
-
-A failing gate with no documented justification constitutes a block on merge.
-Justifications are time-limited: a gate bypass accepted for one PR does not
-carry forward to subsequent PRs.
+- Every pull request MUST reference its corresponding `spec.md` and `plan.md`.
+- The Constitution Check section of `plan.md` MUST be completed and passing before review.
+- Reviewers MUST verify that no new complexity was introduced without justification in the
+  Complexity Tracking table.
+- All checklist items generated by `/speckit.checklist` for the feature MUST be resolved before
+  merge.
 
 ## Governance
 
-This constitution is the highest-ranking technical authority in the project.
-In any conflict between this document and other practices, policies, or
-conventions, the constitution prevails.
+This constitution supersedes all other development practices within the pixel-parsnips project.
+Where a practice conflicts with a principle stated here, the constitution takes precedence.
 
-**Amendment procedure**:
+**Amendment procedure**: Amendments MUST be proposed as a pull request updating this file.
+The PR description MUST state: (a) the principle(s) affected, (b) motivation for the change,
+and (c) impact on existing features or in-flight specs. The `LAST_AMENDED_DATE` and
+`CONSTITUTION_VERSION` MUST be updated in the same commit.
 
-1. Open a dedicated PR modifying only `.specify/memory/constitution.md` and any
-   directly impacted template files.
-2. State the motivation, the version bump type (MAJOR / MINOR / PATCH), and the
-   impact on existing work in the PR description.
-3. Obtain approval from at least two maintainers before merging.
-4. Update `LAST_AMENDED_DATE` and `CONSTITUTION_VERSION` in the footer.
-5. Run `/speckit.analyze` after merging to surface any downstream spec/plan
-   inconsistencies introduced by the amendment.
+**Versioning policy**:
+- MAJOR: Removal or backward-incompatible redefinition of a principle.
+- MINOR: New principle or section added; material expansion of existing guidance.
+- PATCH: Clarification, wording improvement, or typo fix with no semantic change.
 
-**Versioning policy** (semantic):
-
-- **MAJOR** — a principle is removed, renamed with incompatible meaning, or its
-  non-negotiable rules are materially weakened.
-- **MINOR** — a new principle or section is added, or existing guidance is
-  materially expanded without removing anything.
-- **PATCH** — clarifications, wording improvements, typo fixes, or
-  non-semantic refinements.
-
-**Compliance review**:
-
-- All PR reviewers are responsible for verifying that implementation tasks do
-  not violate any principle.
-- The plan.md Constitution Check section MUST be completed (not left as a
-  placeholder) before a feature moves to implementation.
-- Quarterly: maintainers review whether thresholds (coverage %, latency targets,
-  etc.) remain appropriate and initiate amendments where needed.
+**Compliance review**: Constitution Check gates in `plan.md` serve as the primary compliance
+mechanism. The `/speckit.analyze` command SHOULD be run after each feature's tasks are generated
+to catch cross-artifact drift.
 
 **Version**: 1.0.0 | **Ratified**: 2026-03-16 | **Last Amended**: 2026-03-16

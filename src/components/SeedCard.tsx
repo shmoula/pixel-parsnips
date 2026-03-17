@@ -12,7 +12,9 @@ interface SeedCardProps {
   price: number;
   seedCount: number;
   onBuy: (cropId: CropId) => void;
+  onSelect: (cropId: CropId) => void;
   canAfford: boolean;
+  isSelected: boolean;
 }
 
 export function SeedCard({
@@ -20,13 +22,15 @@ export function SeedCard({
   price,
   seedCount,
   onBuy,
+  onSelect,
   canAfford,
+  isSelected,
 }: SeedCardProps) {
   const crop = CROP_DEFINITIONS[cropId];
   const disabled = !canAfford;
 
   return (
-    <div className="flex flex-col gap-1 p-3 bg-farm-parchment rounded-lg border border-farm-stone">
+    <div className={`flex flex-col gap-1 p-3 bg-farm-parchment rounded-lg border-2 transition-colors ${isSelected ? 'border-farm-grass' : 'border-farm-stone'}`}>
       <div className="flex items-center justify-between">
         <span className="text-lg">{CROP_EMOJI[cropId]}</span>
         {seedCount > 0 && (
@@ -43,6 +47,23 @@ export function SeedCard({
         <span className="mx-1">·</span>
         <span>{crop.baseYield}🪙 yield</span>
       </div>
+
+      {seedCount > 0 && (
+        <button
+          type="button"
+          aria-label={`Select ${crop.name} seed to plant`}
+          aria-pressed={isSelected}
+          onClick={() => onSelect(cropId)}
+          className={`
+            mt-1 w-full py-1 rounded font-pixel text-xs transition-colors
+            ${isSelected
+              ? 'bg-farm-grass text-farm-parchment'
+              : 'bg-farm-sky text-farm-ink hover:bg-farm-grass hover:text-farm-parchment'}
+          `}
+        >
+          {isSelected ? 'Planting ✓' : 'Plant'}
+        </button>
+      )}
 
       <button
         type="button"
