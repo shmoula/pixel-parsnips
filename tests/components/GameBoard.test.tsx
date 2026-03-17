@@ -3,8 +3,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
 import { GameBoard } from '../../src/components/GameBoard';
+import { PlotCard } from '../../src/components/PlotCard';
 import { initialGameState } from '../../src/engine/gameEngine';
-import type { DailyLogEntry } from '../../src/engine/types';
+import type { DailyLogEntry, PlotState } from '../../src/engine/types';
 
 // ── T022: BankruptcyScreen smoke tests ────────────────────────────────────────
 
@@ -137,5 +138,105 @@ describe('GameBoard — smoke tests (T047)', () => {
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+});
+
+// ── T019: PlotCard countdown render tests (US3) ───────────────────────────────
+
+function makeExhaustedPlot(id: number, exhaustedSinceDay: number): PlotState {
+  return {
+    id,
+    cropId: null,
+    dayPlanted: null,
+    daysRemaining: null,
+    consecutiveHarvests: 0,
+    exhaustedSinceDay,
+  };
+}
+
+// ── T022: FR-014 — consecutiveHarvests must never appear in the DOM ───────────
+
+describe('PlotCard — FR-014: consecutiveHarvests never rendered (T022)', () => {
+  const cases: Array<{ label: string; plot: PlotState }> = [
+    {
+      label: 'empty plot',
+      plot: { id: 0, cropId: null, dayPlanted: null, daysRemaining: null, consecutiveHarvests: 0, exhaustedSinceDay: null },
+    },
+    {
+      label: 'plot with 1 consecutive harvest',
+      plot: { id: 0, cropId: null, dayPlanted: null, daysRemaining: null, consecutiveHarvests: 1, exhaustedSinceDay: null },
+    },
+    {
+      label: 'plot with 2 consecutive harvests',
+      plot: { id: 0, cropId: null, dayPlanted: null, daysRemaining: null, consecutiveHarvests: 2, exhaustedSinceDay: null },
+    },
+    {
+      label: 'exhausted plot',
+      plot: { id: 0, cropId: null, dayPlanted: null, daysRemaining: null, consecutiveHarvests: 0, exhaustedSinceDay: 5 },
+    },
+  ];
+
+  cases.forEach(({ label, plot }) => {
+    it(`does not render consecutiveHarvests value for ${label}`, () => {
+      render(<PlotCard plot={plot} currentDay={5} />);
+      // The raw consecutiveHarvests number must never appear as text
+      expect(document.body.textContent).not.toMatch(String(plot.consecutiveHarvests));
+    });
+  });
+});
+
+// ── T023/T024: WCAG axe check with exhausted plot (fertilizer aria) ───────────
+
+describe('GameBoard — WCAG with exhausted plot (T023/T024)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('passes WCAG 2.1 AA axe check — GameBoard with exhausted plot', async () => {
+    const exhaustedState = {
+      ...initialGameState(),
+      plots: initialGameState().plots.map((p, i) =>
+        i === 0 ? { ...p, exhaustedSinceDay: 3, consecutiveHarvests: 0 } : p
+      ),
+    };
+    const props = {
+      ...makeGameBoardProps(),
+      state: exhaustedState,
+      getFertilizerCount: () => 1,
+    };
+    const { container } = render(<GameBoard {...props} />);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+});
+
+// ── T019: PlotCard countdown render tests (US3) ───────────────────────────────
+
+describe('PlotCard — exhaustion countdown (T019, US3)', () => {
+  it('renders "3 days remaining" when exhausted this turn (N=3)', () => {
+    // exhaustedSinceDay=5, currentDay=5 → 3 - (5-5) = 3
+    render(<PlotCard plot={makeExhaustedPlot(0, 5)} currentDay={5} />);
+    expect(screen.getByText(/3d remaining/i)).toBeInTheDocument();
+  });
+
+  it('renders "2 days remaining" after 1 day has passed (N=2)', () => {
+    // exhaustedSinceDay=5, currentDay=6 → 3 - (6-5) = 2
+    render(<PlotCard plot={makeExhaustedPlot(0, 5)} currentDay={6} />);
+    expect(screen.getByText(/2d remaining/i)).toBeInTheDocument();
+  });
+
+  it('renders "1 day remaining" after 2 days have passed (N=1)', () => {
+    // exhaustedSinceDay=5, currentDay=7 → 3 - (7-5) = 1
+    render(<PlotCard plot={makeExhaustedPlot(0, 5)} currentDay={7} />);
+    expect(screen.getByText(/1d remaining/i)).toBeInTheDocument();
+  });
+
+  it('does NOT render any countdown when plot is not exhausted', () => {
+    const emptyPlot: PlotState = {
+      id: 0, cropId: null, dayPlanted: null, daysRemaining: null,
+      consecutiveHarvests: 0, exhaustedSinceDay: null,
+    };
+    render(<PlotCard plot={emptyPlot} currentDay={5} />);
+    expect(screen.queryByText(/remaining/i)).not.toBeInTheDocument();
   });
 });

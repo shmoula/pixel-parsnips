@@ -912,3 +912,47 @@ describe('applyFertilizer (T013, US2)', () => {
     }
   });
 });
+
+// ── T022: Edge case tests ─────────────────────────────────────────────────────
+
+describe('processTurn — edge cases (T022)', () => {
+  it('does not crash when all 12 plots are simultaneously exhausted', () => {
+    // Directly inject all plots as exhausted on the current day
+    const currentDay = 10;
+    const allExhaustedState: GameState = {
+      ...initialGameState(),
+      coinBalance: 5000,
+      currentDay,
+      plots: initialGameState().plots.map(p => ({
+        ...p,
+        cropId: null,
+        dayPlanted: null,
+        daysRemaining: null,
+        consecutiveHarvests: 0,
+        exhaustedSinceDay: currentDay,
+      })),
+    };
+    expect(allExhaustedState.plots.every(p => p.exhaustedSinceDay !== null)).toBe(true);
+    expect(() => processTurn(allExhaustedState, 'sunny')).not.toThrow();
+  });
+
+  it('applyFertilizer resets consecutiveHarvests to 0 so plot can exhaust again', () => {
+    const s = { ...exhaustedState(), fertilizerInventory: 1 };
+    const result = applyFertilizer(s, 0);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.state.plots[0].consecutiveHarvests).toBe(0);
+      // Confirm planting is re-enabled
+      const withSeed = withSeeds(result.state, { radish: 1 });
+      expect(plantSeed(withSeed, 0, 'radish').ok).toBe(true);
+    }
+  });
+
+  it('JSON round-trip preserves consecutiveHarvests, exhaustedSinceDay, and fertilizerInventory', () => {
+    const s = { ...exhaustedState(), fertilizerInventory: 2 };
+    const roundTripped: GameState = JSON.parse(JSON.stringify(s));
+    expect(roundTripped.plots[0].exhaustedSinceDay).toBe(s.plots[0].exhaustedSinceDay);
+    expect(roundTripped.plots[0].consecutiveHarvests).toBe(s.plots[0].consecutiveHarvests);
+    expect(roundTripped.fertilizerInventory).toBe(2);
+  });
+});

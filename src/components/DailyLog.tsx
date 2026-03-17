@@ -34,8 +34,20 @@ export function DailyLog({ log }: DailyLogProps) {
         <div className="flex flex-col gap-1">
           {log.harvests.map(h => (
             <div key={h.plotId} className="flex justify-between text-farm-stone">
-              <span>Plot {h.plotId} {h.cropId}</span>
+              <span>Plot {h.plotId + 1} {h.cropId}</span>
               <span className="text-farm-grass">+{h.adjustedYield}🪙</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Exhaustion events */}
+      {log.exhaustedPlots.length > 0 && (
+        <div className="flex flex-col gap-1">
+          {log.exhaustedPlots.map(plotId => (
+            <div key={plotId} className="flex items-center gap-1 text-farm-stone">
+              <span aria-hidden="true">🪨</span>
+              <span>Plot #{plotId + 1} became exhausted.</span>
             </div>
           ))}
         </div>

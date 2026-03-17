@@ -21,44 +21,58 @@ interface PlotCardProps {
   onApplyFertilizer?: (plotId: number) => void;
 }
 
+function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertilizer }: {
+  plot: PlotState;
+  daysUntilRecovery: number;
+  hasFertilizer: boolean;
+  onApplyFertilizer?: (plotId: number) => void;
+}) {
+  return (
+    <div
+      aria-label={`Plot ${plot.id + 1}: Exhausted — ${daysUntilRecovery} day${daysUntilRecovery === 1 ? '' : 's'} until recovery`}
+      className="
+        flex flex-col items-center justify-center
+        w-full aspect-square rounded-lg border-2
+        border-farm-stone bg-farm-parchment
+        select-none p-1
+      "
+    >
+      <span className="text-2xl">🪨</span>
+      <span className="text-xs font-pixel text-farm-stone mt-1">Exhausted</span>
+      <span className="text-xs font-pixel text-farm-stone mt-0.5">
+        {daysUntilRecovery}d remaining
+      </span>
+      {hasFertilizer ? (
+        <button
+          type="button"
+          aria-label="Use Fertilizer on this plot"
+          onClick={() => onApplyFertilizer?.(plot.id)}
+          className="
+            mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
+            bg-farm-grass text-farm-ink
+            hover:brightness-110 transition-all cursor-pointer
+          "
+        >
+          Use Fertilizer
+        </button>
+      ) : (
+        <span className="text-xs text-farm-stone mt-0.5 text-center px-1">
+          Buy Fertilizer in the shop
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer }: PlotCardProps) {
   if (plot.exhaustedSinceDay !== null) {
-    const hasFertilizer = fertilizerInventory > 0;
-    const daysUntilRecovery = EXHAUSTION_RECOVERY_DAYS - (currentDay - plot.exhaustedSinceDay);
     return (
-      <div
-        aria-label={`Plot ${plot.id + 1}: Exhausted — ${daysUntilRecovery} day${daysUntilRecovery === 1 ? '' : 's'} until recovery`}
-        className="
-          flex flex-col items-center justify-center
-          w-full aspect-square rounded-lg border-2
-          border-farm-stone bg-farm-parchment
-          select-none p-1
-        "
-      >
-        <span className="text-2xl">🪨</span>
-        <span className="text-xs font-pixel text-farm-stone mt-1">Exhausted</span>
-        <span className="text-xs font-pixel text-farm-stone mt-0.5">
-          {daysUntilRecovery}d remaining
-        </span>
-        {hasFertilizer ? (
-          <button
-            type="button"
-            aria-label="Use Fertilizer on this plot"
-            onClick={() => onApplyFertilizer?.(plot.id)}
-            className="
-              mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
-              bg-farm-grass text-farm-ink
-              hover:brightness-110 transition-all cursor-pointer
-            "
-          >
-            Use Fertilizer
-          </button>
-        ) : (
-          <span className="text-xs text-farm-stone mt-0.5 text-center px-1">
-            Buy Fertilizer in the shop
-          </span>
-        )}
-      </div>
+      <ExhaustedPlot
+        plot={plot}
+        daysUntilRecovery={EXHAUSTION_RECOVERY_DAYS - (currentDay - plot.exhaustedSinceDay)}
+        hasFertilizer={fertilizerInventory > 0}
+        onApplyFertilizer={onApplyFertilizer}
+      />
     );
   }
 
