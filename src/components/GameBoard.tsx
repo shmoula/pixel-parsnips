@@ -84,8 +84,10 @@ export function GameBoard({
             upgradeTier={state.upgradeTier}
             seedInventory={state.seedInventory}
             fertilizerInventory={getFertilizerCount()}
+            selectedCrop={selectedCrop}
             getSeedPrice={getSeedPrice}
             onBuySeed={handleBuySeed}
+            onSelectCrop={setSelectedCrop}
             onBuyUpgrade={onBuyUpgrade}
             onBuyFertilizer={onBuyFertilizer}
             getNextUpgradeCost={getNextUpgradeCost}

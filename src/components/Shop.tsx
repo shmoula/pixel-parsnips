@@ -1,4 +1,4 @@
-import type { CropId, UpgradeTier } from '../engine/types';
+import type { CropId, UpgradeTier, GameState } from '../engine/types';
 import { UPGRADE_TIER_DEFINITIONS, FERTILIZER_COST } from '../engine/constants';
 import { SeedCard } from './SeedCard';
 import { UpgradeCard } from './UpgradeCard';
@@ -8,10 +8,12 @@ const CROP_IDS: CropId[] = ['radish', 'parsnip', 'pumpkin'];
 interface ShopProps {
   coinBalance: number;
   upgradeTier: UpgradeTier;
-  seedInventory: Record<CropId, number>;
+  seedInventory: GameState['seedInventory'];
   fertilizerInventory: number;
+  selectedCrop: CropId | null;
   getSeedPrice: (cropId: CropId) => number;
   onBuySeed: (cropId: CropId) => void;
+  onSelectCrop: (cropId: CropId) => void;
   onBuyUpgrade: () => void;
   onBuyFertilizer: () => void;
   getNextUpgradeCost: () => number | null;
@@ -22,8 +24,10 @@ export function Shop({
   upgradeTier,
   seedInventory,
   fertilizerInventory,
+  selectedCrop,
   getSeedPrice,
   onBuySeed,
+  onSelectCrop,
   onBuyUpgrade,
   onBuyFertilizer,
   getNextUpgradeCost,
@@ -50,7 +54,9 @@ export function Shop({
                 price={price}
                 seedCount={seedInventory[cropId]}
                 onBuy={onBuySeed}
+                onSelect={onSelectCrop}
                 canAfford={coinBalance >= price}
+                isSelected={selectedCrop === cropId}
               />
             );
           })}
