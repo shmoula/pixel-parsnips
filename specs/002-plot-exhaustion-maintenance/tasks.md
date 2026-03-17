@@ -121,12 +121,12 @@ one day; confirm "2 days remaining". Advance two more; confirm plot is empty (no
 
 ### Tests for User Story 3 ⚠️ Write FIRST — confirm FAIL before T020
 
-- [ ] T019 Write failing snapshot/render test in `tests/components/GameBoard.test.tsx` confirming `PlotCard` renders the correct "N days remaining" string for a given `exhaustedSinceDay` and `currentDay` pair (test with N=3, N=2, N=1)
+- [x] T019 Write failing snapshot/render test in `tests/components/GameBoard.test.tsx` confirming `PlotCard` renders the correct "N days remaining" string for a given `exhaustedSinceDay` and `currentDay` pair (test with N=3, N=2, N=1)
 
 ### Implementation for User Story 3
 
-- [ ] T020 Update `src/components/PlotCard.tsx` to compute and display `daysUntilRecovery = EXHAUSTION_RECOVERY_DAYS - (currentDay - plot.exhaustedSinceDay!)` as "N days remaining" text beneath the "Exhausted" label; import `EXHAUSTION_RECOVERY_DAYS` from `src/engine/constants.ts` — makes T019 GREEN
-- [ ] T021 [P] Update `src/components/DailyLog.tsx` to list newly exhausted plots from `lastDailyLog.exhaustedPlots[]` (e.g. "Plot #3 became exhausted.") to satisfy Constitution Principle V (Observability)
+- [x] T020 Update `src/components/PlotCard.tsx` to compute and display `daysUntilRecovery = EXHAUSTION_RECOVERY_DAYS - (currentDay - plot.exhaustedSinceDay!)` as "N days remaining" text beneath the "Exhausted" label; import `EXHAUSTION_RECOVERY_DAYS` from `src/engine/constants.ts` — makes T019 GREEN
+- [x] T021 [P] Update `src/components/DailyLog.tsx` to list newly exhausted plots from `lastDailyLog.exhaustedPlots[]` (e.g. "Plot #3 became exhausted.") to satisfy Constitution Principle V (Observability)
 
 **Checkpoint**: T019 test GREEN. Exhausted plots show live countdown in browser; DailyLog
 panel shows exhaustion events on the day they occur.
@@ -137,10 +137,10 @@ panel shows exhaustion events on the day they occur.
 
 **Purpose**: Edge case coverage, accessibility, and final quality gate.
 
-- [ ] T022 Add edge case tests in `tests/engine/gameEngine.test.ts`: (a) all 12 plots simultaneously exhausted — no crash; (b) `applyFertilizer` immediately re-enables planting with a fresh counter; (c) full save/reload round-trip preserves `consecutiveHarvests`, `exhaustedSinceDay`, and `fertilizerInventory` after `JSON.parse(JSON.stringify(state))`; add render assertion in `tests/components/GameBoard.test.tsx` confirming `PlotCard` does NOT display the `consecutiveHarvests` value anywhere in the DOM for any plot state (FR-014)
-- [ ] T023 [P] Add `aria-label` to the "Use Fertilizer" button in `src/components/PlotCard.tsx` (e.g. `aria-label="Use Fertilizer on this plot"`); ensure exhausted state is conveyed via text not color alone (axe-core check via `toHaveNoViolations`)
-- [ ] T024 [P] Add `aria-label` to the Fertilizer buy button in `src/components/Shop.tsx` (e.g. `aria-label="Buy 1 Fertilizer for 30 coins"`); ensure disabled state is communicated to screen readers with `aria-disabled`
-- [ ] T025 Run `npm test && npm run lint` to confirm all constitution gates pass: all tests green, no lint errors, no axe violations, TypeScript strict mode clean
+- [x] T022 Add edge case tests in `tests/engine/gameEngine.test.ts`: (a) all 12 plots simultaneously exhausted — no crash; (b) `applyFertilizer` immediately re-enables planting with a fresh counter; (c) full save/reload round-trip preserves `consecutiveHarvests`, `exhaustedSinceDay`, and `fertilizerInventory` after `JSON.parse(JSON.stringify(state))`; add render assertion in `tests/components/GameBoard.test.tsx` confirming `PlotCard` does NOT display the `consecutiveHarvests` value anywhere in the DOM for any plot state (FR-014)
+- [x] T023 [P] Add `aria-label` to the "Use Fertilizer" button in `src/components/PlotCard.tsx` (e.g. `aria-label="Use Fertilizer on this plot"`); ensure exhausted state is conveyed via text not color alone (axe-core check via `toHaveNoViolations`)
+- [x] T024 [P] Add `aria-label` to the Fertilizer buy button in `src/components/Shop.tsx` (e.g. `aria-label="Buy 1 Fertilizer for 30 coins"`); ensure disabled state is communicated to screen readers with `aria-disabled`
+- [x] T025 Run `npm test && npm run lint` to confirm all constitution gates pass: all tests green, no lint errors, no axe violations, TypeScript strict mode clean
 
 **Checkpoint**: All tests pass. Lint clean. `npm run build` succeeds. Manual smoke-test: full
 exhaustion cycle (exhaust → wait → recover) and fertilizer cycle (exhaust → buy → apply)
