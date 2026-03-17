@@ -32,9 +32,9 @@ All paths relative to repo root. Single SPA: `src/`, `tests/`.
 **Purpose**: Update the type system and constants for schema v2. BLOCKS all user stories —
 no engine or UI work may begin until `npx tsc --noEmit` passes cleanly.
 
-- [ ] T001 Extend `PlotState` with `consecutiveHarvests: number` and `exhaustedSinceDay: number | null`; extend `GameState` with `fertilizerInventory: number`; extend `DailyLogEntry` with `exhaustedPlots: number[]`; add `FertilizerResult` union type in `src/engine/types.ts`
-- [ ] T002 [P] Add `SCHEMA_VERSION = 2`, `EXHAUSTION_THRESHOLD = 3`, `EXHAUSTION_RECOVERY_DAYS = 3`, `FERTILIZER_COST = 30` in `src/engine/constants.ts`
-- [ ] T003 Update `initialGameState()` in `src/engine/gameEngine.ts` to set `consecutiveHarvests: 0`, `exhaustedSinceDay: null` on each plot, and `fertilizerInventory: 0` on `GameState` (depends on T001, T002)
+- [x] T001 Extend `PlotState` with `consecutiveHarvests: number` and `exhaustedSinceDay: number | null`; extend `GameState` with `fertilizerInventory: number`; extend `DailyLogEntry` with `exhaustedPlots: number[]`; add `FertilizerResult` union type in `src/engine/types.ts`
+- [x] T002 [P] Add `SCHEMA_VERSION = 2`, `EXHAUSTION_THRESHOLD = 3`, `EXHAUSTION_RECOVERY_DAYS = 3`, `FERTILIZER_COST = 30` in `src/engine/constants.ts`
+- [x] T003 Update `initialGameState()` in `src/engine/gameEngine.ts` to set `consecutiveHarvests: 0`, `exhaustedSinceDay: null` on each plot, and `fertilizerInventory: 0` on `GameState` (depends on T001, T002)
 
 **Checkpoint**: `npx tsc --noEmit` passes; `npm run lint` clean; new fields visible in initial state object.
 
@@ -48,7 +48,7 @@ This single change is a prerequisite for correct behavior in all stories.
 **⚠️ CRITICAL**: Must complete before any user story ships to production; prevents corrupted
 state from v1 saves silently producing `undefined` for the new required fields.
 
-- [ ] T004 Update the schema migration `console.info` log in `src/engine/useGameEngine.ts` to emit `"[PixelParsnips] Save data schema upgraded from v1 to v2 — starting a new game."` when a loaded save's `schemaVersion !== SCHEMA_VERSION`
+- [x] T004 Update the schema migration `console.info` log in `src/engine/useGameEngine.ts` to emit `"[PixelParsnips] Save data schema upgraded from v1 to v2 — starting a new game."` when a loaded save's `schemaVersion !== SCHEMA_VERSION`
 
 **Checkpoint**: Load the game with a manually injected v1 localStorage payload; confirm the
 console emits the migration message and the game starts fresh.

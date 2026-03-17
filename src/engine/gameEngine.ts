@@ -34,6 +34,8 @@ export function initialGameState(): GameState {
     cropId: null,
     dayPlanted: null,
     daysRemaining: null,
+    consecutiveHarvests: 0,
+    exhaustedSinceDay: null,
   }));
 
   return {
@@ -46,6 +48,7 @@ export function initialGameState(): GameState {
     lastDailyLog: null,
     phase: 'playing',
     peakBalance: STARTING_BALANCE,
+    fertilizerInventory: 0,
   };
 }
 

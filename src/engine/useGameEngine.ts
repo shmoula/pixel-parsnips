@@ -18,8 +18,8 @@ function loadState(): GameState {
     if (!raw) return initialGameState();
     const parsed = JSON.parse(raw);
     if (parsed?.schemaVersion !== SCHEMA_VERSION) {
-      console.warn(
-        `[Pixel Parsnips] Save schema v${parsed?.schemaVersion} does not match current v${SCHEMA_VERSION} — starting fresh.`
+      console.info(
+        `[PixelParsnips] Save data schema upgraded from v${parsed?.schemaVersion} to v${SCHEMA_VERSION} — starting a new game.`
       );
       return initialGameState();
     }
