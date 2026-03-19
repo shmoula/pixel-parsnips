@@ -538,8 +538,7 @@ describe('processTurn — Pest Infestation (US2)', () => {
     expect(log.pestDestroyedPlots).toEqual([]);
   });
 
-  // Combo test: requires Phase 5 Flash Drought counter (T020/T021/T022) — activated there
-  it.skip('combo: Pest Infestation during active Flash Drought window — log has both fields and droughtPenalised cleared', () => {
+  it('combo: Pest Infestation during active Flash Drought window — log has both fields and droughtPenalised cleared', () => {
     // Day N: Flash Drought fires → flashDroughtDaysRemaining = 2
     let state = withSeeds(initialGameState(), { radish: 1 });
     state = processTurn(state, 'flash_drought').state;
@@ -551,6 +550,134 @@ describe('processTurn — Pest Infestation (US2)', () => {
     expect(log.pestDestroyedPlots).toEqual([0]);
     expect(log.flashDroughtDaysAfter).toBe(1); // 2→1
     expect(after.plots[0].droughtPenalised).toBe(false); // cleared on destruction
+  });
+});
+
+// ── processTurn — Flash Drought (US4) ────────────────────────────────────────
+
+describe('processTurn — Flash Drought (US4)', () => {
+  it('flashDroughtDaysRemaining=2 immediately after the event turn', () => {
+    const { state } = processTurn(initialGameState(), 'flash_drought');
+    expect(state.flashDroughtDaysRemaining).toBe(2);
+  });
+
+  it('log.flashDroughtDaysAfter=2 on the Flash Drought turn itself (no decrement that day)', () => {
+    const { log } = processTurn(initialGameState(), 'flash_drought');
+    expect(log.flashDroughtDaysAfter).toBe(2);
+  });
+
+  it('planting radish on day N+1 (counter=2): daysRemaining=ceil(1×2)=2 and droughtPenalised=true', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state;  // day N, counter→2
+    const planted = plantSeed(state, 0, 'radish');
+    expect(planted.ok).toBe(true);
+    if (!planted.ok) return;
+    expect(planted.state.plots[0].daysRemaining).toBe(2); // ceil(1*2)=2
+    expect(planted.state.plots[0].droughtPenalised).toBe(true);
+  });
+
+  it('planting radish on day N+2 (counter=1) still doubles growth', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter→2
+    state = processTurn(state, 'sunny').state;          // counter→1
+    const planted = plantSeed(state, 0, 'radish');
+    expect(planted.ok).toBe(true);
+    if (!planted.ok) return;
+    expect(planted.state.plots[0].daysRemaining).toBe(2);
+    expect(planted.state.plots[0].droughtPenalised).toBe(true);
+  });
+
+  it('planting radish on day N+3 (counter=0): normal growth, droughtPenalised=false', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter→2
+    state = processTurn(state, 'sunny').state;          // counter→1
+    state = processTurn(state, 'sunny').state;          // counter→0
+    const planted = plantSeed(state, 0, 'radish');
+    expect(planted.ok).toBe(true);
+    if (!planted.ok) return;
+    expect(planted.state.plots[0].daysRemaining).toBe(1); // normal
+    expect(planted.state.plots[0].droughtPenalised).toBe(false);
+  });
+
+  it('second Flash Drought stacks counter: counter increases by 2 (+=2)', () => {
+    let state = initialGameState();
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    const { state: after } = processTurn(state, 'flash_drought'); // counter=2+2=4
+    expect(after.flashDroughtDaysRemaining).toBe(4);
+  });
+
+  it('log.flashDroughtDaysAfter equals post-decrement counter on non-drought turns', () => {
+    let state = initialGameState();
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    const { log } = processTurn(state, 'sunny');       // counter: 2→1
+    expect(log.flashDroughtDaysAfter).toBe(1);
+  });
+
+  it('flash drought does not affect yield of crops already growing (multiplier=1.0)', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    // Radish matures in 1 turn; inject flash_drought on that turn
+    const { log } = processTurn(state, 'flash_drought');
+    expect(log.harvests).toHaveLength(1);
+    expect(log.harvests[0].adjustedYield).toBe(12); // 12 × 1.0 = 12, unaffected
+  });
+
+  it('radish growth during drought: ceil(1×2)=2 turns', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    expect(state.plots[0].daysRemaining).toBe(2);
+    state = processTurn(state, 'sunny').state; // daysRemaining: 2→1
+    expect(state.plots[0].cropId).toBe('radish'); // not harvested yet
+    state = processTurn(state, 'sunny').state; // daysRemaining: 1→0, harvest
+    expect(state.plots[0].cropId).toBeNull();  // harvested
+  });
+
+  it('pumpkin growth during drought: ceil(3×2)=6 turns', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 5000 }, { pumpkin: 1 });
+    state = processTurn(state, 'flash_drought').state;
+    state = plantSeed(state, 0, 'pumpkin').state as GameState;
+    expect(state.plots[0].daysRemaining).toBe(6);
+  });
+
+  it('droughtPenalised resets to false after harvest', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    state = plantSeed(state, 0, 'radish').state as GameState; // droughtPenalised=true, 2 days
+    state = processTurn(state, 'sunny').state;
+    state = processTurn(state, 'sunny').state; // harvests on this turn
+    expect(state.plots[0].droughtPenalised).toBe(false);
+  });
+
+  it('JSON round-trip preserves flashDroughtDaysRemaining and droughtPenalised', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state;
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    const roundTripped: GameState = JSON.parse(JSON.stringify(state));
+    expect(roundTripped.flashDroughtDaysRemaining).toBe(2);
+    expect(roundTripped.plots[0].droughtPenalised).toBe(true);
+  });
+
+  it('combo: Blight during Flash Drought window — counter decrements, yield reduced, drought still active', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    // Plant during drought window on day N+1
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    expect(state.plots[0].droughtPenalised).toBe(true);
+    // Day N+1: Blight — counter should decrement 2→1, multiplier 0.1
+    const { log, state: after } = processTurn(state, 'blight');
+    expect(log.flashDroughtDaysAfter).toBe(1);
+    expect(log.weatherMultiplier).toBe(0.1);
+    // Counter decremented, but plant was already during window
+    expect(after.flashDroughtDaysRemaining).toBe(1);
+  });
+
+  it('combo: normal weather during Flash Drought window — counter decrements and log reflects it', () => {
+    let state = initialGameState();
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    const { log, state: after } = processTurn(state, 'sunny'); // counter: 2→1
+    expect(log.flashDroughtDaysAfter).toBe(1);
+    expect(after.flashDroughtDaysRemaining).toBe(1);
   });
 });
 

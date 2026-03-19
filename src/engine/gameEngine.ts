@@ -92,11 +92,14 @@ export function plantSeed(
 
   const crop = CROP_DEFINITIONS[cropId];
 
+  // Apply Flash Drought growth penalty at planting time (FR-006)
+  const isDroughtActive = state.flashDroughtDaysRemaining > 0;
   const updatedPlot: PlotState = {
     ...plot,
     cropId,
     dayPlanted: state.currentDay,
-    daysRemaining: crop.growthDays,
+    daysRemaining: isDroughtActive ? Math.ceil(crop.growthDays * 2) : crop.growthDays,
+    droughtPenalised: isDroughtActive,
   };
 
   return {
@@ -234,6 +237,11 @@ export function processTurn(
     });
   })();
 
+  // Step 2b: Flash Drought — set counter to +2 when event fires (stacks)
+  const flashDroughtDaysAfterEvent = weatherId === 'flash_drought'
+    ? state.flashDroughtDaysRemaining + 2
+    : state.flashDroughtDaysRemaining;
+
   // Step 3: Harvest all plots where daysRemaining === 0
   // Sub-step 3a: increment consecutiveHarvests per harvested plot
   // Sub-step 3b: trigger exhaustion when consecutiveHarvests >= EXHAUSTION_THRESHOLD
@@ -260,6 +268,7 @@ export function processTurn(
         cropId: null,
         dayPlanted: null,
         daysRemaining: null,
+        droughtPenalised: false,
         consecutiveHarvests: 0,
         exhaustedSinceDay: state.currentDay + 1, // post-increment day
       };
@@ -269,6 +278,7 @@ export function processTurn(
       cropId: null,
       dayPlanted: null,
       daysRemaining: null,
+      droughtPenalised: false,
       consecutiveHarvests: newConsecutiveHarvests,
     };
   });
@@ -297,13 +307,14 @@ export function processTurn(
       closingBalance: coinBalance,
       exhaustedPlots,
       pestDestroyedPlots,
-      flashDroughtDaysAfter: state.flashDroughtDaysRemaining,
+      flashDroughtDaysAfter: flashDroughtDaysAfterEvent,
     };
     const bankruptState: GameState = {
       ...state,
       plots: harvestedPlots,
       coinBalance,
       phase: 'bankrupt',
+      flashDroughtDaysRemaining: flashDroughtDaysAfterEvent,
       lastDailyLog: log,
     };
     return { state: bankruptState, log, isBankrupt: true };
@@ -319,6 +330,12 @@ export function processTurn(
 
   // Step 8: Increment currentDay
   const currentDay = state.currentDay + 1;
+
+  // Step 8.6: Decrement flash drought counter each calendar day EXCEPT the turn it fires
+  // (skip on flash_drought turn so N+1 and N+2 planting days both receive the penalty)
+  const flashDroughtDaysRemaining = (weatherId !== 'flash_drought' && flashDroughtDaysAfterEvent > 0)
+    ? flashDroughtDaysAfterEvent - 1
+    : flashDroughtDaysAfterEvent;
 
   // Step 8.5: Natural recovery — clear exhaustion after EXHAUSTION_RECOVERY_DAYS turns
   const recoveredPlots = harvestedPlots.map(plot => {
@@ -347,7 +364,7 @@ export function processTurn(
     closingBalance: coinBalance,
     exhaustedPlots,
     pestDestroyedPlots,
-    flashDroughtDaysAfter: state.flashDroughtDaysRemaining,
+    flashDroughtDaysAfter: flashDroughtDaysRemaining,
   };
 
   const nextState: GameState = {
@@ -355,6 +372,7 @@ export function processTurn(
     plots: recoveredPlots,
     coinBalance,
     currentDay,
+    flashDroughtDaysRemaining,
     peakBalance,
     lastDailyLog: log,
   };

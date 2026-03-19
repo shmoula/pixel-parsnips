@@ -97,45 +97,9 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
   );
 }
 
-export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer, onClearPestDamage }: PlotCardProps) {
-  // Highest priority: pest damage blocks everything until acknowledged
-  if (plot.pestDamaged) {
-    return <PestDamagedPlot plot={plot} onClearPestDamage={onClearPestDamage} />;
-  }
-
-  if (plot.exhaustedSinceDay !== null) {
-    return (
-      <ExhaustedPlot
-        plot={plot}
-        daysUntilRecovery={EXHAUSTION_RECOVERY_DAYS - (currentDay - plot.exhaustedSinceDay)}
-        hasFertilizer={fertilizerInventory > 0}
-        onApplyFertilizer={onApplyFertilizer}
-      />
-    );
-  }
-
-  const isEmpty = plot.cropId === null;
-
-  if (isEmpty) {
-    return (
-      <button
-        type="button"
-        aria-label={`Empty plot ${plot.id + 1} — click to plant`}
-        onClick={() => onPlant?.(plot.id)}
-        className="
-          flex flex-col items-center justify-center
-          w-full aspect-square rounded-lg border-2 border-dashed
-          border-farm-stone bg-farm-parchment text-farm-stone
-          hover:border-farm-grass hover:text-farm-grass
-          transition-colors cursor-pointer select-none
-        "
-      >
-        <span className="text-2xl">🟫</span>
-        <span className="text-xs mt-1 font-pixel">Empty</span>
-      </button>
-    );
-  }
-
+function GrowingCropCard({ plot }: {
+  plot: PlotState;
+}) {
   const emoji = CROP_EMOJI[plot.cropId!];
   const label = CROP_LABEL[plot.cropId!];
   const daysLeft = plot.daysRemaining ?? 0;
@@ -157,6 +121,15 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlan
       <span className="text-xs text-farm-stone mt-0.5">
         Day {plot.dayPlanted}
       </span>
+      {plot.droughtPenalised && (
+        <span
+          aria-label="Growth slowed by Flash Drought"
+          title="Growth slowed by Flash Drought"
+          className="text-xs mt-0.5"
+        >
+          ☀️🔥
+        </span>
+      )}
       <span
         className={`
           text-xs font-pixel mt-1 px-1.5 py-0.5 rounded
@@ -168,5 +141,45 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlan
         {isReady ? 'Ready!' : `${daysLeft}d left`}
       </span>
     </div>
+  );
+}
+
+export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer, onClearPestDamage }: PlotCardProps) {
+  // Highest priority: pest damage blocks everything until acknowledged
+  if (plot.pestDamaged) {
+    return <PestDamagedPlot plot={plot} onClearPestDamage={onClearPestDamage} />;
+  }
+
+  if (plot.exhaustedSinceDay !== null) {
+    return (
+      <ExhaustedPlot
+        plot={plot}
+        daysUntilRecovery={EXHAUSTION_RECOVERY_DAYS - (currentDay - plot.exhaustedSinceDay)}
+        hasFertilizer={fertilizerInventory > 0}
+        onApplyFertilizer={onApplyFertilizer}
+      />
+    );
+  }
+
+  if (plot.cropId !== null) {
+    return <GrowingCropCard plot={plot} />;
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={`Empty plot ${plot.id + 1} — click to plant`}
+      onClick={() => onPlant?.(plot.id)}
+      className="
+        flex flex-col items-center justify-center
+        w-full aspect-square rounded-lg border-2 border-dashed
+        border-farm-stone bg-farm-parchment text-farm-stone
+        hover:border-farm-grass hover:text-farm-grass
+        transition-colors cursor-pointer select-none
+      "
+    >
+      <span className="text-2xl">🟫</span>
+      <span className="text-xs mt-1 font-pixel">Empty</span>
+    </button>
   );
 }
