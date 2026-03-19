@@ -55,6 +55,7 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null } =
     onBuyUpgrade: vi.fn(),
     onBuyFertilizer: vi.fn(),
     onApplyFertilizer: vi.fn(),
+    onClearPestDamage: vi.fn(),
     getFertilizerCount: () => 0,
     getSeedPrice: () => 5,
     getNextUpgradeCost: () => 50 as number | null,
@@ -74,6 +75,8 @@ const sampleLog: DailyLogEntry = {
   netChange: -19,
   closingBalance: 81,
   exhaustedPlots: [],
+  pestDestroyedPlots: [],
+  flashDroughtDaysAfter: 0,
 };
 
 describe('GameBoard — smoke tests (T047)', () => {
@@ -207,6 +210,53 @@ describe('GameBoard — WCAG with exhausted plot (T023/T024)', () => {
     const { container } = render(<GameBoard {...props} />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+});
+
+// ── T027: FR-010 Flash Drought banner + FR-018 drought icon smoke tests ────────
+
+describe('GameBoard — Flash Drought banner (T027, FR-010)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('renders Flash Drought banner when flashDroughtDaysRemaining > 0', () => {
+    const droughtState = { ...initialGameState(), flashDroughtDaysRemaining: 2 };
+    render(<GameBoard {...makeGameBoardProps()} state={droughtState} />);
+    expect(screen.getByRole('alert', { name: /flash drought warning/i })).toBeInTheDocument();
+  });
+
+  it('does NOT render Flash Drought banner when flashDroughtDaysRemaining === 0', () => {
+    render(<GameBoard {...makeGameBoardProps()} />);
+    expect(screen.queryByRole('alert', { name: /flash drought warning/i })).not.toBeInTheDocument();
+  });
+
+  it('shows remaining day count in banner', () => {
+    const droughtState = { ...initialGameState(), flashDroughtDaysRemaining: 1 };
+    render(<GameBoard {...makeGameBoardProps()} state={droughtState} />);
+    expect(screen.getByRole('alert', { name: /flash drought warning/i })).toHaveTextContent('1 day');
+  });
+});
+
+describe('PlotCard — drought icon (T027, FR-018)', () => {
+  it('renders drought icon when plot.droughtPenalised is true', () => {
+    const droughtPlot: PlotState = {
+      id: 0, cropId: 'radish', dayPlanted: 1, daysRemaining: 2,
+      consecutiveHarvests: 0, exhaustedSinceDay: null,
+      pestDamaged: false, droughtPenalised: true,
+    };
+    render(<PlotCard plot={droughtPlot} currentDay={1} />);
+    expect(screen.getByTitle('Growth slowed by Flash Drought')).toBeInTheDocument();
+  });
+
+  it('does NOT render drought icon when plot.droughtPenalised is false', () => {
+    const normalPlot: PlotState = {
+      id: 0, cropId: 'radish', dayPlanted: 1, daysRemaining: 1,
+      consecutiveHarvests: 0, exhaustedSinceDay: null,
+      pestDamaged: false, droughtPenalised: false,
+    };
+    render(<PlotCard plot={normalPlot} currentDay={1} />);
+    expect(screen.queryByTitle('Growth slowed by Flash Drought')).not.toBeInTheDocument();
   });
 });
 

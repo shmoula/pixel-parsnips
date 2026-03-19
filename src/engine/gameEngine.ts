@@ -6,7 +6,7 @@ import {
   MAX_UPGRADE_TIER,
   CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
-  WEATHER_IDS,
+  WEATHER_PROBABILITY_BANDS,
   UPGRADE_TIER_DEFINITIONS,
   TAX_RATE,
   EXHAUSTION_THRESHOLD,
@@ -24,6 +24,7 @@ import type {
   BuyResult,
   UpgradeResult,
   FertilizerResult,
+  ClearPestDamageResult,
   TurnResult,
   DailyLogEntry,
   HarvestEvent,
@@ -40,6 +41,8 @@ export function initialGameState(): GameState {
     daysRemaining: null,
     consecutiveHarvests: 0,
     exhaustedSinceDay: null,
+    pestDamaged: false,
+    droughtPenalised: false,
   }));
 
   return {
@@ -53,6 +56,7 @@ export function initialGameState(): GameState {
     phase: 'playing',
     peakBalance: STARTING_BALANCE,
     fertilizerInventory: 0,
+    flashDroughtDaysRemaining: 0,
   };
 }
 
@@ -78,17 +82,24 @@ export function plantSeed(
     return { ok: false, error: 'plot_exhausted' };
   }
 
+  if (plot.pestDamaged) {
+    return { ok: false, error: 'plot_pest_damaged' };
+  }
+
   if (state.seedInventory[cropId] === 0) {
     return { ok: false, error: 'no_seed' };
   }
 
   const crop = CROP_DEFINITIONS[cropId];
 
+  // Apply Flash Drought growth penalty at planting time (FR-006)
+  const isDroughtActive = state.flashDroughtDaysRemaining > 0;
   const updatedPlot: PlotState = {
     ...plot,
     cropId,
     dayPlanted: state.currentDay,
-    daysRemaining: crop.growthDays,
+    daysRemaining: isDroughtActive ? Math.ceil(crop.growthDays * 2) : crop.growthDays,
+    droughtPenalised: isDroughtActive,
   };
 
   return {
@@ -176,12 +187,14 @@ export function buyUpgrade(state: GameState): UpgradeResult {
 
 /**
  * Executes the full end-of-turn sequence (FR-002).
- * Pass `weatherRoll` in tests for deterministic results; omit in production
- * to use uniform-random weather selection.
+ * Pass `weatherRoll` in tests for deterministic weather; omit in production.
+ * Pass `pestDestructionOverride` (plot ID array) for deterministic pest tests;
+ * omit in production to use random 50% rolls per occupied plot.
  */
 export function processTurn(
   state: GameState,
-  weatherRoll?: WeatherId
+  weatherRoll?: WeatherId,
+  pestDestructionOverride?: number[]
 ): TurnResult {
   // Step 1: Decrement daysRemaining on all occupied plots
   const plots = state.plots.map(plot => {
@@ -189,17 +202,52 @@ export function processTurn(
     return { ...plot, daysRemaining: plot.daysRemaining - 1 };
   });
 
-  // Step 2: Resolve weather — inject via weatherRoll for tests, else uniform random
-  const weatherId: WeatherId =
-    weatherRoll ?? WEATHER_IDS[Math.floor(Math.random() * WEATHER_IDS.length)];
+  // Step 2: Resolve weather — inject via weatherRoll for tests, else continuous-band random
+  const weatherId: WeatherId = (() => {
+    if (weatherRoll) return weatherRoll;
+    const roll = Math.random();
+    for (const band of WEATHER_PROBABILITY_BANDS) {
+      if (roll < band.threshold) return band.id;
+    }
+    return 'perfect_sun'; // guard: roll === 1.0 exactly
+  })();
   const weather = WEATHER_DEFINITIONS[weatherId];
+
+  // Step 2a: Pest Infestation — destroy occupied plots before harvest (FR-004)
+  const pestDestroyedPlots: number[] = [];
+  const plotsAfterPest = (() => {
+    if (weatherId !== 'pest_infestation') return plots;
+    return plots.map(plot => {
+      if (plot.cropId === null) return plot; // empty/exhausted plots immune
+      const isDestroyed = pestDestructionOverride !== undefined
+        ? pestDestructionOverride.includes(plot.id)
+        : Math.random() < 0.5;
+      if (isDestroyed) {
+        pestDestroyedPlots.push(plot.id);
+        return {
+          ...plot,
+          cropId: null,
+          daysRemaining: null,
+          dayPlanted: null,
+          droughtPenalised: false,
+          pestDamaged: true,
+        };
+      }
+      return plot;
+    });
+  })();
+
+  // Step 2b: Flash Drought — set counter to +2 when event fires (stacks)
+  const flashDroughtDaysAfterEvent = weatherId === 'flash_drought'
+    ? state.flashDroughtDaysRemaining + 2
+    : state.flashDroughtDaysRemaining;
 
   // Step 3: Harvest all plots where daysRemaining === 0
   // Sub-step 3a: increment consecutiveHarvests per harvested plot
   // Sub-step 3b: trigger exhaustion when consecutiveHarvests >= EXHAUSTION_THRESHOLD
   const harvests: HarvestEvent[] = [];
   const exhaustedPlots: number[] = [];
-  const harvestedPlots = plots.map(plot => {
+  const harvestedPlots = plotsAfterPest.map(plot => {
     if (plot.cropId === null || plot.daysRemaining !== 0) return plot;
     const crop = CROP_DEFINITIONS[plot.cropId];
     const adjustedYield = coins(crop.baseYield * weather.multiplier);
@@ -220,6 +268,7 @@ export function processTurn(
         cropId: null,
         dayPlanted: null,
         daysRemaining: null,
+        droughtPenalised: false,
         consecutiveHarvests: 0,
         exhaustedSinceDay: state.currentDay + 1, // post-increment day
       };
@@ -229,6 +278,7 @@ export function processTurn(
       cropId: null,
       dayPlanted: null,
       daysRemaining: null,
+      droughtPenalised: false,
       consecutiveHarvests: newConsecutiveHarvests,
     };
   });
@@ -256,12 +306,15 @@ export function processTurn(
       netChange: totalHarvestIncome,
       closingBalance: coinBalance,
       exhaustedPlots,
+      pestDestroyedPlots,
+      flashDroughtDaysAfter: flashDroughtDaysAfterEvent,
     };
     const bankruptState: GameState = {
       ...state,
       plots: harvestedPlots,
       coinBalance,
       phase: 'bankrupt',
+      flashDroughtDaysRemaining: flashDroughtDaysAfterEvent,
       lastDailyLog: log,
     };
     return { state: bankruptState, log, isBankrupt: true };
@@ -277,6 +330,12 @@ export function processTurn(
 
   // Step 8: Increment currentDay
   const currentDay = state.currentDay + 1;
+
+  // Step 8.6: Decrement flash drought counter each calendar day EXCEPT the turn it fires
+  // (skip on flash_drought turn so N+1 and N+2 planting days both receive the penalty)
+  const flashDroughtDaysRemaining = (weatherId !== 'flash_drought' && flashDroughtDaysAfterEvent > 0)
+    ? flashDroughtDaysAfterEvent - 1
+    : flashDroughtDaysAfterEvent;
 
   // Step 8.5: Natural recovery — clear exhaustion after EXHAUSTION_RECOVERY_DAYS turns
   const recoveredPlots = harvestedPlots.map(plot => {
@@ -304,6 +363,8 @@ export function processTurn(
     netChange: totalHarvestIncome - landLeaseDeducted - taxDeducted,
     closingBalance: coinBalance,
     exhaustedPlots,
+    pestDestroyedPlots,
+    flashDroughtDaysAfter: flashDroughtDaysRemaining,
   };
 
   const nextState: GameState = {
@@ -311,11 +372,39 @@ export function processTurn(
     plots: recoveredPlots,
     coinBalance,
     currentDay,
+    flashDroughtDaysRemaining,
     peakBalance,
     lastDailyLog: log,
   };
 
   return { state: nextState, log, isBankrupt: false };
+}
+
+// ── clearPestDamage (stub — implemented in T013) ──────────────────────────────
+
+/** Removes Pest Damage state from a plot, making it plantable again. Pure — no mutations. */
+export function clearPestDamage(
+  state: GameState,
+  plotId: number
+): ClearPestDamageResult {
+  if (plotId < 0 || plotId >= PLOT_COUNT) {
+    return { ok: false, error: 'invalid_plot' };
+  }
+
+  const plot = state.plots[plotId];
+  if (!plot.pestDamaged) {
+    return { ok: false, error: 'plot_not_pest_damaged' };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      plots: state.plots.map(p =>
+        p.id === plotId ? { ...p, pestDamaged: false } : p
+      ),
+    },
+  };
 }
 
 // ── T014: buyFertilizer ───────────────────────────────────────────────────────

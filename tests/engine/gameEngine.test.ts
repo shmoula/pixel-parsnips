@@ -8,6 +8,7 @@ import {
   buyUpgrade,
   buyFertilizer,
   applyFertilizer,
+  clearPestDamage,
 } from '../../src/engine/gameEngine';
 import { LAND_LEASE_FEE, EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST } from '../../src/engine/constants';
 import type { GameState } from '../../src/engine/types';
@@ -415,28 +416,307 @@ describe('processTurn — DailyLogEntry accounting fields (US4)', () => {
 // ── processTurn — uniform random weather when no weatherRoll (US4, T037) ──────
 
 describe('processTurn — uniform random weather selection (US4)', () => {
-  it('uses Math.random to select weather when no weatherRoll is injected', () => {
-    // WEATHER_IDS = ['drought','overcast','sunny','warm_breeze','perfect_sun']
-    // Math.random() = 0.0 → floor(0.0 × 5) = 0 → 'drought'
+  // WEATHER_PROBABILITY_BANDS: 0.00–0.05 blight, 0.05–0.10 pest_infestation,
+  // 0.10–0.15 flash_drought, 0.15–0.32 drought, 0.32–0.49 overcast,
+  // 0.49–0.66 sunny, 0.66–0.83 warm_breeze, 0.83–1.00 perfect_sun
+
+  it('selects blight when Math.random returns 0.0 (roll < 0.05)', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0.0);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('blight');
+    spy.mockRestore();
+  });
+
+  it('selects pest_infestation when Math.random returns 0.07 (0.05 ≤ roll < 0.10)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.07);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('pest_infestation');
+    spy.mockRestore();
+  });
+
+  it('selects flash_drought when Math.random returns 0.12 (0.10 ≤ roll < 0.15)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.12);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('flash_drought');
+    spy.mockRestore();
+  });
+
+  it('selects drought when Math.random returns 0.20 (0.15 ≤ roll < 0.32)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.20);
     const { log } = processTurn(initialGameState());
     expect(log.weatherId).toBe('drought');
     spy.mockRestore();
   });
 
-  it('selects perfect_sun when Math.random returns 0.8', () => {
-    // floor(0.8 × 5) = floor(4.0) = 4 → 'perfect_sun'
-    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.8);
+  it('selects warm_breeze when Math.random returns 0.80 (0.66 ≤ roll < 0.83)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.80);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('warm_breeze');
+    spy.mockRestore();
+  });
+
+  it('selects perfect_sun when Math.random returns 0.95 (0.83 ≤ roll < 1.00)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.95);
     const { log } = processTurn(initialGameState());
     expect(log.weatherId).toBe('perfect_sun');
     spy.mockRestore();
   });
 
   it('injected weatherRoll still overrides random selection', () => {
-    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.0); // would give 'drought'
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.0); // would give 'blight'
     const { log } = processTurn(initialGameState(), 'warm_breeze');
     expect(log.weatherId).toBe('warm_breeze');
     spy.mockRestore();
+  });
+});
+
+// ── processTurn — Pest Infestation (US2) ─────────────────────────────────────
+
+describe('processTurn — Pest Infestation (US2)', () => {
+  it('deterministically destroys injected plot IDs (pestDestructionOverride)', () => {
+    let state = withSeeds(initialGameState(), { radish: 3 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    state = plantSeed(state, 1, 'radish').state as GameState;
+    state = plantSeed(state, 2, 'radish').state as GameState;
+    const { state: after, log } = processTurn(state, 'pest_infestation', [0, 2]);
+    expect(log.pestDestroyedPlots).toEqual([0, 2]);
+    expect(after.plots[0].pestDamaged).toBe(true);
+    expect(after.plots[0].cropId).toBeNull();
+    expect(after.plots[2].pestDamaged).toBe(true);
+    expect(after.plots[2].cropId).toBeNull();
+  });
+
+  it('untouched plot is unaffected when override excludes it', () => {
+    // Use parsnip (growthDays=2) for plot 1 so it won't harvest this turn
+    let state = withSeeds(initialGameState(), { radish: 2, parsnip: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    state = plantSeed(state, 1, 'parsnip').state as GameState;
+    state = plantSeed(state, 2, 'radish').state as GameState;
+    const { state: after } = processTurn(state, 'pest_infestation', [0, 2]);
+    expect(after.plots[1].pestDamaged).toBe(false);
+    expect(after.plots[1].cropId).toBe('parsnip'); // still growing, not yet harvested
+  });
+
+  it('destroyed plot has cropId=null, daysRemaining=null, pestDamaged=true', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    const { state: after } = processTurn(state, 'pest_infestation', [0]);
+    const plot = after.plots[0];
+    expect(plot.pestDamaged).toBe(true);
+    expect(plot.cropId).toBeNull();
+    expect(plot.daysRemaining).toBeNull();
+    expect(plot.dayPlanted).toBeNull();
+  });
+
+  it('crop maturing this turn is included in destruction (destroyed with no yield)', () => {
+    // Radish growthDays=1: planted on day 1, matures (daysRemaining→0) on processTurn
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    const { state: after, log } = processTurn(state, 'pest_infestation', [0]);
+    expect(log.pestDestroyedPlots).toContain(0);
+    expect(log.harvests).toHaveLength(0); // destroyed before harvest
+    expect(after.plots[0].pestDamaged).toBe(true);
+  });
+
+  it('no-crash when no crops present — pestDestroyedPlots === []', () => {
+    const { log } = processTurn(initialGameState(), 'pest_infestation', []);
+    expect(log.pestDestroyedPlots).toEqual([]);
+  });
+
+  it('plantSeed returns plot_pest_damaged on a pestDamaged plot', () => {
+    let state = withSeeds(initialGameState(), { radish: 2 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    const { state: after } = processTurn(state, 'pest_infestation', [0]);
+    const withMore = withSeeds(after, { radish: 1 });
+    const result = plantSeed(withMore, 0, 'radish');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('plot_pest_damaged');
+  });
+
+  it('non-pest turn still has pestDestroyedPlots === [] in log', () => {
+    const { log } = processTurn(initialGameState(), 'sunny');
+    expect(log.pestDestroyedPlots).toEqual([]);
+  });
+
+  it('combo: Pest Infestation during active Flash Drought window — log has both fields and droughtPenalised cleared', () => {
+    // Day N: Flash Drought fires → flashDroughtDaysRemaining = 2
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state;
+    // Plant during drought window → droughtPenalised=true
+    state = withSeeds(state, { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    // Day N+1: Pest Infestation → counter decrements 2→1, plot destroyed
+    const { state: after, log } = processTurn(state, 'pest_infestation', [0]);
+    expect(log.pestDestroyedPlots).toEqual([0]);
+    expect(log.flashDroughtDaysAfter).toBe(1); // 2→1
+    expect(after.plots[0].droughtPenalised).toBe(false); // cleared on destruction
+  });
+});
+
+// ── processTurn — Flash Drought (US4) ────────────────────────────────────────
+
+describe('processTurn — Flash Drought (US4)', () => {
+  it('flashDroughtDaysRemaining=2 immediately after the event turn', () => {
+    const { state } = processTurn(initialGameState(), 'flash_drought');
+    expect(state.flashDroughtDaysRemaining).toBe(2);
+  });
+
+  it('log.flashDroughtDaysAfter=2 on the Flash Drought turn itself (no decrement that day)', () => {
+    const { log } = processTurn(initialGameState(), 'flash_drought');
+    expect(log.flashDroughtDaysAfter).toBe(2);
+  });
+
+  it('planting radish on day N+1 (counter=2): daysRemaining=ceil(1×2)=2 and droughtPenalised=true', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state;  // day N, counter→2
+    const planted = plantSeed(state, 0, 'radish');
+    expect(planted.ok).toBe(true);
+    if (!planted.ok) return;
+    expect(planted.state.plots[0].daysRemaining).toBe(2); // ceil(1*2)=2
+    expect(planted.state.plots[0].droughtPenalised).toBe(true);
+  });
+
+  it('planting radish on day N+2 (counter=1) still doubles growth', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter→2
+    state = processTurn(state, 'sunny').state;          // counter→1
+    const planted = plantSeed(state, 0, 'radish');
+    expect(planted.ok).toBe(true);
+    if (!planted.ok) return;
+    expect(planted.state.plots[0].daysRemaining).toBe(2);
+    expect(planted.state.plots[0].droughtPenalised).toBe(true);
+  });
+
+  it('planting radish on day N+3 (counter=0): normal growth, droughtPenalised=false', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter→2
+    state = processTurn(state, 'sunny').state;          // counter→1
+    state = processTurn(state, 'sunny').state;          // counter→0
+    const planted = plantSeed(state, 0, 'radish');
+    expect(planted.ok).toBe(true);
+    if (!planted.ok) return;
+    expect(planted.state.plots[0].daysRemaining).toBe(1); // normal
+    expect(planted.state.plots[0].droughtPenalised).toBe(false);
+  });
+
+  it('second Flash Drought stacks counter: counter increases by 2 (+=2)', () => {
+    let state = initialGameState();
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    const { state: after } = processTurn(state, 'flash_drought'); // counter=2+2=4
+    expect(after.flashDroughtDaysRemaining).toBe(4);
+  });
+
+  it('log.flashDroughtDaysAfter equals post-decrement counter on non-drought turns', () => {
+    let state = initialGameState();
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    const { log } = processTurn(state, 'sunny');       // counter: 2→1
+    expect(log.flashDroughtDaysAfter).toBe(1);
+  });
+
+  it('flash drought does not affect yield of crops already growing (multiplier=1.0)', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    // Radish matures in 1 turn; inject flash_drought on that turn
+    const { log } = processTurn(state, 'flash_drought');
+    expect(log.harvests).toHaveLength(1);
+    expect(log.harvests[0].adjustedYield).toBe(12); // 12 × 1.0 = 12, unaffected
+  });
+
+  it('radish growth during drought: ceil(1×2)=2 turns', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    expect(state.plots[0].daysRemaining).toBe(2);
+    state = processTurn(state, 'sunny').state; // daysRemaining: 2→1
+    expect(state.plots[0].cropId).toBe('radish'); // not harvested yet
+    state = processTurn(state, 'sunny').state; // daysRemaining: 1→0, harvest
+    expect(state.plots[0].cropId).toBeNull();  // harvested
+  });
+
+  it('pumpkin growth during drought: ceil(3×2)=6 turns', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 5000 }, { pumpkin: 1 });
+    state = processTurn(state, 'flash_drought').state;
+    state = plantSeed(state, 0, 'pumpkin').state as GameState;
+    expect(state.plots[0].daysRemaining).toBe(6);
+  });
+
+  it('droughtPenalised resets to false after harvest', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    state = plantSeed(state, 0, 'radish').state as GameState; // droughtPenalised=true, 2 days
+    state = processTurn(state, 'sunny').state;
+    state = processTurn(state, 'sunny').state; // harvests on this turn
+    expect(state.plots[0].droughtPenalised).toBe(false);
+  });
+
+  it('JSON round-trip preserves flashDroughtDaysRemaining and droughtPenalised', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state;
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    const roundTripped: GameState = JSON.parse(JSON.stringify(state));
+    expect(roundTripped.flashDroughtDaysRemaining).toBe(2);
+    expect(roundTripped.plots[0].droughtPenalised).toBe(true);
+  });
+
+  it('combo: Blight during Flash Drought window — counter decrements, yield reduced, drought still active', () => {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    // Plant during drought window on day N+1
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    expect(state.plots[0].droughtPenalised).toBe(true);
+    // Day N+1: Blight — counter should decrement 2→1, multiplier 0.1
+    const { log, state: after } = processTurn(state, 'blight');
+    expect(log.flashDroughtDaysAfter).toBe(1);
+    expect(log.weatherMultiplier).toBe(0.1);
+    // Counter decremented, but plant was already during window
+    expect(after.flashDroughtDaysRemaining).toBe(1);
+  });
+
+  it('combo: normal weather during Flash Drought window — counter decrements and log reflects it', () => {
+    let state = initialGameState();
+    state = processTurn(state, 'flash_drought').state; // counter=2
+    const { log, state: after } = processTurn(state, 'sunny'); // counter: 2→1
+    expect(log.flashDroughtDaysAfter).toBe(1);
+    expect(after.flashDroughtDaysRemaining).toBe(1);
+  });
+});
+
+// ── processTurn — Blight disaster (US1) ───────────────────────────────────────
+
+describe('processTurn — Blight disaster (US1)', () => {
+  it('radish yield on Blight: floor(12 × 0.1) = 1', () => {
+    const state = withSeeds(initialGameState(), { radish: 1 });
+    const planted = plantSeed(state, 0, 'radish');
+    if (!planted.ok) throw new Error('plant failed');
+    const { log } = processTurn(planted.state, 'blight');
+    expect(log.harvests[0].adjustedYield).toBe(1);
+    expect(log.totalHarvestIncome).toBe(1);
+    expect(log.weatherMultiplier).toBe(0.1);
+  });
+
+  it('pumpkin yield on Blight: floor(65 × 0.1) = 6', () => {
+    let state = withSeeds(initialGameState(), { pumpkin: 1 });
+    const planted = plantSeed(state, 0, 'pumpkin');
+    if (!planted.ok) throw new Error('plant failed');
+    state = planted.state;
+    state = processTurn(state, 'sunny').state;
+    state = processTurn(state, 'sunny').state;
+    const { log } = processTurn(state, 'blight');
+    expect(log.harvests[0].adjustedYield).toBe(6);
+    expect(log.totalHarvestIncome).toBe(6);
+  });
+
+  it('zero-harvest Blight day records weatherId=blight and weatherMultiplier=0.1', () => {
+    const { log } = processTurn(initialGameState(), 'blight');
+    expect(log.weatherId).toBe('blight');
+    expect(log.weatherMultiplier).toBe(0.1);
+    expect(log.harvests).toHaveLength(0);
+  });
+
+  it('Blight turn: log.pestDestroyedPlots === [] and log.flashDroughtDaysAfter === 0', () => {
+    const { log } = processTurn(initialGameState(), 'blight');
+    expect(log.pestDestroyedPlots).toEqual([]);
+    expect(log.flashDroughtDaysAfter).toBe(0);
   });
 });
 
@@ -909,6 +1189,78 @@ describe('applyFertilizer (T013, US2)', () => {
       expect(result.state.plots[0].cropId).toBeNull();
       expect(result.state.plots[0].dayPlanted).toBeNull();
       expect(result.state.plots[0].daysRemaining).toBeNull();
+    }
+  });
+});
+
+// ── clearPestDamage (US3) ─────────────────────────────────────────────────────
+
+describe('clearPestDamage (US3)', () => {
+  /** Returns a state where plot 0 has pestDamaged=true via injected pest turn. */
+  function pestDamagedState(): GameState {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    return processTurn(state, 'pest_infestation', [0]).state;
+  }
+
+  it('success clears pestDamaged=false on the target plot', () => {
+    const s = pestDamagedState();
+    expect(s.plots[0].pestDamaged).toBe(true);
+    const result = clearPestDamage(s, 0);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.state.plots[0].pestDamaged).toBe(false);
+  });
+
+  it('plot is plantable after clearPestDamage succeeds', () => {
+    const s = pestDamagedState();
+    const cleared = clearPestDamage(s, 0);
+    expect(cleared.ok).toBe(true);
+    if (cleared.ok) {
+      const withSeed = withSeeds(cleared.state, { radish: 1 });
+      expect(plantSeed(withSeed, 0, 'radish').ok).toBe(true);
+    }
+  });
+
+  it('returns plot_not_pest_damaged on a healthy plot', () => {
+    const result = clearPestDamage(initialGameState(), 0);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('plot_not_pest_damaged');
+  });
+
+  it('returns invalid_plot for out-of-range ID', () => {
+    const result = clearPestDamage(initialGameState(), 999);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_plot');
+  });
+
+  it('invalid_plot takes priority over plot_not_pest_damaged', () => {
+    const result = clearPestDamage(initialGameState(), -1);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_plot');
+  });
+
+  it('day advance does NOT clear pestDamaged — indicator persists until player acknowledges', () => {
+    const s = pestDamagedState();
+    const after = processTurn(s, 'sunny').state;
+    expect(after.plots[0].pestDamaged).toBe(true);
+  });
+
+  it('JSON round-trip preserves pestDamaged=true', () => {
+    const s = pestDamagedState();
+    const roundTripped: GameState = JSON.parse(JSON.stringify(s));
+    expect(roundTripped.plots[0].pestDamaged).toBe(true);
+  });
+
+  it('does not mutate other plots when clearing one', () => {
+    let s = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 2 });
+    s = plantSeed(s, 0, 'radish').state as GameState;
+    s = plantSeed(s, 1, 'radish').state as GameState;
+    s = processTurn(s, 'pest_infestation', [0, 1]).state;
+    const cleared = clearPestDamage(s, 0);
+    expect(cleared.ok).toBe(true);
+    if (cleared.ok) {
+      expect(cleared.state.plots[0].pestDamaged).toBe(false); // cleared
+      expect(cleared.state.plots[1].pestDamaged).toBe(true);  // untouched
     }
   });
 });

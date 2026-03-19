@@ -1,12 +1,13 @@
 import type {
   CropDefinition,
   WeatherDefinition,
+  WeatherId,
   UpgradeTierDefinition,
 } from './types';
 
 // ── Scalar constants ──────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const STARTING_BALANCE = 100;
 export const PLOT_COUNT = 12;
 export const LAND_LEASE_FEE = 15;
@@ -78,16 +79,42 @@ export const WEATHER_DEFINITIONS: Record<string, WeatherDefinition> = {
     multiplier: 1.5,
     description: 'Bumper harvest!',
   },
+  blight: {
+    id: 'blight',
+    name: 'Blight',
+    multiplier: 0.1,
+    description: 'A fungal blight devastates the harvest.',
+  },
+  pest_infestation: {
+    id: 'pest_infestation',
+    name: 'Pest Infestation',
+    multiplier: 1.0,
+    description: 'Pests invade and destroy crops before they can be picked.',
+  },
+  flash_drought: {
+    id: 'flash_drought',
+    name: 'Flash Drought',
+    multiplier: 1.0,
+    description: 'A sudden drought will slow crop growth for the next 2 days.',
+  },
 } as const;
 
-/** Ordered list for uniform random selection (20% each). */
-export const WEATHER_IDS = [
-  'drought',
-  'overcast',
-  'sunny',
-  'warm_breeze',
-  'perfect_sun',
-] as const;
+/**
+ * Continuous probability bands for weather selection.
+ * Roll Math.random() (0.0–1.0); return the first band where roll < threshold.
+ * Disasters: 0–0.05 Blight, 0.05–0.10 Pest Infestation, 0.10–0.15 Flash Drought.
+ * Existing 5 types split equally over 0.15–1.00 (0.17 each, rounded).
+ */
+export const WEATHER_PROBABILITY_BANDS: Array<{ threshold: number; id: WeatherId }> = [
+  { threshold: 0.05, id: 'blight' },
+  { threshold: 0.10, id: 'pest_infestation' },
+  { threshold: 0.15, id: 'flash_drought' },
+  { threshold: 0.32, id: 'drought' },
+  { threshold: 0.49, id: 'overcast' },
+  { threshold: 0.66, id: 'sunny' },
+  { threshold: 0.83, id: 'warm_breeze' },
+  { threshold: 1.00, id: 'perfect_sun' },
+];
 
 // ── Upgrade tier definitions ──────────────────────────────────────────────────
 

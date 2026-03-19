@@ -14,6 +14,7 @@ interface GameBoardProps {
   onBuyUpgrade: () => void;
   onBuyFertilizer: () => void;
   onApplyFertilizer: (plotId: number) => void;
+  onClearPestDamage: (plotId: number) => void;
   getFertilizerCount: () => number;
   getSeedPrice: (cropId: CropId) => number;
   getNextUpgradeCost: () => number | null;
@@ -28,6 +29,7 @@ export function GameBoard({
   onBuyUpgrade,
   onBuyFertilizer,
   onApplyFertilizer,
+  onClearPestDamage,
   getFertilizerCount,
   getSeedPrice,
   getNextUpgradeCost,
@@ -62,6 +64,16 @@ export function GameBoard({
       <div className="flex flex-1 gap-4 p-4 overflow-hidden">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
+          {state.flashDroughtDaysRemaining > 0 && (
+            <p
+              role="alert"
+              aria-label="Flash Drought warning"
+              className="font-pixel text-xs text-farm-ink bg-farm-red/20 border border-farm-red/40 px-3 py-2 rounded"
+            >
+              ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
+              {state.flashDroughtDaysRemaining} day{state.flashDroughtDaysRemaining === 1 ? '' : 's'} remaining.
+            </p>
+          )}
           {selectedCrop && (
             <p className="font-pixel text-xs text-farm-ink bg-farm-gold/30 px-3 py-2 rounded">
               Planting: {selectedCrop} — click an empty plot
@@ -73,6 +85,7 @@ export function GameBoard({
             fertilizerInventory={getFertilizerCount()}
             onPlant={handlePlot}
             onApplyFertilizer={onApplyFertilizer}
+            onClearPestDamage={onClearPestDamage}
             selectedCrop={selectedCrop}
           />
         </main>
