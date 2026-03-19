@@ -469,6 +469,90 @@ describe('processTurn — uniform random weather selection (US4)', () => {
   });
 });
 
+// ── processTurn — Pest Infestation (US2) ─────────────────────────────────────
+
+describe('processTurn — Pest Infestation (US2)', () => {
+  it('deterministically destroys injected plot IDs (pestDestructionOverride)', () => {
+    let state = withSeeds(initialGameState(), { radish: 3 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    state = plantSeed(state, 1, 'radish').state as GameState;
+    state = plantSeed(state, 2, 'radish').state as GameState;
+    const { state: after, log } = processTurn(state, 'pest_infestation', [0, 2]);
+    expect(log.pestDestroyedPlots).toEqual([0, 2]);
+    expect(after.plots[0].pestDamaged).toBe(true);
+    expect(after.plots[0].cropId).toBeNull();
+    expect(after.plots[2].pestDamaged).toBe(true);
+    expect(after.plots[2].cropId).toBeNull();
+  });
+
+  it('untouched plot is unaffected when override excludes it', () => {
+    // Use parsnip (growthDays=2) for plot 1 so it won't harvest this turn
+    let state = withSeeds(initialGameState(), { radish: 2, parsnip: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    state = plantSeed(state, 1, 'parsnip').state as GameState;
+    state = plantSeed(state, 2, 'radish').state as GameState;
+    const { state: after } = processTurn(state, 'pest_infestation', [0, 2]);
+    expect(after.plots[1].pestDamaged).toBe(false);
+    expect(after.plots[1].cropId).toBe('parsnip'); // still growing, not yet harvested
+  });
+
+  it('destroyed plot has cropId=null, daysRemaining=null, pestDamaged=true', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    const { state: after } = processTurn(state, 'pest_infestation', [0]);
+    const plot = after.plots[0];
+    expect(plot.pestDamaged).toBe(true);
+    expect(plot.cropId).toBeNull();
+    expect(plot.daysRemaining).toBeNull();
+    expect(plot.dayPlanted).toBeNull();
+  });
+
+  it('crop maturing this turn is included in destruction (destroyed with no yield)', () => {
+    // Radish growthDays=1: planted on day 1, matures (daysRemaining→0) on processTurn
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    const { state: after, log } = processTurn(state, 'pest_infestation', [0]);
+    expect(log.pestDestroyedPlots).toContain(0);
+    expect(log.harvests).toHaveLength(0); // destroyed before harvest
+    expect(after.plots[0].pestDamaged).toBe(true);
+  });
+
+  it('no-crash when no crops present — pestDestroyedPlots === []', () => {
+    const { log } = processTurn(initialGameState(), 'pest_infestation', []);
+    expect(log.pestDestroyedPlots).toEqual([]);
+  });
+
+  it('plantSeed returns plot_pest_damaged on a pestDamaged plot', () => {
+    let state = withSeeds(initialGameState(), { radish: 2 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    const { state: after } = processTurn(state, 'pest_infestation', [0]);
+    const withMore = withSeeds(after, { radish: 1 });
+    const result = plantSeed(withMore, 0, 'radish');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('plot_pest_damaged');
+  });
+
+  it('non-pest turn still has pestDestroyedPlots === [] in log', () => {
+    const { log } = processTurn(initialGameState(), 'sunny');
+    expect(log.pestDestroyedPlots).toEqual([]);
+  });
+
+  // Combo test: requires Phase 5 Flash Drought counter (T020/T021/T022) — activated there
+  it.skip('combo: Pest Infestation during active Flash Drought window — log has both fields and droughtPenalised cleared', () => {
+    // Day N: Flash Drought fires → flashDroughtDaysRemaining = 2
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = processTurn(state, 'flash_drought').state;
+    // Plant during drought window → droughtPenalised=true
+    state = withSeeds(state, { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    // Day N+1: Pest Infestation → counter decrements 2→1, plot destroyed
+    const { state: after, log } = processTurn(state, 'pest_infestation', [0]);
+    expect(log.pestDestroyedPlots).toEqual([0]);
+    expect(log.flashDroughtDaysAfter).toBe(1); // 2→1
+    expect(after.plots[0].droughtPenalised).toBe(false); // cleared on destruction
+  });
+});
+
 // ── processTurn — Blight disaster (US1) ───────────────────────────────────────
 
 describe('processTurn — Blight disaster (US1)', () => {

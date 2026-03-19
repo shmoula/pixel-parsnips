@@ -82,6 +82,10 @@ export function plantSeed(
     return { ok: false, error: 'plot_exhausted' };
   }
 
+  if (plot.pestDamaged) {
+    return { ok: false, error: 'plot_pest_damaged' };
+  }
+
   if (state.seedInventory[cropId] === 0) {
     return { ok: false, error: 'no_seed' };
   }
@@ -180,12 +184,14 @@ export function buyUpgrade(state: GameState): UpgradeResult {
 
 /**
  * Executes the full end-of-turn sequence (FR-002).
- * Pass `weatherRoll` in tests for deterministic results; omit in production
- * to use uniform-random weather selection.
+ * Pass `weatherRoll` in tests for deterministic weather; omit in production.
+ * Pass `pestDestructionOverride` (plot ID array) for deterministic pest tests;
+ * omit in production to use random 50% rolls per occupied plot.
  */
 export function processTurn(
   state: GameState,
-  weatherRoll?: WeatherId
+  weatherRoll?: WeatherId,
+  pestDestructionOverride?: number[]
 ): TurnResult {
   // Step 1: Decrement daysRemaining on all occupied plots
   const plots = state.plots.map(plot => {
@@ -204,12 +210,36 @@ export function processTurn(
   })();
   const weather = WEATHER_DEFINITIONS[weatherId];
 
+  // Step 2a: Pest Infestation — destroy occupied plots before harvest (FR-004)
+  const pestDestroyedPlots: number[] = [];
+  const plotsAfterPest = (() => {
+    if (weatherId !== 'pest_infestation') return plots;
+    return plots.map(plot => {
+      if (plot.cropId === null) return plot; // empty/exhausted plots immune
+      const isDestroyed = pestDestructionOverride !== undefined
+        ? pestDestructionOverride.includes(plot.id)
+        : Math.random() < 0.5;
+      if (isDestroyed) {
+        pestDestroyedPlots.push(plot.id);
+        return {
+          ...plot,
+          cropId: null,
+          daysRemaining: null,
+          dayPlanted: null,
+          droughtPenalised: false,
+          pestDamaged: true,
+        };
+      }
+      return plot;
+    });
+  })();
+
   // Step 3: Harvest all plots where daysRemaining === 0
   // Sub-step 3a: increment consecutiveHarvests per harvested plot
   // Sub-step 3b: trigger exhaustion when consecutiveHarvests >= EXHAUSTION_THRESHOLD
   const harvests: HarvestEvent[] = [];
   const exhaustedPlots: number[] = [];
-  const harvestedPlots = plots.map(plot => {
+  const harvestedPlots = plotsAfterPest.map(plot => {
     if (plot.cropId === null || plot.daysRemaining !== 0) return plot;
     const crop = CROP_DEFINITIONS[plot.cropId];
     const adjustedYield = coins(crop.baseYield * weather.multiplier);
@@ -266,7 +296,7 @@ export function processTurn(
       netChange: totalHarvestIncome,
       closingBalance: coinBalance,
       exhaustedPlots,
-      pestDestroyedPlots: [],
+      pestDestroyedPlots,
       flashDroughtDaysAfter: state.flashDroughtDaysRemaining,
     };
     const bankruptState: GameState = {
@@ -316,7 +346,7 @@ export function processTurn(
     netChange: totalHarvestIncome - landLeaseDeducted - taxDeducted,
     closingBalance: coinBalance,
     exhaustedPlots,
-    pestDestroyedPlots: [],
+    pestDestroyedPlots,
     flashDroughtDaysAfter: state.flashDroughtDaysRemaining,
   };
 

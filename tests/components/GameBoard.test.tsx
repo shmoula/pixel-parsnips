@@ -74,6 +74,8 @@ const sampleLog: DailyLogEntry = {
   netChange: -19,
   closingBalance: 81,
   exhaustedPlots: [],
+  pestDestroyedPlots: [],
+  flashDroughtDaysAfter: 0,
 };
 
 describe('GameBoard — smoke tests (T047)', () => {

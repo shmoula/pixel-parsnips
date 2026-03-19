@@ -52,6 +52,18 @@ export function DailyLog({ log }: DailyLogProps) {
         </div>
       )}
 
+      {/* Pest destroyed plots */}
+      {log.pestDestroyedPlots.length > 0 && (
+        <div className="flex flex-col gap-1">
+          {log.pestDestroyedPlots.map(plotId => (
+            <div key={plotId} className="flex items-center gap-1 text-farm-stone">
+              <span aria-hidden="true">🐛</span>
+              <span>Plot #{plotId + 1} destroyed by pests.</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Exhaustion events */}
       {log.exhaustedPlots.length > 0 && (
         <div className="flex flex-col gap-1">
