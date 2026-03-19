@@ -93,8 +93,8 @@ export function GameBoard({
         hasLastTurn={lastDailyLog !== null}
       />
 
-      {/* T006 — flex-col on mobile, flex-row on desktop */}
-      <div className="flex flex-1 flex-col md:flex-row gap-4 p-4">
+      {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}
+      <div className="flex flex-col md:flex-row gap-4 p-4">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
           {state.flashDroughtDaysRemaining > 0 && (
@@ -143,9 +143,9 @@ export function GameBoard({
             'max-h-[70vh] overflow-y-auto overscroll-contain',
             'transition-transform duration-300 ease-in-out',
             isShopOpen ? 'translate-y-0' : 'translate-y-full',
-            // Desktop: back in flow as right sidebar, page scroll handles overflow
+            // Desktop: back in flow as right sidebar, page scroll handles everything
             'md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto',
-            'md:rounded-none md:overflow-visible',
+            'md:rounded-none md:max-h-none md:overflow-visible',
             'md:w-56 md:shrink-0 md:translate-y-0',
             'md:flex md:flex-col md:gap-4',
           ].join(' ')}
