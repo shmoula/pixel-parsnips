@@ -19,6 +19,39 @@ interface PlotCardProps {
   fertilizerInventory?: number;
   onPlant?: (plotId: number) => void;
   onApplyFertilizer?: (plotId: number) => void;
+  onClearPestDamage?: (plotId: number) => void;
+}
+
+function PestDamagedPlot({ plot, onClearPestDamage }: {
+  plot: PlotState;
+  onClearPestDamage?: (plotId: number) => void;
+}) {
+  return (
+    <div
+      aria-label={`Plot ${plot.id + 1}: Pest Damage — click to clear`}
+      className="
+        flex flex-col items-center justify-center
+        w-full aspect-square rounded-lg border-2
+        border-farm-red bg-farm-parchment
+        select-none p-1
+      "
+    >
+      <span className="text-2xl">🐛</span>
+      <span className="text-xs font-pixel text-farm-red mt-1">Pest Damage</span>
+      <button
+        type="button"
+        aria-label="Clear pest damage from this plot"
+        onClick={() => onClearPestDamage?.(plot.id)}
+        className="
+          mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
+          bg-farm-red text-farm-parchment
+          hover:brightness-110 transition-all cursor-pointer
+        "
+      >
+        Clear Plot
+      </button>
+    </div>
+  );
 }
 
 function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertilizer }: {
@@ -64,7 +97,12 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
   );
 }
 
-export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer }: PlotCardProps) {
+export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer, onClearPestDamage }: PlotCardProps) {
+  // Highest priority: pest damage blocks everything until acknowledged
+  if (plot.pestDamaged) {
+    return <PestDamagedPlot plot={plot} onClearPestDamage={onClearPestDamage} />;
+  }
+
   if (plot.exhaustedSinceDay !== null) {
     return (
       <ExhaustedPlot

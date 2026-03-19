@@ -55,6 +55,7 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null } =
     onBuyUpgrade: vi.fn(),
     onBuyFertilizer: vi.fn(),
     onApplyFertilizer: vi.fn(),
+    onClearPestDamage: vi.fn(),
     getFertilizerCount: () => 0,
     getSeedPrice: () => 5,
     getNextUpgradeCost: () => 50 as number | null,

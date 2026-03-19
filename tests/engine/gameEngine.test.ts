@@ -8,6 +8,7 @@ import {
   buyUpgrade,
   buyFertilizer,
   applyFertilizer,
+  clearPestDamage,
 } from '../../src/engine/gameEngine';
 import { LAND_LEASE_FEE, EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST } from '../../src/engine/constants';
 import type { GameState } from '../../src/engine/types';
@@ -1061,6 +1062,78 @@ describe('applyFertilizer (T013, US2)', () => {
       expect(result.state.plots[0].cropId).toBeNull();
       expect(result.state.plots[0].dayPlanted).toBeNull();
       expect(result.state.plots[0].daysRemaining).toBeNull();
+    }
+  });
+});
+
+// ── clearPestDamage (US3) ─────────────────────────────────────────────────────
+
+describe('clearPestDamage (US3)', () => {
+  /** Returns a state where plot 0 has pestDamaged=true via injected pest turn. */
+  function pestDamagedState(): GameState {
+    let state = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    return processTurn(state, 'pest_infestation', [0]).state;
+  }
+
+  it('success clears pestDamaged=false on the target plot', () => {
+    const s = pestDamagedState();
+    expect(s.plots[0].pestDamaged).toBe(true);
+    const result = clearPestDamage(s, 0);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.state.plots[0].pestDamaged).toBe(false);
+  });
+
+  it('plot is plantable after clearPestDamage succeeds', () => {
+    const s = pestDamagedState();
+    const cleared = clearPestDamage(s, 0);
+    expect(cleared.ok).toBe(true);
+    if (cleared.ok) {
+      const withSeed = withSeeds(cleared.state, { radish: 1 });
+      expect(plantSeed(withSeed, 0, 'radish').ok).toBe(true);
+    }
+  });
+
+  it('returns plot_not_pest_damaged on a healthy plot', () => {
+    const result = clearPestDamage(initialGameState(), 0);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('plot_not_pest_damaged');
+  });
+
+  it('returns invalid_plot for out-of-range ID', () => {
+    const result = clearPestDamage(initialGameState(), 999);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_plot');
+  });
+
+  it('invalid_plot takes priority over plot_not_pest_damaged', () => {
+    const result = clearPestDamage(initialGameState(), -1);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_plot');
+  });
+
+  it('day advance does NOT clear pestDamaged — indicator persists until player acknowledges', () => {
+    const s = pestDamagedState();
+    const after = processTurn(s, 'sunny').state;
+    expect(after.plots[0].pestDamaged).toBe(true);
+  });
+
+  it('JSON round-trip preserves pestDamaged=true', () => {
+    const s = pestDamagedState();
+    const roundTripped: GameState = JSON.parse(JSON.stringify(s));
+    expect(roundTripped.plots[0].pestDamaged).toBe(true);
+  });
+
+  it('does not mutate other plots when clearing one', () => {
+    let s = withSeeds({ ...initialGameState(), coinBalance: 500 }, { radish: 2 });
+    s = plantSeed(s, 0, 'radish').state as GameState;
+    s = plantSeed(s, 1, 'radish').state as GameState;
+    s = processTurn(s, 'pest_infestation', [0, 1]).state;
+    const cleared = clearPestDamage(s, 0);
+    expect(cleared.ok).toBe(true);
+    if (cleared.ok) {
+      expect(cleared.state.plots[0].pestDamaged).toBe(false); // cleared
+      expect(cleared.state.plots[1].pestDamaged).toBe(true);  // untouched
     }
   });
 });

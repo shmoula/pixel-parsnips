@@ -14,6 +14,7 @@ interface GameBoardProps {
   onBuyUpgrade: () => void;
   onBuyFertilizer: () => void;
   onApplyFertilizer: (plotId: number) => void;
+  onClearPestDamage: (plotId: number) => void;
   getFertilizerCount: () => number;
   getSeedPrice: (cropId: CropId) => number;
   getNextUpgradeCost: () => number | null;
@@ -28,6 +29,7 @@ export function GameBoard({
   onBuyUpgrade,
   onBuyFertilizer,
   onApplyFertilizer,
+  onClearPestDamage,
   getFertilizerCount,
   getSeedPrice,
   getNextUpgradeCost,
@@ -73,6 +75,7 @@ export function GameBoard({
             fertilizerInventory={getFertilizerCount()}
             onPlant={handlePlot}
             onApplyFertilizer={onApplyFertilizer}
+            onClearPestDamage={onClearPestDamage}
             selectedCrop={selectedCrop}
           />
         </main>

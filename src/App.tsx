@@ -12,6 +12,7 @@ function App() {
     buyUpgrade,
     buyFertilizer,
     applyFertilizer,
+    clearPestDamage,
     getFertilizerCount,
     restart,
     getSeedPrice,
@@ -38,6 +39,7 @@ function App() {
       onBuyUpgrade={buyUpgrade}
       onBuyFertilizer={() => buyFertilizer(1)}
       onApplyFertilizer={applyFertilizer}
+      onClearPestDamage={clearPestDamage}
       getFertilizerCount={getFertilizerCount}
       getSeedPrice={getSeedPrice}
       getNextUpgradeCost={getNextUpgradeCost}

@@ -7,6 +7,7 @@ import {
   buyUpgrade as engineBuyUpgrade,
   buyFertilizer as engineBuyFertilizer,
   applyFertilizer as engineApplyFertilizer,
+  clearPestDamage as engineClearPestDamage,
   computeSeedCost,
 } from './gameEngine';
 import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
@@ -44,6 +45,7 @@ export interface GameEngineHook {
   buyUpgrade: () => boolean;
   buyFertilizer: (quantity: number) => boolean;
   applyFertilizer: (plotId: number) => boolean;
+  clearPestDamage: (plotId: number) => boolean;
   getFertilizerCount: () => number;
   restart: () => void;
   getSeedPrice: (cropId: CropId) => number;
@@ -112,6 +114,16 @@ export function useGameEngine(): GameEngineHook {
     return success;
   }, []);
 
+  const clearPestDamage = useCallback((plotId: number): boolean => {
+    let success = false;
+    setState(prev => {
+      const result = engineClearPestDamage(prev, plotId);
+      if (result.ok) { success = true; saveState(result.state); return result.state; }
+      return prev;
+    });
+    return success;
+  }, []);
+
   const restart = useCallback(() => {
     const fresh = initialGameState();
     saveState(fresh);
@@ -147,6 +159,7 @@ export function useGameEngine(): GameEngineHook {
     buyUpgrade,
     buyFertilizer,
     applyFertilizer,
+    clearPestDamage,
     getFertilizerCount,
     restart,
     getSeedPrice,

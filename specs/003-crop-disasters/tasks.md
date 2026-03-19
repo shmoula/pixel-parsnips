@@ -71,13 +71,13 @@
 
 > **Red-Green-Refactor**: Write T012 first; `clearPestDamage` function doesn't exist yet so tests will fail to compile initially — implement T013 to resolve.
 
-- [ ] T012 [US3] Write `clearPestDamage` tests in `tests/engine/gameEngine.test.ts`: `describe('clearPestDamage (US3)')` covering: success clears `pestDamaged=false` and makes plot plantable; `plot_not_pest_damaged` error on healthy plot; `invalid_plot` error on out-of-range ID; `invalid_plot` takes priority over `plot_not_pest_damaged`; day advance (`processTurn`) does NOT clear `pestDamaged` — indicator persists until player acknowledges; JSON round-trip preserves `pestDamaged=true`
-- [ ] T013 [US3] Implement `clearPestDamage(state: GameState, plotId: number): ClearPestDamageResult` in `src/engine/gameEngine.ts`: validate plotId; check `plot.pestDamaged === true`; return `{ ok: true, state: { ...state, plots: state.plots.map(...) } }` with `pestDamaged: false` on target plot (makes T012 tests pass, depends on T009)
-- [ ] T014 [P] [US3] Add `clearPestDamage` action to `src/engine/useGameEngine.ts`: import `clearPestDamage as engineClearPestDamage`; add `clearPestDamage: (plotId: number) => boolean` to `GameEngineHook` interface; implement callback (same pattern as `applyFertilizer`) (depends on T013)
-- [ ] T015 [P] [US3] Add `PestDamagedPlot` sub-component to `src/components/PlotCard.tsx`: 🐛 emoji, "Pest Damage" label, "Clear Plot" button; add `onClearPestDamage?: (plotId: number) => void` prop; render `PestDamagedPlot` as highest-priority branch when `plot.pestDamaged === true` (before exhausted check)
-- [ ] T016 [US3] Thread `onClearPestDamage` prop through `src/components/FarmGrid.tsx` to each `PlotCard` (depends on T015)
-- [ ] T017 [US3] Add `onClearPestDamage` prop to `src/components/GameBoard.tsx`; pass it to `FarmGrid` (depends on T016)
-- [ ] T018 [US3] Wire `clearPestDamage` from `useGameEngine` into `src/App.tsx`: pass as `onClearPestDamage` prop to `GameBoard` (depends on T014, T017)
+- [x] T012 [US3] Write `clearPestDamage` tests in `tests/engine/gameEngine.test.ts`: `describe('clearPestDamage (US3)')` covering: success clears `pestDamaged=false` and makes plot plantable; `plot_not_pest_damaged` error on healthy plot; `invalid_plot` error on out-of-range ID; `invalid_plot` takes priority over `plot_not_pest_damaged`; day advance (`processTurn`) does NOT clear `pestDamaged` — indicator persists until player acknowledges; JSON round-trip preserves `pestDamaged=true`
+- [x] T013 [US3] Implement `clearPestDamage(state: GameState, plotId: number): ClearPestDamageResult` in `src/engine/gameEngine.ts`: validate plotId; check `plot.pestDamaged === true`; return `{ ok: true, state: { ...state, plots: state.plots.map(...) } }` with `pestDamaged: false` on target plot (makes T012 tests pass, depends on T009)
+- [x] T014 [P] [US3] Add `clearPestDamage` action to `src/engine/useGameEngine.ts`: import `clearPestDamage as engineClearPestDamage`; add `clearPestDamage: (plotId: number) => boolean` to `GameEngineHook` interface; implement callback (same pattern as `applyFertilizer`) (depends on T013)
+- [x] T015 [P] [US3] Add `PestDamagedPlot` sub-component to `src/components/PlotCard.tsx`: 🐛 emoji, "Pest Damage" label, "Clear Plot" button; add `onClearPestDamage?: (plotId: number) => void` prop; render `PestDamagedPlot` as highest-priority branch when `plot.pestDamaged === true` (before exhausted check)
+- [x] T016 [US3] Thread `onClearPestDamage` prop through `src/components/FarmGrid.tsx` to each `PlotCard` (depends on T015)
+- [x] T017 [US3] Add `onClearPestDamage` prop to `src/components/GameBoard.tsx`; pass it to `FarmGrid` (depends on T016)
+- [x] T018 [US3] Wire `clearPestDamage` from `useGameEngine` into `src/App.tsx`: pass as `onClearPestDamage` prop to `GameBoard` (depends on T014, T017)
 
 **Checkpoint**: `npm test` — all `clearPestDamage` tests pass; pest-damaged plots display 🐛 indicator in browser; "Clear Plot" button restores plot; save/reload preserves `pestDamaged` state.
 
