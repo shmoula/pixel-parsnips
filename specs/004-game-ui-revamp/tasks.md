@@ -111,9 +111,9 @@
 
 **Purpose**: Final validation, cleanup, and GameBoard test update for structural changes.
 
-- [ ] T026 Update `tests/components/GameBoard.test.tsx` to reflect: HUD now receives `onNextDay`, `onLastTurn`, `isProcessing`, `hasLastTurn` props; footer with Next Day button is removed; DailyLog sidebar block is removed. Fix any broken queries or assertions caused by these structural changes.
-- [ ] T027 [P] Run `npm test && npm run lint` from repo root. Fix any TypeScript errors or lint violations introduced by the revamp. Confirm all engine tests (`gameEngine.test.ts`, `useGameEngine.test.ts`) still pass.
-- [ ] T028 [P] Visual smoke test: run `npm run dev`, open on both desktop (1280 px) and mobile emulator (375 px). Verify all 5 user story acceptance criteria are met per spec.md SC-001 through SC-007.
+- [x] T026 Update `tests/components/GameBoard.test.tsx` to reflect: HUD now receives `onNextDay`, `onLastTurn`, `isProcessing`, `hasLastTurn` props; footer with Next Day button is removed; DailyLog sidebar block is removed. Fix any broken queries or assertions caused by these structural changes.
+- [x] T027 [P] Run `npm test && npm run lint` from repo root. Fix any TypeScript errors or lint violations introduced by the revamp. Confirm all engine tests (`gameEngine.test.ts`, `useGameEngine.test.ts`) still pass.
+- [x] T028 [P] Visual smoke test: run `npm run dev`, open on both desktop (1280 px) and mobile emulator (375 px). Verify all 5 user story acceptance criteria are met per spec.md SC-001 through SC-007.
 
 ---
 
