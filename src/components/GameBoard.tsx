@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GameState, CropId, DailyLogEntry } from '../engine/types';
 import { HUD } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
-import { DailyLog } from './DailyLog';
+import { DaySummaryModal } from './DaySummaryModal';
 
 interface GameBoardProps {
   state: GameState;
@@ -23,7 +23,6 @@ interface GameBoardProps {
 export function GameBoard({
   state,
   lastDailyLog,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onNextDay,
   onPlantSeed,
   onBuySeed,
@@ -36,11 +35,38 @@ export function GameBoard({
   getNextUpgradeCost,
 }: GameBoardProps) {
   const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
+
   // T005 — bottom sheet state (mobile)
   const [isShopOpen, setIsShopOpen] = useState(false);
 
+  // T010 — Day Summary modal state
+  const [daySummary, setDaySummary] = useState<DailyLogEntry | null>(null);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  // Ref flag: set true when we want the next lastDailyLog update to open the modal
+  const awaitingModalRef = useRef(false);
+
+  // T010 — When the parent re-renders with a new lastDailyLog after onNextDay(),
+  // open the Day Summary modal with that log.
+  useEffect(() => {
+    if (awaitingModalRef.current && lastDailyLog !== null) {
+      awaitingModalRef.current = false;
+      setDaySummary(lastDailyLog);
+      setIsSummaryOpen(true);
+      setIsProcessing(false);
+    }
+  }, [lastDailyLog]);
+
   function toggleShop() {
     setIsShopOpen(prev => !prev);
+  }
+
+  // T010 — Next Day handler: flag modal as awaited, then fire the engine callback
+  function handleNextDay() {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    awaitingModalRef.current = true;
+    onNextDay();
   }
 
   function handlePlot(plotId: number) {
@@ -61,6 +87,10 @@ export function GameBoard({
         currentDay={state.currentDay}
         coinBalance={state.coinBalance}
         onToggleShop={toggleShop}
+        onNextDay={handleNextDay}
+        onLastTurn={() => setIsSummaryOpen(true)}
+        isProcessing={isProcessing}
+        hasLastTurn={lastDailyLog !== null}
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop */}
@@ -104,6 +134,7 @@ export function GameBoard({
         />
 
         {/* T007 — Shop panel: fixed bottom sheet on mobile, inline sidebar on desktop */}
+        {/* T012 — DailyLog removed from sidebar (now shown only in DaySummaryModal) */}
         <div
           className={[
             // Mobile: fixed slide-up panel
@@ -132,13 +163,16 @@ export function GameBoard({
             onBuyFertilizer={onBuyFertilizer}
             getNextUpgradeCost={getNextUpgradeCost}
           />
-
-          {/* Daily Log — removed from sidebar in Phase 4 / T012 */}
-          {lastDailyLog && <DailyLog log={lastDailyLog} />}
         </div>
       </div>
 
-      {/* Footer removed (T006) — Next Day button moves to HUD in Phase 4 / T009 */}
+      {/* T011 — Day Summary modal: opens after each turn, reopenable via Last Turn */}
+      {isSummaryOpen && daySummary !== null && (
+        <DaySummaryModal
+          log={daySummary}
+          onClose={() => setIsSummaryOpen(false)}
+        />
+      )}
     </div>
   );
 }

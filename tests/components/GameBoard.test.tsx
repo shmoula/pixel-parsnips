@@ -100,18 +100,33 @@ describe('GameBoard — smoke tests (T047)', () => {
     expect(screen.getByRole('complementary', { name: /shop/i })).toBeInTheDocument();
   });
 
-  it('does not render DailyLog when lastDailyLog is null (Day 1 before any turn)', () => {
+  it('does not render DaySummaryModal on initial load (modal is closed)', () => {
     render(<GameBoard {...makeGameBoardProps({ lastDailyLog: null })} />);
+    // Modal only opens after a turn — sidebar DailyLog was removed in Phase 4 (T012)
     expect(
       screen.queryByRole('region', { name: /daily summary/i })
     ).not.toBeInTheDocument();
   });
 
-  it('renders DailyLog when lastDailyLog is provided', () => {
+  it('"Last Turn" button is disabled when lastDailyLog is null', () => {
+    render(<GameBoard {...makeGameBoardProps({ lastDailyLog: null })} />);
+    expect(
+      screen.getByRole('button', { name: /last turn/i })
+    ).toBeDisabled();
+  });
+
+  it('"Last Turn" button is enabled when lastDailyLog is provided', () => {
     render(<GameBoard {...makeGameBoardProps({ lastDailyLog: sampleLog })} />);
     expect(
-      screen.getByRole('region', { name: /daily summary/i })
-    ).toBeInTheDocument();
+      screen.getByRole('button', { name: /last turn/i })
+    ).not.toBeDisabled();
+  });
+
+  it('"Next Day" button is rendered and enabled initially', () => {
+    render(<GameBoard {...makeGameBoardProps()} />);
+    expect(
+      screen.getByRole('button', { name: /advance to next day/i })
+    ).not.toBeDisabled();
   });
 
   it('passes WCAG 2.1 AA axe check — Day 1 (no log)', async () => {
