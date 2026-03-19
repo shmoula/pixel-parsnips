@@ -64,23 +64,6 @@ export function SeedCard({
         Est. profit: +{netProfit}🪙
       </p>
 
-      {seedCount > 0 && (
-        <button
-          type="button"
-          aria-label={`Select ${crop.name} seed to plant`}
-          aria-pressed={isSelected}
-          onClick={() => onSelect(cropId)}
-          className={`
-            mt-1 w-full py-1 rounded font-pixel text-xs transition-colors
-            ${isSelected
-              ? 'bg-farm-grass text-farm-parchment'
-              : 'bg-farm-sky text-farm-ink hover:bg-farm-grass hover:text-farm-parchment'}
-          `}
-        >
-          {isSelected ? 'Planting ✓' : 'Plant'}
-        </button>
-      )}
-
       {/* T018d,e — BUY prefix + active:scale-95 press feedback */}
       <button
         type="button"
@@ -98,6 +81,23 @@ export function SeedCard({
       >
         {canAfford ? `BUY ${price}🪙` : `Need ${price}🪙`}
       </button>
+
+      {seedCount > 0 && (
+        <button
+          type="button"
+          aria-label={`Select ${crop.name} seed to plant`}
+          aria-pressed={isSelected}
+          onClick={() => onSelect(cropId)}
+          className={`
+            w-full py-1 rounded font-pixel text-xs transition-colors
+            ${isSelected
+              ? 'bg-farm-grass text-farm-parchment'
+              : 'bg-farm-sky text-farm-ink hover:bg-farm-grass hover:text-farm-parchment'}
+          `}
+        >
+          {isSelected ? 'Planting ✓' : 'Plant'}
+        </button>
+      )}
     </div>
   );
 }
