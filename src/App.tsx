@@ -2,6 +2,23 @@ import { useGameEngine } from './engine/useGameEngine';
 import { GameBoard } from './components/GameBoard';
 import { BankruptcyScreen } from './components/BankruptcyScreen';
 
+function GrainFilter() {
+  return (
+    <svg className="hidden" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="pp-grain" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise" />
+          <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise" />
+          <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blended" />
+          <feComponentTransfer in="blended">
+            <feFuncA type="linear" slope="1" />
+          </feComponentTransfer>
+        </filter>
+      </defs>
+    </svg>
+  );
+}
+
 function App() {
   const {
     state,
@@ -21,16 +38,21 @@ function App() {
 
   if (state.phase === 'bankrupt') {
     return (
-      <BankruptcyScreen
+      <>
+        <GrainFilter />
+        <BankruptcyScreen
         daysPlayed={state.currentDay}
         peakBalance={state.peakBalance}
         onRestart={restart}
       />
+      </>
     );
   }
 
   return (
-    <GameBoard
+    <>
+      <GrainFilter />
+      <GameBoard
       state={state}
       lastDailyLog={lastDailyLog}
       onNextDay={nextDay}
@@ -44,6 +66,7 @@ function App() {
       getSeedPrice={getSeedPrice}
       getNextUpgradeCost={getNextUpgradeCost}
     />
+    </>
   );
 }
 
