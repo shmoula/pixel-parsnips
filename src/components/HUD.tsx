@@ -29,7 +29,7 @@ export function HUD({
       aria-label="Game status"
       className="
         flex flex-wrap items-center gap-2 px-4 py-3
-        bg-farm-soil text-farm-parchment
+        bg-farm-soil/80 backdrop-blur-sm text-farm-parchment
       "
     >
       {/* Left: Day chip + Balance chip */}

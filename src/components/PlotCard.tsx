@@ -162,7 +162,7 @@ function GrowingCropCard({ plot }: {
         isReady
           ? 'border-farm-grass ring-2 ring-farm-grass'
           : 'border-farm-gold',
-        'bg-farm-parchment select-none',
+        'bg-farm-parchment select-none shadow-inner',
       ].join(' ')}
     >
       {/* T014 — circular progress ring wrapping the stage emoji */}
