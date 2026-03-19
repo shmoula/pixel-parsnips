@@ -469,6 +469,45 @@ describe('processTurn — uniform random weather selection (US4)', () => {
   });
 });
 
+// ── processTurn — Blight disaster (US1) ───────────────────────────────────────
+
+describe('processTurn — Blight disaster (US1)', () => {
+  it('radish yield on Blight: floor(12 × 0.1) = 1', () => {
+    const state = withSeeds(initialGameState(), { radish: 1 });
+    const planted = plantSeed(state, 0, 'radish');
+    if (!planted.ok) throw new Error('plant failed');
+    const { log } = processTurn(planted.state, 'blight');
+    expect(log.harvests[0].adjustedYield).toBe(1);
+    expect(log.totalHarvestIncome).toBe(1);
+    expect(log.weatherMultiplier).toBe(0.1);
+  });
+
+  it('pumpkin yield on Blight: floor(65 × 0.1) = 6', () => {
+    let state = withSeeds(initialGameState(), { pumpkin: 1 });
+    const planted = plantSeed(state, 0, 'pumpkin');
+    if (!planted.ok) throw new Error('plant failed');
+    state = planted.state;
+    state = processTurn(state, 'sunny').state;
+    state = processTurn(state, 'sunny').state;
+    const { log } = processTurn(state, 'blight');
+    expect(log.harvests[0].adjustedYield).toBe(6);
+    expect(log.totalHarvestIncome).toBe(6);
+  });
+
+  it('zero-harvest Blight day records weatherId=blight and weatherMultiplier=0.1', () => {
+    const { log } = processTurn(initialGameState(), 'blight');
+    expect(log.weatherId).toBe('blight');
+    expect(log.weatherMultiplier).toBe(0.1);
+    expect(log.harvests).toHaveLength(0);
+  });
+
+  it('Blight turn: log.pestDestroyedPlots === [] and log.flashDroughtDaysAfter === 0', () => {
+    const { log } = processTurn(initialGameState(), 'blight');
+    expect(log.pestDestroyedPlots).toEqual([]);
+    expect(log.flashDroughtDaysAfter).toBe(0);
+  });
+});
+
 // ── computeSeedCost (US3) ─────────────────────────────────────────────────────
 
 describe('computeSeedCost', () => {

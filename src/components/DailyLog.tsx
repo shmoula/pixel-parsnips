@@ -11,7 +11,12 @@ const WEATHER_EMOJI: Record<string, string> = {
   sunny: '🌤️',
   warm_breeze: '🍃',
   perfect_sun: '🌟',
+  blight: '🍄',
+  pest_infestation: '🐛',
+  flash_drought: '☀️🔥',
 };
+
+const DISASTER_WEATHER_IDS = new Set(['blight', 'pest_infestation', 'flash_drought']);
 
 export function DailyLog({ log }: DailyLogProps) {
   const weather = WEATHER_DEFINITIONS[log.weatherId];
@@ -22,8 +27,14 @@ export function DailyLog({ log }: DailyLogProps) {
     >
       <h2 className="font-pixel text-xs text-farm-gold">Day {log.day} Summary</h2>
 
-      {/* Weather badge */}
-      <div className="flex items-center gap-1 px-2 py-1 rounded bg-farm-parchment/20">
+      {/* Weather badge — disaster events get red/amber styling */}
+      <div
+        className={
+          DISASTER_WEATHER_IDS.has(log.weatherId)
+            ? 'flex items-center gap-1 px-2 py-1 rounded bg-farm-red/20 border border-farm-red/40'
+            : 'flex items-center gap-1 px-2 py-1 rounded bg-farm-parchment/20'
+        }
+      >
         <span aria-hidden="true">{WEATHER_EMOJI[log.weatherId]}</span>
         <span className="font-pixel text-farm-parchment">{weather.name}</span>
         <span className="text-farm-stone ml-auto">×{(log.weatherMultiplier).toFixed(1)}</span>

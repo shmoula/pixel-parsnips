@@ -39,8 +39,8 @@
 
 > **Red-Green-Refactor**: Write T006 first, confirm tests compile and pass (Blight works automatically once T001-T004 are complete — the existing harvest loop already applies `WeatherDefinition.multiplier` generically).
 
-- [ ] T006 [US1] Write Blight engine tests in `tests/engine/gameEngine.test.ts`: `describe('processTurn — Blight disaster (US1)')` covering: radish yield `floor(12 × 0.1) = 1`; pumpkin yield `floor(65 × 0.1) = 6`; zero-harvest Blight day records `log.weatherId='blight'` and `log.weatherMultiplier=0.1`; `log.pestDestroyedPlots === []` and `log.flashDroughtDaysAfter === 0` on Blight turn
-- [ ] T007 [P] [US1] Update `src/components/DailyLog.tsx`: render disaster weather badge with red/amber styling (`bg-farm-red/20 border border-farm-red/40`) when `log.weatherId` is `'blight'`, `'pest_infestation'`, or `'flash_drought'`; keep existing parchment/20 style for all other weather IDs
+- [x] T006 [US1] Write Blight engine tests in `tests/engine/gameEngine.test.ts`: `describe('processTurn — Blight disaster (US1)')` covering: radish yield `floor(12 × 0.1) = 1`; pumpkin yield `floor(65 × 0.1) = 6`; zero-harvest Blight day records `log.weatherId='blight'` and `log.weatherMultiplier=0.1`; `log.pestDestroyedPlots === []` and `log.flashDroughtDaysAfter === 0` on Blight turn
+- [x] T007 [P] [US1] Update `src/components/DailyLog.tsx`: render disaster weather badge with red/amber styling (`bg-farm-red/20 border border-farm-red/40`) when `log.weatherId` is `'blight'`, `'pest_infestation'`, or `'flash_drought'`; keep existing parchment/20 style for all other weather IDs
 
 **Checkpoint**: `npm test` — all Blight tests pass; DailyLog visually distinguishes disaster days from normal weather.
 
