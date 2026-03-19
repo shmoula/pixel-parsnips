@@ -31,34 +31,37 @@ export function DaySummaryModal({ log, onClose }: DaySummaryModalProps) {
     >
       <div
         className="
-          relative bg-farm-soil rounded-2xl p-4
+          bg-farm-soil rounded-2xl p-4
           max-w-sm w-full mx-4 shadow-xl
-          max-h-[80vh] overflow-y-auto overscroll-contain
+          max-h-[80vh] flex flex-col
         "
         onClick={e => e.stopPropagation()}
       >
+        <div className="overflow-y-auto overscroll-contain flex-1">
+          {isQuietDay && (
+            <p className="font-pixel text-xs text-farm-stone text-center py-2 mb-1">
+              Quiet day — no harvests.
+            </p>
+          )}
+
+          <DailyLog log={log} />
+        </div>
+
         <button
           ref={closeButtonRef}
           type="button"
           aria-label="Close day summary"
           onClick={onClose}
           className="
-            absolute top-3 right-3
-            font-pixel text-xs text-farm-stone
-            hover:text-farm-parchment transition-colors
-            leading-none
+            mt-4 w-full py-3 rounded-xl
+            font-pixel text-sm
+            bg-farm-grass text-farm-parchment
+            hover:bg-farm-gold hover:text-farm-ink
+            active:scale-95 transition-all
           "
         >
-          ✕
+          Continue →
         </button>
-
-        {isQuietDay && (
-          <p className="font-pixel text-xs text-farm-stone text-center py-2 mb-1">
-            Quiet day — no harvests.
-          </p>
-        )}
-
-        <DailyLog log={log} />
       </div>
     </div>,
     document.body,
