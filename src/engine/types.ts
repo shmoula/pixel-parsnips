@@ -7,7 +7,10 @@ export type WeatherId =
   | 'overcast'
   | 'sunny'
   | 'warm_breeze'
-  | 'perfect_sun';
+  | 'perfect_sun'
+  | 'blight'
+  | 'pest_infestation'
+  | 'flash_drought';
 
 export type UpgradeTier = 0 | 1 | 2 | 3;
 
@@ -44,6 +47,10 @@ export interface PlotState {
   daysRemaining: number | null;
   consecutiveHarvests: number;
   exhaustedSinceDay: number | null;
+  /** Plot was destroyed by Pest Infestation; blocks planting until cleared. */
+  pestDamaged: boolean;
+  /** Crop was planted during an active Flash Drought window; growth time was doubled. */
+  droughtPenalised: boolean;
 }
 
 export interface SeedInventory {
@@ -73,6 +80,10 @@ export interface DailyLogEntry {
   netChange: number;
   closingBalance: number;
   exhaustedPlots: number[];
+  /** Plot IDs destroyed by Pest Infestation this turn; empty array on non-pest turns. */
+  pestDestroyedPlots: number[];
+  /** Value of flashDroughtDaysRemaining at end of turn processing; 0 when inactive. */
+  flashDroughtDaysAfter: number;
 }
 
 export interface GameState {
@@ -86,13 +97,15 @@ export interface GameState {
   phase: 'playing' | 'bankrupt';
   peakBalance: number;
   fertilizerInventory: number;
+  /** Calendar days remaining in the active Flash Drought window (0 = inactive). */
+  flashDroughtDaysRemaining: number;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────
 
 export type PlantResult =
   | { ok: true; state: GameState }
-  | { ok: false; error: 'no_seed' | 'plot_occupied' | 'plot_exhausted' | 'invalid_plot' };
+  | { ok: false; error: 'no_seed' | 'plot_occupied' | 'plot_exhausted' | 'plot_pest_damaged' | 'invalid_plot' };
 
 export type FertilizerResult =
   | { ok: true; state: GameState }
@@ -105,6 +118,10 @@ export type BuyResult =
 export type UpgradeResult =
   | { ok: true; state: GameState }
   | { ok: false; error: 'insufficient_funds' | 'max_tier_reached' };
+
+export type ClearPestDamageResult =
+  | { ok: true; state: GameState }
+  | { ok: false; error: 'plot_not_pest_damaged' | 'invalid_plot' };
 
 export interface TurnResult {
   state: GameState;

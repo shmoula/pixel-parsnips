@@ -6,7 +6,7 @@ import {
   MAX_UPGRADE_TIER,
   CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
-  WEATHER_IDS,
+  WEATHER_PROBABILITY_BANDS,
   UPGRADE_TIER_DEFINITIONS,
   TAX_RATE,
   EXHAUSTION_THRESHOLD,
@@ -24,6 +24,7 @@ import type {
   BuyResult,
   UpgradeResult,
   FertilizerResult,
+  ClearPestDamageResult,
   TurnResult,
   DailyLogEntry,
   HarvestEvent,
@@ -40,6 +41,8 @@ export function initialGameState(): GameState {
     daysRemaining: null,
     consecutiveHarvests: 0,
     exhaustedSinceDay: null,
+    pestDamaged: false,
+    droughtPenalised: false,
   }));
 
   return {
@@ -53,6 +56,7 @@ export function initialGameState(): GameState {
     phase: 'playing',
     peakBalance: STARTING_BALANCE,
     fertilizerInventory: 0,
+    flashDroughtDaysRemaining: 0,
   };
 }
 
@@ -189,9 +193,15 @@ export function processTurn(
     return { ...plot, daysRemaining: plot.daysRemaining - 1 };
   });
 
-  // Step 2: Resolve weather — inject via weatherRoll for tests, else uniform random
-  const weatherId: WeatherId =
-    weatherRoll ?? WEATHER_IDS[Math.floor(Math.random() * WEATHER_IDS.length)];
+  // Step 2: Resolve weather — inject via weatherRoll for tests, else continuous-band random
+  const weatherId: WeatherId = (() => {
+    if (weatherRoll) return weatherRoll;
+    const roll = Math.random();
+    for (const band of WEATHER_PROBABILITY_BANDS) {
+      if (roll < band.threshold) return band.id;
+    }
+    return 'perfect_sun'; // guard: roll === 1.0 exactly
+  })();
   const weather = WEATHER_DEFINITIONS[weatherId];
 
   // Step 3: Harvest all plots where daysRemaining === 0
@@ -256,6 +266,8 @@ export function processTurn(
       netChange: totalHarvestIncome,
       closingBalance: coinBalance,
       exhaustedPlots,
+      pestDestroyedPlots: [],
+      flashDroughtDaysAfter: state.flashDroughtDaysRemaining,
     };
     const bankruptState: GameState = {
       ...state,
@@ -304,6 +316,8 @@ export function processTurn(
     netChange: totalHarvestIncome - landLeaseDeducted - taxDeducted,
     closingBalance: coinBalance,
     exhaustedPlots,
+    pestDestroyedPlots: [],
+    flashDroughtDaysAfter: state.flashDroughtDaysRemaining,
   };
 
   const nextState: GameState = {
@@ -316,6 +330,33 @@ export function processTurn(
   };
 
   return { state: nextState, log, isBankrupt: false };
+}
+
+// ── clearPestDamage (stub — implemented in T013) ──────────────────────────────
+
+/** Removes Pest Damage state from a plot, making it plantable again. Pure — no mutations. */
+export function clearPestDamage(
+  state: GameState,
+  plotId: number
+): ClearPestDamageResult {
+  if (plotId < 0 || plotId >= PLOT_COUNT) {
+    return { ok: false, error: 'invalid_plot' };
+  }
+
+  const plot = state.plots[plotId];
+  if (!plot.pestDamaged) {
+    return { ok: false, error: 'plot_not_pest_damaged' };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      plots: state.plots.map(p =>
+        p.id === plotId ? { ...p, pestDamaged: false } : p
+      ),
+    },
+  };
 }
 
 // ── T014: buyFertilizer ───────────────────────────────────────────────────────

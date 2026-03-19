@@ -415,25 +415,54 @@ describe('processTurn — DailyLogEntry accounting fields (US4)', () => {
 // ── processTurn — uniform random weather when no weatherRoll (US4, T037) ──────
 
 describe('processTurn — uniform random weather selection (US4)', () => {
-  it('uses Math.random to select weather when no weatherRoll is injected', () => {
-    // WEATHER_IDS = ['drought','overcast','sunny','warm_breeze','perfect_sun']
-    // Math.random() = 0.0 → floor(0.0 × 5) = 0 → 'drought'
+  // WEATHER_PROBABILITY_BANDS: 0.00–0.05 blight, 0.05–0.10 pest_infestation,
+  // 0.10–0.15 flash_drought, 0.15–0.32 drought, 0.32–0.49 overcast,
+  // 0.49–0.66 sunny, 0.66–0.83 warm_breeze, 0.83–1.00 perfect_sun
+
+  it('selects blight when Math.random returns 0.0 (roll < 0.05)', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0.0);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('blight');
+    spy.mockRestore();
+  });
+
+  it('selects pest_infestation when Math.random returns 0.07 (0.05 ≤ roll < 0.10)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.07);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('pest_infestation');
+    spy.mockRestore();
+  });
+
+  it('selects flash_drought when Math.random returns 0.12 (0.10 ≤ roll < 0.15)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.12);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('flash_drought');
+    spy.mockRestore();
+  });
+
+  it('selects drought when Math.random returns 0.20 (0.15 ≤ roll < 0.32)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.20);
     const { log } = processTurn(initialGameState());
     expect(log.weatherId).toBe('drought');
     spy.mockRestore();
   });
 
-  it('selects perfect_sun when Math.random returns 0.8', () => {
-    // floor(0.8 × 5) = floor(4.0) = 4 → 'perfect_sun'
-    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.8);
+  it('selects warm_breeze when Math.random returns 0.80 (0.66 ≤ roll < 0.83)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.80);
+    const { log } = processTurn(initialGameState());
+    expect(log.weatherId).toBe('warm_breeze');
+    spy.mockRestore();
+  });
+
+  it('selects perfect_sun when Math.random returns 0.95 (0.83 ≤ roll < 1.00)', () => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.95);
     const { log } = processTurn(initialGameState());
     expect(log.weatherId).toBe('perfect_sun');
     spy.mockRestore();
   });
 
   it('injected weatherRoll still overrides random selection', () => {
-    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.0); // would give 'drought'
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.0); // would give 'blight'
     const { log } = processTurn(initialGameState(), 'warm_breeze');
     expect(log.weatherId).toBe('warm_breeze');
     spy.mockRestore();
