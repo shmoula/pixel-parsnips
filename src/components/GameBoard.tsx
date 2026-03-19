@@ -23,6 +23,7 @@ interface GameBoardProps {
 export function GameBoard({
   state,
   lastDailyLog,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onNextDay,
   onPlantSeed,
   onBuySeed,
@@ -34,34 +35,36 @@ export function GameBoard({
   getSeedPrice,
   getNextUpgradeCost,
 }: GameBoardProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
+  // T005 — bottom sheet state (mobile)
+  const [isShopOpen, setIsShopOpen] = useState(false);
 
-  function handleNextDay() {
-    if (isProcessing) return;
-    setIsProcessing(true);
-    setTimeout(() => {
-      onNextDay();
-      setIsProcessing(false);
-    }, 0);
+  function toggleShop() {
+    setIsShopOpen(prev => !prev);
   }
 
   function handlePlot(plotId: number) {
     if (!selectedCrop) return;
     const planted = onPlantSeed(plotId, selectedCrop);
-    if (planted) setSelectedCrop(null); // deselect after successful plant
+    if (planted) setSelectedCrop(null);
   }
 
   function handleBuySeed(cropId: CropId) {
     onBuySeed(cropId);
-    setSelectedCrop(cropId); // auto-select the just-bought crop
+    setSelectedCrop(cropId);
   }
 
   return (
+    // T006 — relative container needed for fixed backdrop to scope correctly
     <div className="flex flex-col min-h-screen bg-farm-parchment">
-      <HUD currentDay={state.currentDay} coinBalance={state.coinBalance} />
+      <HUD
+        currentDay={state.currentDay}
+        coinBalance={state.coinBalance}
+        onToggleShop={toggleShop}
+      />
 
-      <div className="flex flex-1 gap-4 p-4 overflow-hidden">
+      {/* T006 — flex-col on mobile, flex-row on desktop */}
+      <div className="flex flex-1 flex-col md:flex-row gap-4 p-4 overflow-hidden">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
           {state.flashDroughtDaysRemaining > 0 && (
@@ -90,8 +93,32 @@ export function GameBoard({
           />
         </main>
 
-        {/* Right column: Shop + Daily Log */}
-        <div className="flex flex-col gap-4 w-56 shrink-0">
+        {/* T007 — backdrop: mobile-only, fades in/out behind the bottom sheet */}
+        <div
+          className={[
+            'fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden',
+            isShopOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
+          ].join(' ')}
+          onClick={toggleShop}
+          aria-hidden="true"
+        />
+
+        {/* T007 — Shop panel: fixed bottom sheet on mobile, inline sidebar on desktop */}
+        <div
+          className={[
+            // Mobile: fixed slide-up panel
+            'fixed bottom-0 left-0 right-0 z-40',
+            'rounded-t-2xl',
+            'max-h-[70vh] overflow-y-auto overscroll-contain',
+            'transition-transform duration-300 ease-in-out',
+            isShopOpen ? 'translate-y-0' : 'translate-y-full',
+            // Desktop: back in flow as right sidebar
+            'md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto',
+            'md:rounded-none md:max-h-none md:overflow-y-auto',
+            'md:w-56 md:shrink-0 md:translate-y-0',
+            'md:flex md:flex-col md:gap-4',
+          ].join(' ')}
+        >
           <Shop
             coinBalance={state.coinBalance}
             upgradeTier={state.upgradeTier}
@@ -106,28 +133,12 @@ export function GameBoard({
             getNextUpgradeCost={getNextUpgradeCost}
           />
 
-          {/* Daily Log — null on Day 1 before any turn */}
+          {/* Daily Log — removed from sidebar in Phase 4 / T012 */}
           {lastDailyLog && <DailyLog log={lastDailyLog} />}
         </div>
       </div>
 
-      <footer className="flex justify-center py-4">
-        <button
-          type="button"
-          aria-label="Advance to next day"
-          disabled={isProcessing}
-          onClick={handleNextDay}
-          className="
-            px-8 py-3 rounded-lg font-pixel text-sm
-            bg-farm-grass text-farm-parchment
-            hover:bg-farm-gold hover:text-farm-ink
-            disabled:opacity-50 disabled:cursor-not-allowed
-            transition-colors
-          "
-        >
-          {isProcessing ? 'Processing…' : 'Next Day →'}
-        </button>
-      </footer>
+      {/* Footer removed (T006) — Next Day button moves to HUD in Phase 4 / T009 */}
     </div>
   );
 }

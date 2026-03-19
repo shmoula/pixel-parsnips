@@ -3,9 +3,11 @@ import { LAND_LEASE_FEE, TAX_RATE } from '../engine/constants';
 interface HUDProps {
   currentDay: number;
   coinBalance: number;
+  /** Mobile only: opens/closes the shop bottom sheet. */
+  onToggleShop: () => void;
 }
 
-export function HUD({ currentDay, coinBalance }: HUDProps) {
+export function HUD({ currentDay, coinBalance, onToggleShop }: HUDProps) {
   return (
     <header
       aria-label="Game status"
@@ -34,6 +36,21 @@ export function HUD({ currentDay, coinBalance }: HUDProps) {
           Tax {TAX_RATE * 100}%
         </span>
       </div>
+
+      {/* Shop toggle — mobile only (T008) */}
+      <button
+        type="button"
+        aria-label="Open shop"
+        onClick={onToggleShop}
+        className="
+          md:hidden
+          font-pixel text-xs px-3 py-1 rounded
+          bg-farm-gold text-farm-ink
+          hover:brightness-110 transition-all
+        "
+      >
+        🌾 Shop
+      </button>
     </header>
   );
 }

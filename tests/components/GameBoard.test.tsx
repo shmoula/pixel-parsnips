@@ -100,13 +100,6 @@ describe('GameBoard — smoke tests (T047)', () => {
     expect(screen.getByRole('complementary', { name: /shop/i })).toBeInTheDocument();
   });
 
-  it('renders the Next Day button', () => {
-    render(<GameBoard {...makeGameBoardProps()} />);
-    expect(
-      screen.getByRole('button', { name: /advance to next day/i })
-    ).toBeInTheDocument();
-  });
-
   it('does not render DailyLog when lastDailyLog is null (Day 1 before any turn)', () => {
     render(<GameBoard {...makeGameBoardProps({ lastDailyLog: null })} />);
     expect(
