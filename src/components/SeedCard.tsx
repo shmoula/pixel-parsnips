@@ -29,8 +29,19 @@ export function SeedCard({
   const crop = CROP_DEFINITIONS[cropId];
   const disabled = !canAfford;
 
+  // T018a — net profit per seed after buy cost
+  const netProfit = crop.baseYield - price;
+
   return (
-    <div className={`flex flex-col gap-1 p-3 bg-farm-parchment rounded-lg border-2 transition-colors ${isSelected ? 'border-farm-grass' : 'border-farm-stone'}`}>
+    // T018c — active border: gold ring instead of grass
+    <div
+      className={[
+        'flex flex-col gap-1 p-3 bg-farm-parchment rounded-lg border-2 transition-colors',
+        isSelected
+          ? 'border-farm-gold ring-2 ring-farm-gold'
+          : 'border-farm-stone',
+      ].join(' ')}
+    >
       <div className="flex items-center justify-between">
         <span className="text-lg">{CROP_EMOJI[cropId]}</span>
         {seedCount > 0 && (
@@ -47,6 +58,11 @@ export function SeedCard({
         <span className="mx-1">·</span>
         <span>{crop.baseYield}🪙 yield</span>
       </div>
+
+      {/* T018b — estimated net profit display */}
+      <p className="text-xs text-farm-grass font-pixel">
+        Est. profit: +{netProfit}🪙
+      </p>
 
       {seedCount > 0 && (
         <button
@@ -65,6 +81,7 @@ export function SeedCard({
         </button>
       )}
 
+      {/* T018d,e — BUY prefix + active:scale-95 press feedback */}
       <button
         type="button"
         aria-label={`Buy ${crop.name} seed for ${price} coins`}
@@ -74,11 +91,12 @@ export function SeedCard({
           mt-1 w-full py-1 rounded font-pixel text-xs
           bg-farm-gold text-farm-ink
           hover:bg-farm-grass hover:text-farm-parchment
+          active:scale-95 active:brightness-90
           disabled:opacity-40 disabled:cursor-not-allowed
-          transition-colors
+          transition-all
         "
       >
-        {canAfford ? `${price}🪙` : `Need ${price}🪙`}
+        {canAfford ? `BUY ${price}🪙` : `Need ${price}🪙`}
       </button>
     </div>
   );

@@ -17,14 +17,13 @@ export function UpgradeCard({
 }: UpgradeCardProps) {
   const discountPct = Math.round(def.cumulativeDiscount * 100);
 
+  // T019 — compact tray-item style for owned tools (used in Active Buffs section)
   if (isOwned) {
     return (
-      <div className="flex items-center justify-between p-2 rounded bg-farm-grass/20 border border-farm-grass">
-        <div>
-          <p className="font-pixel text-xs text-farm-ink">{def.label}</p>
-          <p className="text-xs text-farm-stone">−{discountPct}% seeds</p>
-        </div>
-        <span className="font-pixel text-xs text-farm-grass">Owned ✓</span>
+      <div className="flex items-center gap-2 px-2 py-1 rounded bg-farm-grass/20 border border-farm-grass/40">
+        <span className="text-farm-grass text-sm">✓</span>
+        <p className="font-pixel text-xs text-farm-ink">{def.label}</p>
+        <p className="text-xs text-farm-stone ml-auto">−{discountPct}% seeds</p>
       </div>
     );
   }
@@ -45,8 +44,9 @@ export function UpgradeCard({
             px-2 py-1 rounded font-pixel text-xs
             bg-farm-gold text-farm-ink
             hover:bg-farm-grass hover:text-farm-parchment
+            active:scale-95 active:brightness-90
             disabled:opacity-40 disabled:cursor-not-allowed
-            transition-colors
+            transition-all
           "
         >
           {def.cost}🪙
