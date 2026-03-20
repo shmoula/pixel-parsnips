@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   initialGameState,
   plantSeed,
@@ -55,12 +55,19 @@ export interface GameEngineHook {
 
 export function useGameEngine(): GameEngineHook {
   const [state, setState] = useState<GameState>(() => loadState());
+  const hasHydratedRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasHydratedRef.current) {
+      hasHydratedRef.current = true;
+      return;
+    }
+    saveState(state);
+  }, [state]);
 
   const nextDay = useCallback(() => {
     setState(prev => {
-      const next = processTurn(prev).state;
-      saveState(next);
-      return next;
+      return processTurn(prev).state;
     });
   }, []);
 
@@ -68,7 +75,7 @@ export function useGameEngine(): GameEngineHook {
     let success = false;
     setState(prev => {
       const result = plantSeed(prev, plotId, cropId);
-      if (result.ok) { success = true; saveState(result.state); return result.state; }
+      if (result.ok) { success = true; return result.state; }
       return prev;
     });
     return success;
@@ -78,7 +85,7 @@ export function useGameEngine(): GameEngineHook {
     let success = false;
     setState(prev => {
       const result = engineBuySeed(prev, cropId, quantity);
-      if (result.ok) { success = true; saveState(result.state); return result.state; }
+      if (result.ok) { success = true; return result.state; }
       return prev;
     });
     return success;
@@ -88,7 +95,7 @@ export function useGameEngine(): GameEngineHook {
     let success = false;
     setState(prev => {
       const result = engineBuyUpgrade(prev);
-      if (result.ok) { success = true; saveState(result.state); return result.state; }
+      if (result.ok) { success = true; return result.state; }
       return prev;
     });
     return success;
@@ -98,7 +105,7 @@ export function useGameEngine(): GameEngineHook {
     let success = false;
     setState(prev => {
       const result = engineBuyFertilizer(prev, quantity);
-      if (result.ok) { success = true; saveState(result.state); return result.state; }
+      if (result.ok) { success = true; return result.state; }
       return prev;
     });
     return success;
@@ -108,7 +115,7 @@ export function useGameEngine(): GameEngineHook {
     let success = false;
     setState(prev => {
       const result = engineApplyFertilizer(prev, plotId);
-      if (result.ok) { success = true; saveState(result.state); return result.state; }
+      if (result.ok) { success = true; return result.state; }
       return prev;
     });
     return success;
@@ -118,7 +125,7 @@ export function useGameEngine(): GameEngineHook {
     let success = false;
     setState(prev => {
       const result = engineClearPestDamage(prev, plotId);
-      if (result.ok) { success = true; saveState(result.state); return result.state; }
+      if (result.ok) { success = true; return result.state; }
       return prev;
     });
     return success;
@@ -126,7 +133,6 @@ export function useGameEngine(): GameEngineHook {
 
   const restart = useCallback(() => {
     const fresh = initialGameState();
-    saveState(fresh);
     setState(fresh);
   }, []);
 

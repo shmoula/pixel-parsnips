@@ -133,6 +133,9 @@ export function buySeed(
   cropId: CropId,
   quantity: number
 ): BuyResult {
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    return { ok: false, error: 'invalid_quantity' };
+  }
   const unitCost = computeSeedCost(cropId, state.upgradeTier);
   const totalCost = unitCost * quantity;
 
@@ -230,6 +233,8 @@ export function processTurn(
           daysRemaining: null,
           dayPlanted: null,
           droughtPenalised: false,
+          consecutiveHarvests: 0,
+          exhaustedSinceDay: null,
           pestDamaged: true,
         };
       }
@@ -411,6 +416,9 @@ export function clearPestDamage(
 
 /** Purchases fertilizer from the shop. Pure — no mutations. */
 export function buyFertilizer(state: GameState, quantity: number): BuyResult {
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    return { ok: false, error: 'invalid_quantity' };
+  }
   const totalCost = FERTILIZER_COST * quantity;
 
   if (state.coinBalance < totalCost) {

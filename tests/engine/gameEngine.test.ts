@@ -508,6 +508,19 @@ describe('processTurn — Pest Infestation (US2)', () => {
     expect(plot.dayPlanted).toBeNull();
   });
 
+  it('pest destruction resets consecutiveHarvests to 0', () => {
+    let state = withSeeds(initialGameState(), { radish: 1 });
+    state = plantSeed(state, 0, 'radish').state as GameState;
+    state = {
+      ...state,
+      plots: state.plots.map((p, i) =>
+        i === 0 ? { ...p, consecutiveHarvests: 2 } : p
+      ),
+    };
+    const { state: after } = processTurn(state, 'pest_infestation', [0]);
+    expect(after.plots[0].consecutiveHarvests).toBe(0);
+  });
+
   it('crop maturing this turn is included in destruction (destroyed with no yield)', () => {
     // Radish growthDays=1: planted on day 1, matures (daysRemaining→0) on processTurn
     let state = withSeeds(initialGameState(), { radish: 1 });
@@ -794,6 +807,20 @@ describe('buySeed', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.state.seedInventory.parsnip).toBe(2); // unchanged
+  });
+
+  it('returns invalid_quantity for zero quantity', () => {
+    const state = initialGameState();
+    const result = buySeed(state, 'radish', 0);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_quantity');
+  });
+
+  it('returns invalid_quantity for negative quantity', () => {
+    const state = initialGameState();
+    const result = buySeed(state, 'radish', -2);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_quantity');
   });
 });
 
@@ -1116,6 +1143,20 @@ describe('buyFertilizer (T012, US2)', () => {
     const result = buyFertilizer(state, 2);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe('insufficient_funds');
+  });
+
+  it('returns invalid_quantity for zero quantity', () => {
+    const state = initialGameState();
+    const result = buyFertilizer(state, 0);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_quantity');
+  });
+
+  it('returns invalid_quantity for negative quantity', () => {
+    const state = initialGameState();
+    const result = buyFertilizer(state, -1);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('invalid_quantity');
   });
 });
 

@@ -113,7 +113,8 @@ export type FertilizerResult =
 
 export type BuyResult =
   | { ok: true; state: GameState }
-  | { ok: false; error: 'insufficient_funds'; cost: number; balance: number };
+  | { ok: false; error: 'insufficient_funds'; cost: number; balance: number }
+  | { ok: false; error: 'invalid_quantity' };
 
 export type UpgradeResult =
   | { ok: true; state: GameState }
