@@ -63,12 +63,12 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
       className="
         flex flex-col items-center justify-center
         w-full aspect-square rounded-lg border-2
-        border-farm-red bg-farm-parchment
+        border-farm-red bg-[#2A1010]
         select-none p-1 shadow-inner
       "
     >
       <span className="text-2xl">🐛</span>
-      <span className="text-xs font-pixel text-farm-red mt-1">Pest Damage</span>
+      <span className="text-xs font-pixel text-farm-red/90 mt-1">Pest Damage</span>
       <button
         type="button"
         aria-label="Clear pest damage from this plot"
@@ -76,7 +76,7 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
         className="
           mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
           bg-farm-red text-farm-parchment
-          hover:brightness-110 transition-all cursor-pointer
+          hover:bg-[#d94040] active:scale-95 transition-all cursor-pointer
         "
       >
         Clear Plot
@@ -120,8 +120,9 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
           onClick={() => onApplyFertilizer?.(plot.id)}
           className="
             mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
-            bg-farm-grass text-farm-ink
-            hover:brightness-110 transition-all cursor-pointer
+            bg-farm-grass text-farm-parchment
+            hover:bg-farm-gold hover:text-farm-ink
+            active:scale-95 transition-all cursor-pointer
           "
         >
           Use Fertilizer
@@ -144,11 +145,9 @@ function GrowingCropCard({ plot }: {
   const daysRemaining = plot.daysRemaining ?? 0;
   const isReady = daysRemaining === 0;
   const stage = getGrowthStage(plot, growthDays);
-  // Use effective growth days (accounts for Flash Drought doubling)
   const effectiveGrowthDays = plot.droughtPenalised ? growthDays * 2 : growthDays;
   const progress = isReady ? 1 : 1 - (daysRemaining / effectiveGrowthDays);
 
-  // Stage emoji: sprout/small have their own; full/ready use crop-specific
   const stageEmoji = GROWTH_STAGE_EMOJI[stage] ?? CROP_EMOJI[plot.cropId!];
   const label = CROP_LABEL[plot.cropId!];
 
@@ -160,16 +159,24 @@ function GrowingCropCard({ plot }: {
         'flex flex-col items-center justify-center',
         'w-full aspect-square rounded-lg border-2',
         isReady
-          ? 'border-farm-grass ring-2 ring-farm-grass'
-          : 'border-farm-gold',
-        'bg-farm-parchment select-none shadow-inner',
+          ? 'border-farm-grass ring-2 ring-farm-grass/50 bg-[#162810]'
+          : 'border-farm-gold/60 bg-[#1A2C10]',
+        'select-none shadow-inner',
       ].join(' ')}
     >
-      {/* T014 — circular progress ring wrapping the stage emoji */}
       <ProgressRing progress={progress} size={52}>
         <span className="text-2xl">{stageEmoji}</span>
       </ProgressRing>
-      <span className="text-xs font-pixel text-farm-ink mt-1">{label}</span>
+      <span className="text-xs font-pixel text-farm-parchment/80 mt-1">{label}</span>
+      {isReady ? (
+        <span className="mt-1 font-pixel text-[9px] px-2 py-0.5 rounded bg-farm-grass text-farm-parchment">
+          HARVEST
+        </span>
+      ) : (
+        <span className="mt-1 font-pixel text-[9px] px-2 py-0.5 rounded bg-farm-gold/20 border border-farm-gold/50 text-farm-gold">
+          {daysRemaining}d left
+        </span>
+      )}
       {plot.droughtPenalised && (
         <span
           aria-label="Growth slowed by Flash Drought"
@@ -214,13 +221,16 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlan
         group
         flex flex-col items-center justify-center
         w-full aspect-square rounded-lg
-        shadow-inner border border-farm-soil/60
-        bg-[#2A1A0E]
+        border border-[#3D2510]/80
+        hover:border-farm-gold/50 hover:brightness-125
         cursor-pointer select-none
-        transition-colors
+        transition-all duration-150
       "
+      style={{
+        background: 'repeating-linear-gradient(180deg, #2A1A0E 0px, #2A1A0E 5px, #221408 5px, #221408 7px)',
+      }}
     >
-      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-pixel text-farm-gold mt-1">
+      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-pixel text-farm-gold">
         🌱 Plant
       </span>
     </button>

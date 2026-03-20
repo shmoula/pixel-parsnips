@@ -82,7 +82,7 @@ export function GameBoard({
 
   return (
     // T006 — relative container needed for fixed backdrop to scope correctly
-    <div className="flex flex-col min-h-screen bg-farm-parchment">
+    <div className="flex flex-col min-h-screen bg-[#140E06]">
       <HUD
         currentDay={state.currentDay}
         coinBalance={state.coinBalance}
@@ -101,15 +101,15 @@ export function GameBoard({
             <p
               role="alert"
               aria-label="Flash Drought warning"
-              className="font-pixel text-xs text-farm-ink bg-farm-red/20 border border-farm-red/40 px-3 py-2 rounded"
+              className="font-pixel text-xs text-farm-red bg-farm-red/10 border border-farm-red/40 px-3 py-2 rounded"
             >
               ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
               {state.flashDroughtDaysRemaining} day{state.flashDroughtDaysRemaining === 1 ? '' : 's'} remaining.
             </p>
           )}
           {selectedCrop && (
-            <p className="font-pixel text-xs text-farm-ink bg-farm-gold/30 px-3 py-2 rounded">
-              Planting: {selectedCrop} — click an empty plot
+            <p className="font-pixel text-xs text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded">
+              🌱 Planting: {selectedCrop} — click an empty plot
             </p>
           )}
           <FarmGrid
