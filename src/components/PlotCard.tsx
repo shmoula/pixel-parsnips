@@ -1,6 +1,8 @@
 import type { PlotState } from '../engine/types';
-import { EXHAUSTION_RECOVERY_DAYS } from '../engine/constants';
+import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS } from '../engine/constants';
+import { ProgressRing } from './ProgressRing';
 
+// T013 — crop-specific emojis for full/ready stages
 const CROP_EMOJI: Record<string, string> = {
   radish:  '🌱',
   parsnip: '🥕',
@@ -11,6 +13,35 @@ const CROP_LABEL: Record<string, string> = {
   radish:  'Radish',
   parsnip: 'Parsnip',
   pumpkin: 'Pumpkin',
+};
+
+// T013 — growth stage helper (equal-thirds of effectiveGrowthDays)
+// Accounts for Flash Drought which doubles daysRemaining (droughtPenalised flag).
+type GrowthStage = 'sprout' | 'small' | 'full' | 'ready';
+
+function getGrowthStage(plot: PlotState, growthDays: number): GrowthStage {
+  // Flash Drought doubles the effective grow time
+  const effectiveGrowthDays = plot.droughtPenalised ? growthDays * 2 : growthDays;
+  const daysRemaining = plot.daysRemaining ?? effectiveGrowthDays;
+  const daysElapsed = effectiveGrowthDays - daysRemaining;
+
+  if (daysRemaining === 0) return 'ready';
+  if (effectiveGrowthDays <= 1) return 'full';
+  if (effectiveGrowthDays === 2) return daysElapsed === 0 ? 'sprout' : 'full';
+
+  // effectiveGrowthDays >= 3: equal thirds
+  const third = effectiveGrowthDays / 3;
+  if (daysElapsed < third) return 'sprout';
+  if (daysElapsed < 2 * third) return 'small';
+  return 'full';
+}
+
+// T014 — stage emoji map; sprout/small use generic growth emojis
+const GROWTH_STAGE_EMOJI: Record<GrowthStage, string | null> = {
+  sprout: '🌱',
+  small:  '🌿',
+  full:   null, // falls through to crop-specific emoji
+  ready:  null,
 };
 
 interface PlotCardProps {
@@ -32,12 +63,12 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
       className="
         flex flex-col items-center justify-center
         w-full aspect-square rounded-lg border-2
-        border-farm-red bg-farm-parchment
-        select-none p-1
+        border-farm-red bg-[#2A1010]
+        select-none p-1 shadow-inner
       "
     >
       <span className="text-2xl">🐛</span>
-      <span className="text-xs font-pixel text-farm-red mt-1">Pest Damage</span>
+      <span className="text-xs font-pixel text-farm-red/90 mt-1">Pest Damage</span>
       <button
         type="button"
         aria-label="Clear pest damage from this plot"
@@ -45,7 +76,7 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
         className="
           mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
           bg-farm-red text-farm-parchment
-          hover:brightness-110 transition-all cursor-pointer
+          hover:bg-[#d94040] active:scale-95 transition-all cursor-pointer
         "
       >
         Clear Plot
@@ -54,6 +85,7 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
   );
 }
 
+// T016 — ExhaustedPlot: cracked earth gradient, grayscale, red border
 function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertilizer }: {
   plot: PlotState;
   daysUntilRecovery: number;
@@ -66,13 +98,19 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
       className="
         flex flex-col items-center justify-center
         w-full aspect-square rounded-lg border-2
-        border-farm-stone bg-farm-parchment
-        select-none p-1
+        border-farm-red/60
+        select-none p-1 opacity-75
       "
+      style={{
+        background: [
+          'repeating-linear-gradient(20deg, #3a2010 0px, #3a2010 8px, #2a1208 9px, #2a1208 10px)',
+          'repeating-linear-gradient(-30deg, transparent 0px, transparent 12px, #1a0a02 13px, #1a0a02 14px)',
+        ].join(', '),
+        filter: 'grayscale(0.4)',
+      }}
     >
       <span className="text-2xl">🪨</span>
-      <span className="text-xs font-pixel text-farm-stone mt-1">Exhausted</span>
-      <span className="text-xs font-pixel text-farm-stone mt-0.5">
+      <span className="text-xs font-pixel text-farm-stone/80 mt-0.5">
         {daysUntilRecovery}d remaining
       </span>
       {hasFertilizer ? (
@@ -82,14 +120,15 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
           onClick={() => onApplyFertilizer?.(plot.id)}
           className="
             mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
-            bg-farm-grass text-farm-ink
-            hover:brightness-110 transition-all cursor-pointer
+            bg-farm-grass text-farm-parchment
+            hover:bg-farm-gold hover:text-farm-ink
+            active:scale-95 transition-all cursor-pointer
           "
         >
           Use Fertilizer
         </button>
       ) : (
-        <span className="text-xs text-farm-stone mt-0.5 text-center px-1">
+        <span className="text-xs text-farm-stone/70 mt-0.5 text-center px-1">
           Buy Fertilizer in the shop
         </span>
       )}
@@ -97,30 +136,47 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
   );
 }
 
+// T014 — GrowingCropCard: ProgressRing + growth stages
 function GrowingCropCard({ plot }: {
   plot: PlotState;
 }) {
-  const emoji = CROP_EMOJI[plot.cropId!];
+  const cropDef = CROP_DEFINITIONS[plot.cropId!];
+  const growthDays = cropDef.growthDays;
+  const daysRemaining = plot.daysRemaining ?? 0;
+  const isReady = daysRemaining === 0;
+  const stage = getGrowthStage(plot, growthDays);
+  const effectiveGrowthDays = plot.droughtPenalised ? growthDays * 2 : growthDays;
+  const progress = isReady ? 1 : 1 - (daysRemaining / effectiveGrowthDays);
+
+  const stageEmoji = GROWTH_STAGE_EMOJI[stage] ?? CROP_EMOJI[plot.cropId!];
   const label = CROP_LABEL[plot.cropId!];
-  const daysLeft = plot.daysRemaining ?? 0;
-  const isReady = daysLeft === 0;
 
   return (
     <div
       role="img"
-      aria-label={`Plot ${plot.id + 1}: ${label}, planted day ${plot.dayPlanted}, ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining`}
-      className="
-        flex flex-col items-center justify-center
-        w-full aspect-square rounded-lg border-2
-        border-farm-grass bg-farm-parchment
-        select-none
-      "
+      aria-label={`Plot ${plot.id + 1}: ${label}, planted day ${plot.dayPlanted}, ${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining`}
+      className={[
+        'flex flex-col items-center justify-center',
+        'w-full aspect-square rounded-lg border-2',
+        isReady
+          ? 'border-farm-grass ring-2 ring-farm-grass/50 bg-[#162810]'
+          : 'border-farm-gold/60 bg-[#1A2C10]',
+        'select-none shadow-inner',
+      ].join(' ')}
     >
-      <span className="text-2xl">{emoji}</span>
-      <span className="text-xs font-pixel text-farm-ink mt-1">{label}</span>
-      <span className="text-xs text-farm-stone mt-0.5">
-        Day {plot.dayPlanted}
-      </span>
+      <ProgressRing progress={progress} size={52}>
+        <span className="text-2xl">{stageEmoji}</span>
+      </ProgressRing>
+      <span className="text-xs font-pixel text-farm-parchment/80 mt-1">{label}</span>
+      {isReady ? (
+        <span className="mt-1 font-pixel text-[9px] px-2 py-0.5 rounded bg-farm-grass text-farm-parchment">
+          HARVEST
+        </span>
+      ) : (
+        <span className="mt-1 font-pixel text-[9px] px-2 py-0.5 rounded bg-farm-gold/20 border border-farm-gold/50 text-farm-gold">
+          {daysRemaining}d left
+        </span>
+      )}
       {plot.droughtPenalised && (
         <span
           aria-label="Growth slowed by Flash Drought"
@@ -130,16 +186,6 @@ function GrowingCropCard({ plot }: {
           ☀️🔥
         </span>
       )}
-      <span
-        className={`
-          text-xs font-pixel mt-1 px-1.5 py-0.5 rounded
-          ${isReady
-            ? 'bg-farm-gold text-farm-ink'
-            : 'bg-farm-sky text-farm-ink'}
-        `}
-      >
-        {isReady ? 'Ready!' : `${daysLeft}d left`}
-      </span>
     </div>
   );
 }
@@ -165,21 +211,28 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlan
     return <GrowingCropCard plot={plot} />;
   }
 
+  // T015 — EmptyPlot: dark tilled soil with hover CTA
   return (
     <button
       type="button"
       aria-label={`Empty plot ${plot.id + 1} — click to plant`}
       onClick={() => onPlant?.(plot.id)}
       className="
+        group
         flex flex-col items-center justify-center
-        w-full aspect-square rounded-lg border-2 border-dashed
-        border-farm-stone bg-farm-parchment text-farm-stone
-        hover:border-farm-grass hover:text-farm-grass
-        transition-colors cursor-pointer select-none
+        w-full aspect-square rounded-lg
+        border border-[#3D2510]/80
+        hover:border-farm-gold/50 hover:brightness-125
+        cursor-pointer select-none
+        transition-all duration-150
       "
+      style={{
+        background: 'repeating-linear-gradient(180deg, #2A1A0E 0px, #2A1A0E 5px, #221408 5px, #221408 7px)',
+      }}
     >
-      <span className="text-2xl">🟫</span>
-      <span className="text-xs mt-1 font-pixel">Empty</span>
+      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-pixel text-farm-gold">
+        🌱 Plant
+      </span>
     </button>
   );
 }

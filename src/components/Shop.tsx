@@ -34,16 +34,28 @@ export function Shop({
 }: ShopProps) {
   const nextUpgradeCost = getNextUpgradeCost();
 
+  // T020 — split upgrade tiers into owned / next purchasable / future locked
+  const ownedTiers = UPGRADE_TIER_DEFINITIONS.filter(d => upgradeTier >= d.tier);
+  const nextTier = UPGRADE_TIER_DEFINITIONS.find(d => upgradeTier === d.tier - 1);
+  const futureTiers = UPGRADE_TIER_DEFINITIONS.filter(d => upgradeTier < d.tier - 1);
+
   return (
+    // T021 — wood-grain texture on sidebar wrapper
     <aside
       aria-label="Shop"
-      className="flex flex-col gap-4 p-4 bg-farm-soil rounded-lg"
+      className="flex flex-col gap-4 p-4 rounded-lg"
+      style={{
+        background: [
+          'repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 8px)',
+          '#4A2F1A',
+        ].join(', '),
+      }}
     >
       <h2 className="font-pixel text-xs text-farm-gold">Shop</h2>
 
       {/* Seeds section */}
       <section aria-label="Seeds">
-        <p className="font-pixel text-xs text-farm-stone mb-2">Seeds</p>
+        <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Seeds</p>
         <div className="flex flex-col gap-2">
           {CROP_IDS.map(cropId => {
             const price = getSeedPrice(cropId);
@@ -65,14 +77,14 @@ export function Shop({
 
       {/* Fertilizer section */}
       <section aria-label="Fertilizer">
-        <p className="font-pixel text-xs text-farm-stone mb-2">Supplies</p>
+        <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Supplies</p>
         <div className="flex flex-col gap-2">
-          <div className="bg-farm-parchment rounded-lg p-3 flex flex-col gap-1">
+          <div className="bg-[#261808] rounded-lg p-3 flex flex-col gap-1 border border-[#5C3D1E]/60">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🌿</span>
                 <div>
-                  <p className="font-pixel text-xs text-farm-ink">Fertilizer</p>
+                  <p className="font-pixel text-xs text-farm-parchment/90">Fertilizer</p>
                   <p className="text-xs text-farm-stone">Restores an exhausted plot instantly</p>
                 </div>
               </div>
@@ -91,8 +103,9 @@ export function Shop({
               className="
                 w-full font-pixel text-xs py-1.5 rounded
                 bg-farm-gold text-farm-ink
+                hover:enabled:bg-farm-grass hover:enabled:text-farm-parchment
+                active:enabled:scale-95 transition-all
                 disabled:opacity-40 disabled:cursor-not-allowed
-                hover:enabled:brightness-110 transition-all
               "
             >
               {FERTILIZER_COST}🪙
@@ -101,26 +114,53 @@ export function Shop({
         </div>
       </section>
 
-      {/* Upgrades section */}
-      <section aria-label="Tool upgrades">
-        <p className="font-pixel text-xs text-farm-stone mb-2">Tools</p>
-        <div className="flex flex-col gap-2">
-          {UPGRADE_TIER_DEFINITIONS.map(def => {
-            const isOwned = upgradeTier >= def.tier;
-            const isNext = upgradeTier === def.tier - 1;
-            return (
+      {/* T020b — Active Buffs tray: only shown when at least one tool is owned */}
+      {ownedTiers.length > 0 && (
+        <section aria-label="Active Buffs">
+          <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Active Buffs</p>
+          <div className="flex flex-col gap-1">
+            {ownedTiers.map(def => (
               <UpgradeCard
                 key={def.tier}
                 def={def}
-                isOwned={isOwned}
-                isNext={isNext}
+                isOwned={true}
+                isNext={false}
+                canAfford={false}
+                onBuy={() => {}}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* T020c — Tools section: next purchasable + future locked only (no owned tiers) */}
+      {(nextTier !== undefined || futureTiers.length > 0) && (
+        <section aria-label="Tool upgrades">
+          <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Tools</p>
+          <div className="flex flex-col gap-2">
+            {nextTier && (
+              <UpgradeCard
+                key={nextTier.tier}
+                def={nextTier}
+                isOwned={false}
+                isNext={true}
                 canAfford={nextUpgradeCost !== null && coinBalance >= nextUpgradeCost}
                 onBuy={onBuyUpgrade}
               />
-            );
-          })}
-        </div>
-      </section>
+            )}
+            {futureTiers.map(def => (
+              <UpgradeCard
+                key={def.tier}
+                def={def}
+                isOwned={false}
+                isNext={false}
+                canAfford={false}
+                onBuy={() => {}}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </aside>
   );
 }
