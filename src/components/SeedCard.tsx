@@ -7,6 +7,12 @@ const CROP_EMOJI: Record<CropId, string> = {
   pumpkin: '🎃',
 };
 
+const CROP_ACCENT: Record<CropId, string> = {
+  radish:  '#3D7A2B',
+  parsnip: '#C87820',
+  pumpkin: '#C05010',
+};
+
 interface SeedCardProps {
   cropId: CropId;
   price: number;
@@ -36,11 +42,13 @@ export function SeedCard({
     // T018c — active border: gold ring instead of grass
     <div
       className={[
-        'flex flex-col gap-1 p-3 bg-farm-parchment rounded-lg border-2 transition-colors',
+        'flex flex-col gap-1 p-3 rounded-lg border transition-all',
+        'bg-[#261808]',
         isSelected
           ? 'border-farm-gold ring-2 ring-farm-gold'
-          : 'border-farm-stone',
+          : 'border-[#5C3D1E]/60',
       ].join(' ')}
+      style={{ borderLeftColor: CROP_ACCENT[cropId], borderLeftWidth: '3px' }}
     >
       <div className="flex items-center justify-between">
         <span className="text-lg">{CROP_EMOJI[cropId]}</span>
@@ -51,9 +59,9 @@ export function SeedCard({
         )}
       </div>
 
-      <p className="font-pixel text-xs text-farm-ink">{crop.name}</p>
+      <p className="font-pixel text-xs text-farm-parchment/90">{crop.name}</p>
 
-      <div className="text-xs text-farm-stone">
+      <div className="text-xs text-farm-stone/80">
         <span>{crop.growthDays}d grow</span>
         <span className="mx-1">·</span>
         <span>{crop.baseYield}🪙 yield</span>
