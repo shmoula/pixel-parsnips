@@ -41,10 +41,11 @@ function App() {
       <>
         <GrainFilter />
         <BankruptcyScreen
-        daysPlayed={state.currentDay}
-        peakBalance={state.peakBalance}
-        onRestart={restart}
-      />
+          daysPlayed={state.currentDay}
+          peakBalance={state.peakBalance}
+          lastLog={lastDailyLog}
+          onRestart={restart}
+        />
       </>
     );
   }

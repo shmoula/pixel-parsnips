@@ -1,14 +1,35 @@
+import type { DailyLogEntry } from '../engine/types';
+
 interface BankruptcyScreenProps {
   daysPlayed: number;
   peakBalance: number;
+  lastLog: DailyLogEntry | null;
   onRestart: () => void;
+}
+
+function getInsight(daysPlayed: number, peakBalance: number, lastLog: DailyLogEntry | null): string {
+  if (lastLog && lastLog.pestDestroyedPlots.length > 0) {
+    return 'Pests destroyed your final crops. Harvest early when pest risk is high.';
+  }
+  if (lastLog?.weatherId === 'flash_drought') {
+    return 'A flash drought ended your run. Avoid planting during drought events.';
+  }
+  if (daysPlayed <= 5) {
+    return 'Your run was very short. Try buying seeds before advancing the day.';
+  }
+  if (peakBalance < 50) {
+    return 'Balance never recovered. Focus on fast Radishes early to build a buffer.';
+  }
+  return 'Try diversifying between fast Radishes and higher-yield Pumpkins.';
 }
 
 export function BankruptcyScreen({
   daysPlayed,
   peakBalance,
+  lastLog,
   onRestart,
 }: BankruptcyScreenProps) {
+  const insight = getInsight(daysPlayed, peakBalance, lastLog);
   return (
     <div
       role="main"
@@ -38,6 +59,12 @@ export function BankruptcyScreen({
           <span className="font-pixel text-xs text-farm-stone">Peak Balance</span>
           <span className="font-pixel text-sm text-farm-gold">{peakBalance}🪙</span>
         </div>
+      </div>
+
+      <div className="w-full max-w-xs px-4 py-3 bg-farm-ink/60 border border-farm-stone/30 rounded">
+        <p className="font-pixel text-[11px] text-farm-stone/80 leading-relaxed text-center">
+          💡 {insight}
+        </p>
       </div>
 
       <button

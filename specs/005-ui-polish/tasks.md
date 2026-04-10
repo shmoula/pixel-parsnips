@@ -131,9 +131,9 @@
 
 ### Implementation for User Story 7
 
-- [ ] T014 [US7] In `src/App.tsx`, thread `lastLog={state.lastDailyLog}` as a prop to `BankruptcyScreen` component
-- [ ] T015 [US7] Update `BankruptcyScreen` props interface in `src/components/BankruptcyScreen.tsx` to accept `lastLog: DailyLogEntry | null`
-- [ ] T016 [US7] In `src/components/BankruptcyScreen.tsx`, implement the priority insight rule set and render the result below existing stats:
+- [x] T014 [US7] In `src/App.tsx`, thread `lastLog={state.lastDailyLog}` as a prop to `BankruptcyScreen` component
+- [x] T015 [US7] Update `BankruptcyScreen` props interface in `src/components/BankruptcyScreen.tsx` to accept `lastLog: DailyLogEntry | null`
+- [x] T016 [US7] In `src/components/BankruptcyScreen.tsx`, implement the priority insight rule set and render the result below existing stats:
   1. `lastLog?.pestDestroyedPlots.length > 0` → "Pests destroyed your final crops. Harvest early when pest risk is high."
   2. `lastLog?.weatherId === 'flash_drought'` → "A flash drought ended your run. Avoid planting during drought events."
   3. `daysPlayed <= 5` → "Your run was very short. Try buying seeds before advancing the day."
