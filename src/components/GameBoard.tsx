@@ -80,6 +80,14 @@ export function GameBoard({
     setSelectedCrop(cropId);
   }
 
+  // US4 — Day 1 onboarding hint: visible when it's Day 1, no seeds in inventory,
+  // and no plots have a crop or are in exhaustion recovery.
+  // Automatically disappears once the first seed is planted (cropId becomes non-null).
+  const showOnboardingHint =
+    state.currentDay === 1 &&
+    state.plots.every(p => p.cropId === null && p.exhaustedSinceDay === null) &&
+    Object.values(state.seedInventory).every(n => n === 0);
+
   return (
     // T006 — relative container needed for fixed backdrop to scope correctly
     <div className="flex flex-col min-h-screen bg-[#140E06]">
@@ -97,6 +105,15 @@ export function GameBoard({
       <div className="flex flex-col md:flex-row gap-4 p-4">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
+          {showOnboardingHint && (
+            <p
+              role="status"
+              aria-label="Onboarding tip: visit the shop to buy seeds"
+              className="font-pixel text-[12px] text-farm-grass bg-farm-grass/10 border border-farm-grass/40 px-3 py-2 rounded"
+            >
+              🌱 Visit the Shop to buy seeds before advancing the day
+            </p>
+          )}
           {state.flashDroughtDaysRemaining > 0 && (
             <p
               role="alert"

@@ -86,7 +86,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T008 [US4] In `src/components/GameBoard.tsx`, derive `showOnboardingHint` from `state.currentDay === 1 && state.plots.every(p => p.cropId === null && !p.exhaustedSinceDay) && Object.values(state.seedInventory).every(n => n === 0)`; render hint banner between HUD and FarmGrid when true
+- [x] T008 [US4] In `src/components/GameBoard.tsx`, derive `showOnboardingHint` from `state.currentDay === 1 && state.plots.every(p => p.cropId === null && !p.exhaustedSinceDay) && Object.values(state.seedInventory).every(n => n === 0)`; render hint banner between HUD and FarmGrid when true
 
 **Checkpoint**: US4 fully functional — Day 1 onboarding hint visible at start, auto-dismisses after first plant
 
