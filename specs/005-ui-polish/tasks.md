@@ -44,7 +44,7 @@ No project initialization required — all changes are targeted edits to existin
 
 **Independent Test**: Clear localStorage, load game — hint banner visible. Plant one seed — hint gone.
 
-- [ ] T003 [US2] Derive `showOnboardingHint` boolean and render hint banner between the flash-drought banner and the planting-mode banner in `src/components/GameBoard.tsx`
+- [x] T003 [US2] Derive `showOnboardingHint` boolean and render hint banner between the flash-drought banner and the planting-mode banner in `src/components/GameBoard.tsx`
   - Condition: `state.currentDay === 1 && state.plots.every(p => p.cropId === null && !p.pestDamaged && p.exhaustedSinceDay === null)`
   - Banner text: `🛒 Visit the Shop to buy seeds before advancing the day!`
   - Styling: `bg-farm-sky/10 border border-farm-sky/40 text-farm-sky font-pixel text-xs px-3 py-2 rounded`

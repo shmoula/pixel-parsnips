@@ -107,6 +107,11 @@ export function GameBoard({
               {state.flashDroughtDaysRemaining} day{state.flashDroughtDaysRemaining === 1 ? '' : 's'} remaining.
             </p>
           )}
+          {state.currentDay === 1 && state.plots.every(p => p.cropId === null && !p.pestDamaged && p.exhaustedSinceDay === null) && (
+            <p className="font-pixel text-xs text-farm-sky bg-farm-sky/10 border border-farm-sky/40 px-3 py-2 rounded">
+              🛒 Visit the Shop to buy seeds before advancing the day!
+            </p>
+          )}
           {selectedCrop && (
             <p className="font-pixel text-xs text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded">
               🌱 Planting: {selectedCrop} — click an empty plot
