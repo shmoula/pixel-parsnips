@@ -39,12 +39,25 @@ export function GameBoard({
   // T005 — bottom sheet state (mobile)
   const [isShopOpen, setIsShopOpen] = useState(false);
 
+  // T022 — autosave indicator: timestamp updated after every state-mutating action
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  // T023 — transient "Saved ✓" confirmation chip driven by lastSavedAt
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+
   // T010 — Day Summary modal state
   const [daySummary, setDaySummary] = useState<DailyLogEntry | null>(null);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   // Ref flag: set true when we want the next lastDailyLog update to open the modal
   const awaitingModalRef = useRef(false);
+
+  // T023 — Show "Saved ✓" chip for 2 s after any save action
+  useEffect(() => {
+    if (lastSavedAt === null) return;
+    setShowSaveConfirm(true);
+    const timer = setTimeout(() => setShowSaveConfirm(false), 2000);
+    return () => clearTimeout(timer);
+  }, [lastSavedAt]);
 
   // T010 — When the parent re-renders with a new lastDailyLog after onNextDay(),
   // open the Day Summary modal with that log.
@@ -67,17 +80,32 @@ export function GameBoard({
     setIsProcessing(true);
     awaitingModalRef.current = true;
     onNextDay();
+    setLastSavedAt(Date.now());
   }
 
   function handlePlot(plotId: number) {
     if (!selectedCrop) return;
     const planted = onPlantSeed(plotId, selectedCrop);
-    if (planted) setSelectedCrop(null);
+    if (planted) {
+      setSelectedCrop(null);
+      setLastSavedAt(Date.now());
+    }
   }
 
   function handleBuySeed(cropId: CropId) {
     onBuySeed(cropId);
     setSelectedCrop(cropId);
+    setLastSavedAt(Date.now());
+  }
+
+  function handleBuyUpgrade() {
+    onBuyUpgrade();
+    setLastSavedAt(Date.now());
+  }
+
+  function handleBuyFertilizer() {
+    onBuyFertilizer();
+    setLastSavedAt(Date.now());
   }
 
   // US4 — Day 1 onboarding hint: visible when it's Day 1, no seeds in inventory,
@@ -105,6 +133,17 @@ export function GameBoard({
       <div className="flex flex-col md:flex-row gap-4 p-4">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
+          {/* T023 — transient autosave confirmation chip */}
+          {showSaveConfirm && (
+            <p
+              role="status"
+              aria-label="Game saved"
+              className="font-pixel text-[11px] text-farm-grass/80 bg-farm-grass/10 border border-farm-grass/30 px-3 py-1 rounded self-end"
+            >
+              Saved ✓
+            </p>
+          )}
+
           {showOnboardingHint && (
             <p
               role="status"
@@ -118,9 +157,9 @@ export function GameBoard({
             <p
               role="alert"
               aria-label="Flash Drought warning"
-              className="font-pixel text-xs text-farm-red bg-farm-red/10 border border-farm-red/40 px-3 py-2 rounded"
+              className="font-pixel text-[14px] text-farm-red bg-farm-red/20 border border-farm-red/40 px-3 py-2 rounded"
             >
-              ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
+              ⚠️ ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
               {state.flashDroughtDaysRemaining} day{state.flashDroughtDaysRemaining === 1 ? '' : 's'} remaining.
             </p>
           )}
@@ -176,8 +215,8 @@ export function GameBoard({
             getSeedPrice={getSeedPrice}
             onBuySeed={handleBuySeed}
             onSelectCrop={setSelectedCrop}
-            onBuyUpgrade={onBuyUpgrade}
-            onBuyFertilizer={onBuyFertilizer}
+            onBuyUpgrade={handleBuyUpgrade}
+            onBuyFertilizer={handleBuyFertilizer}
             getNextUpgradeCost={getNextUpgradeCost}
           />
         </div>

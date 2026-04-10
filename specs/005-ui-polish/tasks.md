@@ -168,11 +168,11 @@
 
 ### Implementation for User Story 9
 
-- [ ] T020 [P] [US9] Fix FarmGrid sm breakpoint in `src/components/FarmGrid.tsx`: change `grid-cols-4` to `grid-cols-4 sm:grid-cols-6` so 6-column layout activates at 640px
-- [ ] T021 [P] [US9] Fix owned-tier upgrade card text contrast in `src/components/UpgradeCard.tsx`: change `text-farm-ink` to `text-farm-parchment` on owned-tier label and discount text (lines 25–26)
-- [ ] T022 [US9] In `src/components/GameBoard.tsx`, add `lastSavedAt` state (number | null) and update it to `Date.now()` inside all action callbacks: `onNextDay`, `onPlantSeed`, `onBuySeed`, `onBuyUpgrade`
-- [ ] T023 [US9] In `src/components/GameBoard.tsx`, add `showSaveConfirm` boolean state driven by a `useEffect` watching `lastSavedAt` (set true, clear after 2000ms); render "Saved ✓" chip in HUD area when true; omit fade transition when reduced-motion is active
-- [ ] T024 [US9] Increase Flash Drought warning banner visual weight in `src/components/GameBoard.tsx`: change font from `text-xs` to `text-[14px]`, increase background from `bg-farm-red/10` to `bg-farm-red/20`, add a `⚠️` icon to the left of the text
+- [x] T020 [P] [US9] Fix FarmGrid sm breakpoint in `src/components/FarmGrid.tsx`: change `grid-cols-4` to `grid-cols-4 sm:grid-cols-6` so 6-column layout activates at 640px
+- [x] T021 [P] [US9] Fix owned-tier upgrade card text contrast in `src/components/UpgradeCard.tsx`: change `text-farm-ink` to `text-farm-parchment` on owned-tier label and discount text (lines 25–26)
+- [x] T022 [US9] In `src/components/GameBoard.tsx`, add `lastSavedAt` state (number | null) and update it to `Date.now()` inside all action callbacks: `onNextDay`, `onPlantSeed`, `onBuySeed`, `onBuyUpgrade`
+- [x] T023 [US9] In `src/components/GameBoard.tsx`, add `showSaveConfirm` boolean state driven by a `useEffect` watching `lastSavedAt` (set true, clear after 2000ms); render "Saved ✓" chip in HUD area when true; omit fade transition when reduced-motion is active
+- [x] T024 [US9] Increase Flash Drought warning banner visual weight in `src/components/GameBoard.tsx`: change font from `text-xs` to `text-[14px]`, increase background from `bg-farm-red/10` to `bg-farm-red/20`, add a `⚠️` icon to the left of the text
 
 **Checkpoint**: US9 fully functional — game looks polished and consistent at all breakpoints
 
