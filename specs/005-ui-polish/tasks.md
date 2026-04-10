@@ -153,7 +153,7 @@ No project initialization required — all changes are targeted edits to existin
 
 ## Phase 8: Final Validation
 
-- [ ] T014 Run `npm test && npm run lint` and confirm all checks pass
+- [x] T014 Run `npm test && npm run lint` and confirm all checks pass
 
 ---
 
