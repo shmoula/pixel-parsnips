@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState, CropId, DailyLogEntry } from '../engine/types';
 import { HUD } from './HUD';
+
+/** Pure helper — complexity counted separately, not inside GameBoard. */
+function shouldShowOnboardingHint(state: GameState): boolean {
+  return (
+    state.currentDay === 1 &&
+    state.plots.every(p => p.cropId === null && p.exhaustedSinceDay === null) &&
+    Object.values(state.seedInventory).every(n => n === 0)
+  );
+}
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
 import { DaySummaryModal } from './DaySummaryModal';
@@ -111,10 +120,7 @@ export function GameBoard({
   // US4 — Day 1 onboarding hint: visible when it's Day 1, no seeds in inventory,
   // and no plots have a crop or are in exhaustion recovery.
   // Automatically disappears once the first seed is planted (cropId becomes non-null).
-  const showOnboardingHint =
-    state.currentDay === 1 &&
-    state.plots.every(p => p.cropId === null && p.exhaustedSinceDay === null) &&
-    Object.values(state.seedInventory).every(n => n === 0);
+  const showOnboardingHint = shouldShowOnboardingHint(state);
 
   return (
     // T006 — relative container needed for fixed backdrop to scope correctly

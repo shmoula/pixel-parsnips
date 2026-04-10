@@ -182,8 +182,8 @@
 
 **Purpose**: Verify complete implementation, no regressions
 
-- [ ] T025 Run full test suite and confirm all existing tests pass: `npm test`
-- [ ] T026 [P] Run linter and resolve any issues: `npm run lint`
+- [x] T025 Run full test suite and confirm all existing tests pass: `npm test`
+- [x] T026 [P] Run linter and resolve any issues: `npm run lint`
 
 ---
 
