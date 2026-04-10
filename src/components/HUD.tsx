@@ -110,8 +110,8 @@ export function HUD({
         onClick={onToggleShop}
         className="
           md:hidden
-          font-pixel text-[9px] px-3 py-1.5 rounded uppercase tracking-widest
-          bg-farm-gold text-farm-ink
+          font-pixel text-[9px] px-4 py-2 rounded uppercase tracking-widest
+          bg-farm-gold text-farm-ink ring-1 ring-farm-gold/50
           hover:brightness-110 transition-all
         "
       >

@@ -22,7 +22,7 @@ export function UpgradeCard({
     return (
       <div className="flex items-center gap-2 px-2 py-1 rounded bg-farm-grass/20 border border-farm-grass/40">
         <span className="text-farm-grass text-sm">✓</span>
-        <p className="font-pixel text-xs text-farm-ink">{def.label}</p>
+        <p className="font-pixel text-xs text-farm-parchment">{def.label}</p>
         <p className="text-xs text-farm-stone ml-auto">−{discountPct}% seeds</p>
       </div>
     );

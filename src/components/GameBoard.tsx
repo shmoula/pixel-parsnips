@@ -101,7 +101,7 @@ export function GameBoard({
             <p
               role="alert"
               aria-label="Flash Drought warning"
-              className="font-pixel text-xs text-farm-red bg-farm-red/10 border border-farm-red/40 px-3 py-2 rounded"
+              className="font-pixel text-xs text-farm-red bg-farm-red/20 border border-farm-red/70 tracking-wide px-3 py-2 rounded"
             >
               ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
               {state.flashDroughtDaysRemaining} day{state.flashDroughtDaysRemaining === 1 ? '' : 's'} remaining.

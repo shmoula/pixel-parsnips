@@ -131,19 +131,19 @@ No project initialization required — all changes are targeted edits to existin
 
 **Independent Test**: Load game on mobile + desktop; verify owned upgrade card labels are legible, flash drought banner stands out, Shop button is clearly larger than Last Turn button, no layout gap at 768–1024px.
 
-- [ ] T010 [P] [US6] Remove redundant `sm:grid-cols-4` from farm plots grid in `src/components/FarmGrid.tsx`
+- [x] T010 [P] [US6] Remove redundant `sm:grid-cols-4` from farm plots grid in `src/components/FarmGrid.tsx`
   - Before: `className="grid grid-cols-4 gap-2 sm:grid-cols-4 md:grid-cols-6"`
   - After: `className="grid grid-cols-4 gap-2 md:grid-cols-6"`
 
-- [ ] T011 [P] [US6] Fix owned upgrade card label text contrast in `src/components/UpgradeCard.tsx`
+- [x] T011 [P] [US6] Fix owned upgrade card label text contrast in `src/components/UpgradeCard.tsx`
   - Before: `<p className="font-pixel text-xs text-farm-ink">{def.label}</p>`
   - After: `<p className="font-pixel text-xs text-farm-parchment">{def.label}</p>`
 
-- [ ] T012 [P] [US6] Strengthen flash drought banner background, border, and typography in `src/components/GameBoard.tsx`
+- [x] T012 [P] [US6] Strengthen flash drought banner background, border, and typography in `src/components/GameBoard.tsx`
   - Before: `bg-farm-red/10 border border-farm-red/40`
   - After: `bg-farm-red/20 border border-farm-red/70 tracking-wide`
 
-- [ ] T013 [P] [US6] Increase Shop button padding and add ring in `src/components/HUD.tsx`
+- [x] T013 [P] [US6] Increase Shop button padding and add ring in `src/components/HUD.tsx`
   - Before: `px-3 py-1.5`
   - After: `px-4 py-2 ring-1 ring-farm-gold/50`
 
