@@ -43,6 +43,7 @@ function App() {
         <BankruptcyScreen
         daysPlayed={state.currentDay}
         peakBalance={state.peakBalance}
+        lastDailyLog={state.lastDailyLog}
         onRestart={restart}
       />
       </>

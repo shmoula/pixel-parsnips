@@ -100,7 +100,7 @@ No project initialization required — all changes are targeted edits to existin
 
 **Independent Test**: Trigger bankruptcy. Insight text must appear and reflect the final turn (pest / blight / early / low-balance).
 
-- [ ] T007 [US5] Add `lastDailyLog?: DailyLogEntry | null` prop and `deriveInsight` pure function to `src/components/BankruptcyScreen.tsx`
+- [x] T007 [US5] Add `lastDailyLog?: DailyLogEntry | null` prop and `deriveInsight` pure function to `src/components/BankruptcyScreen.tsx`
   - Import `DailyLogEntry` from `'../engine/types'`
   - Priority-ordered first-match rules (check in this exact order):
     1. `!lastDailyLog` → "Plant early and harvest often to build a coin reserve."
@@ -111,7 +111,7 @@ No project initialization required — all changes are targeted edits to existin
     6. `peakBalance < 40` → "Your balance stayed dangerously low. Aim for a buffer of 3× your lease cost."
     7. default → "Keep a reserve above your daily lease cost to survive bad-weather turns."
 
-- [ ] T008 [US5] Render insight block below the stats section in `src/components/BankruptcyScreen.tsx` (depends on T007)
+- [x] T008 [US5] Render insight block below the stats section in `src/components/BankruptcyScreen.tsx` (depends on T007)
   ```tsx
   <div className="flex flex-col gap-2 w-full max-w-xs px-4 py-3 bg-farm-ink rounded border border-farm-stone/30">
     <span className="font-pixel text-[9px] text-farm-stone uppercase tracking-widest">Insight</span>
@@ -119,7 +119,7 @@ No project initialization required — all changes are targeted edits to existin
   </div>
   ```
 
-- [ ] T009 [US5] Pass `lastDailyLog={state.lastDailyLog}` to `<BankruptcyScreen>` in `src/App.tsx` (depends on T007)
+- [x] T009 [US5] Pass `lastDailyLog={state.lastDailyLog}` to `<BankruptcyScreen>` in `src/App.tsx` (depends on T007)
 
 **Checkpoint**: Bankruptcy screen shows contextual insight; different run patterns produce different insight text.
 
