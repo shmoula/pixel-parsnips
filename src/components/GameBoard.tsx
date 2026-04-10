@@ -158,7 +158,7 @@ export function GameBoard({
             'fixed bottom-0 left-0 right-0 z-40',
             'rounded-t-2xl',
             'max-h-[70vh] overflow-y-auto overscroll-contain',
-            'transition-transform duration-300 ease-in-out',
+            'transition-transform duration-300 ease-in-out motion-reduce:transition-none',
             isShopOpen ? 'translate-y-0' : 'translate-y-full',
             // Desktop: back in flow as right sidebar, page scroll handles everything
             'md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto',

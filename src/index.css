@@ -9,3 +9,16 @@ body {
   min-height: 100vh;
   background: repeating-linear-gradient(0deg, #3D2010 0px, #3D2010 2px, #4A2F1A 2px, #4A2F1A 6px);
 }
+
+/* T017 — US8: Reduced-motion accessibility
+   Collapse all animation and transition durations to near-zero so no
+   transform-based motion plays when the OS reduced-motion preference is set. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

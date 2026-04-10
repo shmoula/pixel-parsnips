@@ -152,9 +152,9 @@
 
 ### Implementation for User Story 8
 
-- [ ] T017 [P] [US8] Add `@media (prefers-reduced-motion: reduce)` block to `src/index.css` that sets `animation-duration: 0.01ms !important`, `animation-iteration-count: 1 !important`, and `transition-duration: 0.01ms !important` for all elements
-- [ ] T018 [P] [US8] Add `motion-reduce:transition-none` to the shop bottom-sheet slide classes (`transition-transform duration-300`) in `src/components/GameBoard.tsx`
-- [ ] T019 [P] [US8] Add `motion-reduce:animate-none` to any `animate-pulse` class added for the critical balance warning in `src/components/HUD.tsx`
+- [x] T017 [P] [US8] Add `@media (prefers-reduced-motion: reduce)` block to `src/index.css` that sets `animation-duration: 0.01ms !important`, `animation-iteration-count: 1 !important`, and `transition-duration: 0.01ms !important` for all elements
+- [x] T018 [P] [US8] Add `motion-reduce:transition-none` to the shop bottom-sheet slide classes (`transition-transform duration-300`) in `src/components/GameBoard.tsx`
+- [x] T019 [P] [US8] Add `motion-reduce:animate-none` to any `animate-pulse` class added for the critical balance warning in `src/components/HUD.tsx`
 
 **Checkpoint**: US8 fully functional — game is safe and accessible for users with vestibular sensitivities
 

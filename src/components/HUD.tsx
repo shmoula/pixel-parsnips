@@ -28,7 +28,7 @@ export function HUD({
   const isWarning  = !isCritical && coinBalance <= LOW_BALANCE_WARNING_THRESHOLD;
 
   const balanceChipBorder = isCritical
-    ? 'border-farm-red/70 bg-farm-red/10 animate-pulse'
+    ? 'border-farm-red/70 bg-farm-red/10 animate-pulse motion-reduce:animate-none'
     : isWarning
     ? 'border-amber-500/60 bg-amber-900/20'
     : 'border-[#5C3D1E]/60';
