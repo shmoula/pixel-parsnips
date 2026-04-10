@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import type { DailyLogEntry } from '../engine/types';
 import { DailyLog } from './DailyLog';
 
+const DISASTER_WEATHER_IDS = new Set(['blight', 'pest_infestation', 'flash_drought']);
+
 interface DaySummaryModalProps {
   log: DailyLogEntry;
   onClose: () => void;
@@ -10,6 +12,7 @@ interface DaySummaryModalProps {
 
 export function DaySummaryModal({ log, onClose }: DaySummaryModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const isDisaster = DISASTER_WEATHER_IDS.has(log.weatherId);
 
   useEffect(() => {
     // Auto-focus close button so keyboard users can dismiss immediately
@@ -31,12 +34,20 @@ export function DaySummaryModal({ log, onClose }: DaySummaryModalProps) {
     >
       <div
         className="
-          bg-farm-soil rounded-2xl p-4
+          relative bg-farm-soil rounded-2xl p-4
           max-w-sm w-full mx-4 shadow-xl
           max-h-[80vh] flex flex-col
         "
         onClick={e => e.stopPropagation()}
       >
+        {/* T013 — disaster tinted overlay: semi-transparent red wash over modal background */}
+        {isDisaster && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 rounded-2xl bg-farm-red/10 pointer-events-none"
+          />
+        )}
+
         <div className="overflow-y-auto overscroll-contain flex-1">
           {isQuietDay && (
             <p className="font-pixel text-xs text-farm-stone text-center py-2 mb-1">

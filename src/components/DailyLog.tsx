@@ -54,12 +54,23 @@ function LogAccountingRows({ log }: { log: DailyLogEntry }) {
 
 export function DailyLog({ log }: DailyLogProps) {
   const weather = WEATHER_DEFINITIONS[log.weatherId];
+  const isDisaster = DISASTER_WEATHER_IDS.has(log.weatherId);
   return (
     <section
       aria-label="Daily summary"
       className="flex flex-col gap-2 p-3 bg-farm-soil rounded-lg text-xs"
     >
       <h2 className="font-pixel text-xs text-farm-gold">Day {log.day} Summary</h2>
+
+      {/* Disaster headline — prominent alert above line items */}
+      {isDisaster && (
+        <p
+          role="alert"
+          className="font-pixel text-[14px] text-farm-red leading-snug"
+        >
+          ⚠️ {weather.name}!
+        </p>
+      )}
 
       {/* Weather badge — disaster events get red/amber styling */}
       <div

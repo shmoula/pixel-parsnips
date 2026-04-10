@@ -116,8 +116,8 @@
 
 ### Implementation for User Story 6
 
-- [ ] T012 [P] [US6] In `src/components/DailyLog.tsx`, derive `isDisaster` from `weatherId` being one of `['blight', 'pest_infestation', 'flash_drought']`; when true, render a prominent `font-pixel text-[14px] text-farm-red` headline (e.g., "⚠️ Pest Infestation!") above the line-item section
-- [ ] T013 [P] [US6] In `src/components/DaySummaryModal.tsx`, derive `isDisaster` from `log.weatherId`; when true, apply `bg-farm-red/10` tinted overlay to the modal container background
+- [x] T012 [P] [US6] In `src/components/DailyLog.tsx`, derive `isDisaster` from `weatherId` being one of `['blight', 'pest_infestation', 'flash_drought']`; when true, render a prominent `font-pixel text-[14px] text-farm-red` headline (e.g., "⚠️ Pest Infestation!") above the line-item section
+- [x] T013 [P] [US6] In `src/components/DaySummaryModal.tsx`, derive `isDisaster` from `log.weatherId`; when true, apply `bg-farm-red/10` tinted overlay to the modal container background
 
 **Checkpoint**: US6 fully functional — disaster day summaries are emotionally impactful and visually distinct from calm days
 
