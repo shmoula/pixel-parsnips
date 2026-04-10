@@ -18,7 +18,7 @@
 
 **Purpose**: Establish a green baseline before any changes
 
-- [ ] T001 Run existing test suite to confirm green baseline: `npm test && npm run lint`
+- [x] T001 Run existing test suite to confirm green baseline: `npm test && npm run lint`
 
 ---
 
@@ -28,7 +28,7 @@
 
 **⚠️ CRITICAL**: US3 cannot begin until T002 is complete
 
-- [ ] T002 Add `LOW_BALANCE_WARNING_THRESHOLD = 45` and `LOW_BALANCE_CRITICAL_THRESHOLD = 15` to `src/engine/constants.ts` (co-locate with `LAND_LEASE_FEE`)
+- [x] T002 Add `LOW_BALANCE_WARNING_THRESHOLD = 45` and `LOW_BALANCE_CRITICAL_THRESHOLD = 15` to `src/engine/constants.ts` (co-locate with `LAND_LEASE_FEE`)
 
 **Checkpoint**: Constants ready — US1, US2 can already begin in parallel; US3 now also unblocked
 
@@ -42,9 +42,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T003 [US1] Raise font sizes in `src/components/HUD.tsx`: coin balance `text-sm` → `text-[18px]`, day counter → `text-[18px]`, lease/tax labels `text-[9px]` → `text-[14px]`, button text `text-[10px]`/`text-[9px]` → `text-[14px]`
-- [ ] T004 [US1] Remove `hidden sm:flex` wrapper from lease/tax display in `src/components/HUD.tsx`; render as compact always-visible sub-label beneath coin balance chip (e.g., `−15🪙/day · 5% tax`) on all viewports
-- [ ] T005 [US1] Increase Shop button visual weight in `src/components/HUD.tsx`: larger padding, accent border, or seed-count badge so it reads as the primary action button on mobile
+- [x] T003 [US1] Raise font sizes in `src/components/HUD.tsx`: coin balance `text-sm` → `text-[18px]`, day counter → `text-[18px]`, lease/tax labels `text-[9px]` → `text-[14px]`, button text `text-[10px]`/`text-[9px]` → `text-[14px]`
+- [x] T004 [US1] Remove `hidden sm:flex` wrapper from lease/tax display in `src/components/HUD.tsx`; render as compact always-visible sub-label beneath coin balance chip (e.g., `−15🪙/day · 5% tax`) on all viewports
+- [x] T005 [US1] Increase Shop button visual weight in `src/components/HUD.tsx`: larger padding, accent border, or seed-count badge so it reads as the primary action button on mobile
 
 **Checkpoint**: US1 fully functional — mobile HUD readable and all financial info always visible
 
@@ -58,7 +58,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T006 [P] [US2] Add a persistent low-opacity affordance indicator to empty plots in `src/components/PlotCard.tsx`: always visible at `opacity-30`, increases to `opacity-100` on `hover:`/`focus:`; indicator disappears only when plot has a growing crop or is in exhaustion recovery — pest-damaged plots retain the indicator since clearing them is a player action
+- [x] T006 [P] [US2] Add a persistent low-opacity affordance indicator to empty plots in `src/components/PlotCard.tsx`: always visible at `opacity-30`, increases to `opacity-100` on `hover:`/`focus:`; indicator disappears only when plot has a growing crop or is in exhaustion recovery — pest-damaged plots retain the indicator since clearing them is a player action
 
 **Checkpoint**: US2 fully functional — empty plots visibly invite interaction at rest on all devices
 

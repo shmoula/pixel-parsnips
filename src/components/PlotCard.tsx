@@ -230,7 +230,10 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlan
         background: 'repeating-linear-gradient(180deg, #2A1A0E 0px, #2A1A0E 5px, #221408 5px, #221408 7px)',
       }}
     >
-      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-pixel text-farm-gold">
+      {/* Persistent affordance: visible at rest (opacity-30) so touch users know the plot is tappable;
+          full opacity on hover/focus. Disappears only when a crop is growing or plot is exhausted —
+          pest-damaged plots have their own Clear button so this empty branch is never reached. */}
+      <span className="opacity-30 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity text-xs font-pixel text-farm-gold">
         🌱 Plant
       </span>
     </button>

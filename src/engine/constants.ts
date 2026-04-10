@@ -17,6 +17,11 @@ export const EXHAUSTION_THRESHOLD = 3;
 export const EXHAUSTION_RECOVERY_DAYS = 3;
 export const FERTILIZER_COST = 30;
 
+/** Coin balance below which the amber low-balance warning activates (3 × LAND_LEASE_FEE). */
+export const LOW_BALANCE_WARNING_THRESHOLD = 45;
+/** Coin balance below which the pulsing critical-danger state activates (1 × LAND_LEASE_FEE). */
+export const LOW_BALANCE_CRITICAL_THRESHOLD = 15;
+
 /** Integer rounding helper for all coin arithmetic. */
 export const coins = (n: number): number => Math.floor(n);
 
