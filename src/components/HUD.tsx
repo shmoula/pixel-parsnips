@@ -40,9 +40,23 @@ export function HUD({
           <span className="font-pixel text-[10px] text-farm-stone/60 uppercase tracking-widest">Day</span>
           <span className="font-pixel text-sm text-farm-gold">{currentDay}</span>
         </div>
-        <div className="flex items-center gap-1.5 bg-[#261808] border border-[#5C3D1E]/60 px-2.5 py-1 rounded">
+        <div className={[
+          'flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border',
+          coinBalance <= LAND_LEASE_FEE
+            ? 'border-farm-red/80 animate-pulse'
+            : coinBalance <= LAND_LEASE_FEE * 3
+            ? 'border-yellow-600/70'
+            : 'border-[#5C3D1E]/60',
+        ].join(' ')}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
-          <span className="font-pixel text-sm text-farm-gold">{coinBalance}</span>
+          <span className={[
+            'font-pixel text-sm',
+            coinBalance <= LAND_LEASE_FEE
+              ? 'text-farm-red'
+              : coinBalance <= LAND_LEASE_FEE * 3
+              ? 'text-yellow-300'
+              : 'text-farm-gold',
+          ].join(' ')}>{coinBalance}</span>
         </div>
       </div>
 

@@ -1,189 +1,159 @@
-# Tasks: UI Polish & Accessibility
+# Tasks: UI Polish Core (005-ui-polish-core)
 
-**Input**: Design documents from `/specs/005-ui-polish/`  
-**Prerequisites**: plan.md ✅, spec.md ✅, research.md ✅, data-model.md ✅
+**Input**: Design documents from `specs/005-ui-polish/`  
+**Branch**: `005-ui-polish-core`
 
-**Tests**: No test tasks generated — feature spec does not request new tests. Existing test suite must remain green throughout.
+**Tests**: Not requested — spec contains no TDD requirement. Test files are not generated.
 
-**Organization**: Tasks grouped by user story (US1–US9) to enable independent implementation and testing of each story.
+**Organization**: Tasks are grouped by user story. No new dependencies, no schema changes, no new packages. All changes are UI/presentational within existing components.
 
 ## Format: `[ID] [P?] [Story] Description`
 
-- **[P]**: Can run in parallel (different files, no dependencies on each other)
-- **[Story]**: Which user story this task belongs to (US1–US9)
+- **[P]**: Can run in parallel with other [P] tasks in the same phase (different files, no shared dependency)
+- **[Story]**: User story this task belongs to
 
 ---
 
 ## Phase 1: Setup
 
-**Purpose**: Establish a green baseline before any changes
+No project initialization required — all changes are targeted edits to existing files.
 
-- [ ] T001 Run existing test suite to confirm green baseline: `npm test && npm run lint`
-
----
-
-## Phase 2: Foundational (Blocking Prerequisites)
-
-**Purpose**: New constants that US3 (low-balance warning) depends on
-
-**⚠️ CRITICAL**: US3 cannot begin until T002 is complete
-
-- [ ] T002 Add `LOW_BALANCE_WARNING_THRESHOLD = 45` and `LOW_BALANCE_CRITICAL_THRESHOLD = 15` to `src/engine/constants.ts` (co-locate with `LAND_LEASE_FEE`)
-
-**Checkpoint**: Constants ready — US1, US2 can already begin in parallel; US3 now also unblocked
+- [x] T001 Confirm dev server starts and baseline game loads via `npm run dev`
 
 ---
 
-## Phase 3: User Story 1 — Critical Readability & Mobile Visibility (Priority: P1) 🎯 MVP
+## Phase 2: User Story 1 — Low-Balance Danger Warning (Priority: P1) 🎯 MVP
 
-**Goal**: All critical HUD text is legible on any device; lease cost and tax always visible on mobile without interaction; Shop button has higher visual prominence.
+**Goal**: Coin balance chip in the HUD shows an amber warning state below 45 coins and a red pulsing danger state at or below 15 coins; both auto-clear when balance recovers.
 
-**Independent Test**: Open game on a mobile viewport. Without resizing or tapping, confirm coin balance, lease cost ("−15🪙/day"), and tax rate ("5% tax") are all visible and readable. Empty game on a fresh load.
+**Independent Test**: Open game, set `coinBalance` to 44, 15, and 60 in localStorage state, reload — confirm chip colour changes at each threshold.
 
-### Implementation for User Story 1
+- [x] T002 [US1] Add `balanceWarning` derived tier ('normal' | 'warning' | 'critical') and apply conditional Tailwind classes to coin balance chip in `src/components/HUD.tsx`
+  - Normal (>45): existing gold border + gold text (unchanged)
+  - Warning (≤45, >15): `border-yellow-600/70 text-yellow-300`
+  - Critical (≤15): `border-farm-red/80 text-farm-red animate-pulse`
+  - Thresholds: `LAND_LEASE_FEE * 3` and `LAND_LEASE_FEE` (constant already imported)
 
-- [ ] T003 [US1] Raise font sizes in `src/components/HUD.tsx`: coin balance `text-sm` → `text-[18px]`, day counter → `text-[18px]`, lease/tax labels `text-[9px]` → `text-[14px]`, button text `text-[10px]`/`text-[9px]` → `text-[14px]`
-- [ ] T004 [US1] Remove `hidden sm:flex` wrapper from lease/tax display in `src/components/HUD.tsx`; render as compact always-visible sub-label beneath coin balance chip (e.g., `−15🪙/day · 5% tax`) on all viewports
-- [ ] T005 [US1] Increase Shop button visual weight in `src/components/HUD.tsx`: larger padding, accent border, or seed-count badge so it reads as the primary action button on mobile
-
-**Checkpoint**: US1 fully functional — mobile HUD readable and all financial info always visible
-
----
-
-## Phase 4: User Story 2 — Empty Plot Touch Affordance (Priority: P1)
-
-**Goal**: A first-time mobile player sees empty farm plots and immediately understands they are tappable.
-
-**Independent Test**: View the farm grid on a touch device in idle state (no seed selected). Each empty plot shows a visible indicator (e.g., faint "+" or "🌱") without needing to hover or tap first.
-
-### Implementation for User Story 2
-
-- [ ] T006 [P] [US2] Add a persistent low-opacity affordance indicator to empty plots in `src/components/PlotCard.tsx`: always visible at `opacity-30`, increases to `opacity-100` on `hover:`/`focus:`; indicator disappears only when plot has a growing crop or is in exhaustion recovery — pest-damaged plots retain the indicator since clearing them is a player action
-
-**Checkpoint**: US2 fully functional — empty plots visibly invite interaction at rest on all devices
+**Checkpoint**: Coin chip changes colour at both thresholds and recovers to gold when balance rises.
 
 ---
 
-## Phase 5: User Story 3 — Low-Balance Danger Warning (Priority: P2)
+## Phase 3: User Story 2 — First-Run Onboarding Hint (Priority: P1)
 
-**Goal**: Players approaching bankruptcy see a clear escalating visual warning on the coin balance chip.
+**Goal**: On Day 1 with no crops planted, a banner appears directing the player to the shop. It disappears automatically once any crop is in a plot.
 
-**Independent Test**: Set coin balance to 40 coins (below warning threshold of 45) → amber warning appears. Set to 15 coins (critical threshold) → red pulsing danger state appears. Increase balance above 45 → warning disappears.
+**Independent Test**: Clear localStorage, load game — hint banner visible. Plant one seed — hint gone.
 
-### Implementation for User Story 3
+- [ ] T003 [US2] Derive `showOnboardingHint` boolean and render hint banner between the flash-drought banner and the planting-mode banner in `src/components/GameBoard.tsx`
+  - Condition: `state.currentDay === 1 && state.plots.every(p => p.cropId === null && !p.pestDamaged && p.exhaustedSinceDay === null)`
+  - Banner text: `🛒 Visit the Shop to buy seeds before advancing the day!`
+  - Styling: `bg-farm-sky/10 border border-farm-sky/40 text-farm-sky font-pixel text-xs px-3 py-2 rounded`
 
-- [ ] T007 [US3] Add two-tier warning state to coin balance chip in `src/components/HUD.tsx`: when `coinBalance ≤ LOW_BALANCE_WARNING_THRESHOLD` apply amber styling and a ⚠️ icon; when `coinBalance ≤ LOW_BALANCE_CRITICAL_THRESHOLD` escalate to `text-farm-red` with `animate-pulse`
-
-**Checkpoint**: US3 fully functional — coin display provides early and critical danger signals before bankruptcy
-
----
-
-## Phase 6: User Story 4 — First-Run Onboarding Hint (Priority: P2)
-
-**Goal**: Day 1 players with no seeds planted see a contextual hint directing them to the shop before they drain their balance.
-
-**Independent Test**: Start a fresh game (Day 1, empty inventory, no crops). Hint banner "🌱 Visit the Shop to buy seeds before advancing the day" is visible. Plant one seed → hint disappears.
-
-### Implementation for User Story 4
-
-- [ ] T008 [US4] In `src/components/GameBoard.tsx`, derive `showOnboardingHint` from `state.currentDay === 1 && state.plots.every(p => p.cropId === null && !p.exhaustedSinceDay) && Object.values(state.seedInventory).every(n => n === 0)`; render hint banner between HUD and FarmGrid when true
-
-**Checkpoint**: US4 fully functional — Day 1 onboarding hint visible at start, auto-dismisses after first plant
+**Checkpoint**: Banner visible on fresh Day-1 game; gone after first crop is planted.
 
 ---
 
-## Phase 7: User Story 5 — Buy-to-Plant State Clarity (Priority: P2)
+## Phase 4: User Story 3 — Empty Plot Plant Text Brightness (Priority: P2)
 
-**Goal**: When a player selects a seed to plant, both the farm grid container and individual empty plots change appearance to clearly invite a tap.
+**Goal**: The 🌱 Plant label on every empty plot is fully visible at rest — not hidden until hover.
 
-**Independent Test**: Buy a seed (selectedCrop becomes non-null). Farm grid container shows a ring/border glow AND each empty plot shows an invitation highlight simultaneously. Tap a plot or cancel → both visual cues disappear.
+**Independent Test**: Load game with empty plots, observe without hovering — 🌱 Plant text must be visible on every empty plot.
 
-### Implementation for User Story 5
+- [ ] T004 [US3] Remove `opacity-0 group-hover:opacity-100 transition-opacity` from the Plant label span in `EmptyPlot` in `src/components/PlotCard.tsx`
+  - Before: `<span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-pixel text-farm-gold">`
+  - After: `<span className="text-xs font-pixel text-farm-gold">`
+  - Retain `hover:border-farm-gold/50 hover:brightness-125` on the container button (unchanged)
 
-- [ ] T009 [US5] Add `isPlantingMode: boolean` prop to `src/components/FarmGrid.tsx`; when true, apply a `ring-2 ring-farm-gold` (or similar) border/glow to the grid container element
-- [ ] T010 [US5] In `src/components/GameBoard.tsx`, derive `isPlantingMode = selectedCrop !== null` and pass it as a prop to `FarmGrid`
-- [ ] T011 [P] [US5] Add `isPlantingMode: boolean` prop to `src/components/PlotCard.tsx`; when true and the plot is empty, apply a bright invitation highlight (e.g., `ring-1 ring-farm-gold bg-farm-gold/10`) in addition to the existing affordance indicator from T006; FarmGrid will pass this prop through to each PlotCard once T009 and T010 are complete
-
-**Checkpoint**: US5 fully functional — planting mode gives clear two-layer visual feedback (grid + plot level)
-
----
-
-## Phase 8: User Story 6 — Disaster Event Drama (Priority: P3)
-
-**Goal**: Day Summary after a disaster event has a visually distinct presentation that conveys the severity of the loss.
-
-**Independent Test**: Trigger a blight, pest infestation, or flash drought. Open the Day Summary modal — a prominent disaster headline (e.g., "⚠️ Pest Infestation!") appears before the line items, and the modal background has a red tint. Compare with a sunny-day summary — the difference is immediately apparent.
-
-### Implementation for User Story 6
-
-- [ ] T012 [P] [US6] In `src/components/DailyLog.tsx`, derive `isDisaster` from `weatherId` being one of `['blight', 'pest_infestation', 'flash_drought']`; when true, render a prominent `font-pixel text-[14px] text-farm-red` headline (e.g., "⚠️ Pest Infestation!") above the line-item section
-- [ ] T013 [P] [US6] In `src/components/DaySummaryModal.tsx`, derive `isDisaster` from `log.weatherId`; when true, apply `bg-farm-red/10` tinted overlay to the modal container background
-
-**Checkpoint**: US6 fully functional — disaster day summaries are emotionally impactful and visually distinct from calm days
+**Checkpoint**: 🌱 Plant text visible on empty plots without hovering.
 
 ---
 
-## Phase 9: User Story 7 — Bankruptcy Post-Mortem Insight (Priority: P3)
+## Phase 5: User Story 4 — Disaster Event Drama (Priority: P2)
 
-**Goal**: The bankruptcy screen displays one run-specific insight derived from how the player actually lost.
+**Goal**: Day Summary modal opened after a disaster turn shows a red-tinted background and a bold ⚠️ Disaster! headline above the log entries.
 
-**Independent Test**: Trigger bankruptcy after: (a) pest attack on final turn — insight mentions pests; (b) many empty days — insight mentions empty days; (c) very short run (≤5 days) — insight mentions buying seeds early.
+**Independent Test**: Set `lastDailyLog.weatherId` to `'blight'` in state, open Day Summary — modal must be visually distinct from a normal-day summary.
 
-### Implementation for User Story 7
+- [ ] T005 [US4] Export `DISASTER_WEATHER_IDS` from `src/components/DailyLog.tsx`
+  - Change: `const DISASTER_WEATHER_IDS` → `export const DISASTER_WEATHER_IDS`
 
-- [ ] T014 [US7] In `src/App.tsx`, thread `lastLog={state.lastDailyLog}` as a prop to `BankruptcyScreen` component
-- [ ] T015 [US7] Update `BankruptcyScreen` props interface in `src/components/BankruptcyScreen.tsx` to accept `lastLog: DailyLogEntry | null`
-- [ ] T016 [US7] In `src/components/BankruptcyScreen.tsx`, implement the priority insight rule set and render the result below existing stats:
-  1. `lastLog?.pestDestroyedPlots.length > 0` → "Pests destroyed your final crops. Harvest early when pest risk is high."
-  2. `lastLog?.weatherId === 'flash_drought'` → "A flash drought ended your run. Avoid planting during drought events."
-  3. `daysPlayed <= 5` → "Your run was very short. Try buying seeds before advancing the day."
-  4. `peakBalance < 50` → "Balance never recovered. Focus on fast Radishes early to build a buffer."
-  5. Default → "Try diversifying between fast Radishes and higher-yield Pumpkins."
+- [ ] T006 [US4] Import `DISASTER_WEATHER_IDS`, derive `isDisaster`, apply red-tinted modal background, and prepend disaster headline in `src/components/DaySummaryModal.tsx` (depends on T005)
+  - `const isDisaster = DISASTER_WEATHER_IDS.has(log.weatherId);`
+  - Modal container: `isDisaster ? 'bg-[#2A0A0A]' : 'bg-farm-soil'`
+  - Prepend before `<DailyLog>`:
+    ```tsx
+    {isDisaster && (
+      <div className="flex items-center gap-2 px-3 py-2 rounded bg-farm-red/20 border border-farm-red/50 mb-2">
+        <span className="text-xl" aria-hidden="true">⚠️</span>
+        <span className="font-pixel text-xs text-farm-red uppercase tracking-widest">Disaster!</span>
+      </div>
+    )}
+    ```
 
-**Checkpoint**: US7 fully functional — bankruptcy screen provides run-specific, actionable insight to drive re-engagement
-
----
-
-## Phase 10: User Story 8 — Accessibility: Reduced Motion (Priority: P3)
-
-**Goal**: Players with OS reduced-motion enabled experience the game with no transform-based animations.
-
-**Independent Test**: Enable "Reduce Motion" in OS accessibility settings and load the game. Shop panel must not slide in (appears/disappears instantly or via opacity). Coin danger pulse must not animate. All `active:scale-95` effects must be suppressed.
-
-### Implementation for User Story 8
-
-- [ ] T017 [P] [US8] Add `@media (prefers-reduced-motion: reduce)` block to `src/index.css` that sets `animation-duration: 0.01ms !important`, `animation-iteration-count: 1 !important`, and `transition-duration: 0.01ms !important` for all elements
-- [ ] T018 [P] [US8] Add `motion-reduce:transition-none` to the shop bottom-sheet slide classes (`transition-transform duration-300`) in `src/components/GameBoard.tsx`
-- [ ] T019 [P] [US8] Add `motion-reduce:animate-none` to any `animate-pulse` class added for the critical balance warning in `src/components/HUD.tsx`
-
-**Checkpoint**: US8 fully functional — game is safe and accessible for users with vestibular sensitivities
+**Checkpoint**: Disaster day modal is red-tinted with ⚠️ headline; normal day modal is unchanged.
 
 ---
 
-## Phase 11: User Story 9 — Visual Polish & Consistency (Priority: P4)
+## Phase 6: User Story 5 — Bankruptcy Post-Mortem Insight (Priority: P2)
 
-**Goal**: The game is visually consistent at all screen sizes: no breakpoint gaps, readable upgrade text, save confirmation, prominent drought banner, and shop button prominence.
+**Goal**: Bankruptcy screen shows one contextual insight derived from the player's final turn data, below the stats.
 
-**Independent Test**: Check at 4 viewport widths (320px, 640px, 1024px, 1440px). Trigger actions for save confirmation. Activate Flash Drought. Review owned upgrade cards.
+**Independent Test**: Trigger bankruptcy. Insight text must appear and reflect the final turn (pest / blight / early / low-balance).
 
-### Implementation for User Story 9
+- [ ] T007 [US5] Add `lastDailyLog?: DailyLogEntry | null` prop and `deriveInsight` pure function to `src/components/BankruptcyScreen.tsx`
+  - Import `DailyLogEntry` from `'../engine/types'`
+  - Priority-ordered first-match rules (check in this exact order):
+    1. `!lastDailyLog` → "Plant early and harvest often to build a coin reserve."
+    2. `lastDailyLog.pestDestroyedPlots.length > 0` → "Pests wiped your plots. Clear them quickly and replant to recover income."
+    3. `lastDailyLog.weatherId === 'blight'` → "Blight destroyed your crops. Fast-growing radishes reduce blight exposure."
+    4. `lastDailyLog.weatherId === 'flash_drought'` → "Flash Drought delayed your harvest. Keep a coin buffer to survive slow turns."
+    5. `daysPlayed < 5` → "You went bankrupt early. Start with radishes — they pay out in just 1 day."
+    6. `peakBalance < 40` → "Your balance stayed dangerously low. Aim for a buffer of 3× your lease cost."
+    7. default → "Keep a reserve above your daily lease cost to survive bad-weather turns."
 
-- [ ] T020 [P] [US9] Fix FarmGrid sm breakpoint in `src/components/FarmGrid.tsx`: change `grid-cols-4` to `grid-cols-4 sm:grid-cols-6` so 6-column layout activates at 640px
-- [ ] T021 [P] [US9] Fix owned-tier upgrade card text contrast in `src/components/UpgradeCard.tsx`: change `text-farm-ink` to `text-farm-parchment` on owned-tier label and discount text (lines 25–26)
-- [ ] T022 [US9] In `src/components/GameBoard.tsx`, add `lastSavedAt` state (number | null) and update it to `Date.now()` inside all action callbacks: `onNextDay`, `onPlantSeed`, `onBuySeed`, `onBuyUpgrade`
-- [ ] T023 [US9] In `src/components/GameBoard.tsx`, add `showSaveConfirm` boolean state driven by a `useEffect` watching `lastSavedAt` (set true, clear after 2000ms); render "Saved ✓" chip in HUD area when true; omit fade transition when reduced-motion is active
-- [ ] T024 [US9] Increase Flash Drought warning banner visual weight in `src/components/GameBoard.tsx`: change font from `text-xs` to `text-[14px]`, increase background from `bg-farm-red/10` to `bg-farm-red/20`, add a `⚠️` icon to the left of the text
+- [ ] T008 [US5] Render insight block below the stats section in `src/components/BankruptcyScreen.tsx` (depends on T007)
+  ```tsx
+  <div className="flex flex-col gap-2 w-full max-w-xs px-4 py-3 bg-farm-ink rounded border border-farm-stone/30">
+    <span className="font-pixel text-[9px] text-farm-stone uppercase tracking-widest">Insight</span>
+    <p className="font-pixel text-xs text-farm-parchment leading-relaxed">{insight}</p>
+  </div>
+  ```
 
-**Checkpoint**: US9 fully functional — game looks polished and consistent at all breakpoints
+- [ ] T009 [US5] Pass `lastDailyLog={state.lastDailyLog}` to `<BankruptcyScreen>` in `src/App.tsx` (depends on T007)
+
+**Checkpoint**: Bankruptcy screen shows contextual insight; different run patterns produce different insight text.
 
 ---
 
-## Phase 12: Final Polish
+## Phase 7: User Story 6 — Visual Polish & Consistency (Priority: P3)
 
-**Purpose**: Verify complete implementation, no regressions
+**Goal**: Four independent one-to-three-line fixes across four files — upgrade card contrast, flash drought prominence, Shop button weight, and tablet layout redundancy.
 
-- [ ] T025 Run full test suite and confirm all existing tests pass: `npm test`
-- [ ] T026 [P] Run linter and resolve any issues: `npm run lint`
+**Independent Test**: Load game on mobile + desktop; verify owned upgrade card labels are legible, flash drought banner stands out, Shop button is clearly larger than Last Turn button, no layout gap at 768–1024px.
+
+- [ ] T010 [P] [US6] Remove redundant `sm:grid-cols-4` from farm plots grid in `src/components/FarmGrid.tsx`
+  - Before: `className="grid grid-cols-4 gap-2 sm:grid-cols-4 md:grid-cols-6"`
+  - After: `className="grid grid-cols-4 gap-2 md:grid-cols-6"`
+
+- [ ] T011 [P] [US6] Fix owned upgrade card label text contrast in `src/components/UpgradeCard.tsx`
+  - Before: `<p className="font-pixel text-xs text-farm-ink">{def.label}</p>`
+  - After: `<p className="font-pixel text-xs text-farm-parchment">{def.label}</p>`
+
+- [ ] T012 [P] [US6] Strengthen flash drought banner background, border, and typography in `src/components/GameBoard.tsx`
+  - Before: `bg-farm-red/10 border border-farm-red/40`
+  - After: `bg-farm-red/20 border border-farm-red/70 tracking-wide`
+
+- [ ] T013 [P] [US6] Increase Shop button padding and add ring in `src/components/HUD.tsx`
+  - Before: `px-3 py-1.5`
+  - After: `px-4 py-2 ring-1 ring-farm-gold/50`
+
+**Checkpoint**: All four changes applied; owned upgrade label legible; flash drought banner prominent; Shop button visually heavier; no layout gaps.
+
+---
+
+## Phase 8: Final Validation
+
+- [ ] T014 Run `npm test && npm run lint` and confirm all checks pass
 
 ---
 
@@ -191,95 +161,77 @@
 
 ### Phase Dependencies
 
-- **Phase 1 (Setup)**: No dependencies — start immediately
-- **Phase 2 (Foundational)**: Depends on Phase 1 — T002 constants unblock US3
-- **Phase 3 (US1)**: Can start after Phase 1 (independent of T002)
-- **Phase 4 (US2)**: Can start after Phase 1 (independent, different file from US1)
-- **Phase 5 (US3)**: Requires T002 (constants) from Phase 2
-- **Phase 6 (US4)**: Can start after Phase 1 (different file from all above)
-- **Phase 7 (US5)**: Can start after Phase 1; T011 depends on T009 and T010
-- **Phase 8 (US6)**: Can start after Phase 1; T012 and T013 are parallel
-- **Phase 9 (US7)**: T015 and T016 depend on T014
-- **Phase 10 (US8)**: T017, T018, T019 are all parallel (different files)
-- **Phase 11 (US9)**: T022 → T023 → T024 sequential (same file); T020, T021 parallel
-- **Phase 12 (Polish)**: Depends on all desired stories complete
+- **Phase 1**: No dependencies
+- **Phases 2–7**: All stories are independent of each other (each touches distinct files)
+  - Exception: T006 depends on T005 (DaySummaryModal imports exported const from DailyLog)
+  - Exception: T008 and T009 depend on T007 (prop must exist before render + App.tsx passthrough)
+  - Note: US6 T013 (HUD.tsx) should follow US1 T002 (same file); by Phase 7 T002 is long complete
 
-### User Story Dependencies (within stories)
+### User Story Dependencies
 
-- **US5**: T009 and T011 are parallel (independent files — FarmGrid and PlotCard each add their own prop interface); T010 depends on both (GameBoard wires the prop through once both component interfaces exist)
-- **US7**: T014 → T015 → T016 (prop threading before implementation)
-- **US9**: T022 → T023 (state before effect), T024 independent of T022/T023 but same file
+| Story | Intra-story dependency | Cross-story dependency |
+|-------|----------------------|----------------------|
+| US1 | None | None |
+| US2 | None | None |
+| US3 | None | None |
+| US4 | T006 after T005 | None |
+| US5 | T008/T009 after T007 | None |
+| US6 | None within phase | T013 after T002 (same file, different lines) |
 
-### HUD.tsx Modification Order
+### Parallel Opportunities
 
-Multiple stories modify `src/components/HUD.tsx`. Recommended order to avoid merge conflicts:
-1. T003, T004, T005 (US1 — font sizes and layout)
-2. T007 (US3 — warning state, reads new constants)
-3. T019 (US8 — motion-reduce on pulse class added in T007)
-
-### GameBoard.tsx Modification Order
-
-Multiple stories modify `src/components/GameBoard.tsx`. Recommended order:
-1. T008 (US4 — onboarding hint)
-2. T010 (US5 — isPlantingMode prop pass-through)
-3. T018 (US8 — motion-reduce on shop slide)
-4. T022, T023, T024 (US9 — autosave indicator, Flash Drought)
+- T002, T003, T004, T005 can all run in parallel (HUD, GameBoard, PlotCard, DailyLog)
+- T010, T011, T012, T013 (US6 phase) can all run in parallel (four different files)
+- After T007 completes: T008 and T009 can run in parallel
 
 ---
 
-## Parallel Opportunities
+## Parallel Example: Phase 7 (US6)
 
-### P1 Stories (US1 + US2): Can be worked in parallel
 ```
-Parallel batch:
-  T003-T005 [US1] → src/components/HUD.tsx
-  T006      [US2] → src/components/PlotCard.tsx
-```
+All four US6 tasks touch different files — safe to run simultaneously:
 
-### P3 Stories (US6 + US7 + US8): Largely parallel across files
-```
-Parallel batch:
-  T012 [US6] → src/components/DailyLog.tsx
-  T013 [US6] → src/components/DaySummaryModal.tsx
-  T017 [US8] → src/index.css
-  T014 [US7] → src/App.tsx (prop threading only)
-```
-
-### US9 Parallel Start
-```
-Parallel batch:
-  T020 [US9] → src/components/FarmGrid.tsx
-  T021 [US9] → src/components/UpgradeCard.tsx
-Then sequential:
-  T022 → T023 → T024 → src/components/GameBoard.tsx
+T010: src/components/FarmGrid.tsx      — remove sm:grid-cols-4
+T011: src/components/UpgradeCard.tsx   — fix text-farm-ink → text-farm-parchment
+T012: src/components/GameBoard.tsx     — strengthen flash drought banner
+T013: src/components/HUD.tsx           — increase Shop button padding + ring
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (P1 Stories Only)
+### MVP (US1 + US2 only — 2 tasks)
 
-1. Complete Phase 1: Baseline check
-2. Complete Phase 3: US1 (HUD readability + mobile visibility)
-3. Complete Phase 4: US2 (touch affordance)
-4. **STOP and VALIDATE**: Game readable on mobile, empty plots have visible affordance
-5. Ship P1 fixes independently
+1. T001 baseline check
+2. T002 HUD warning → validate US1
+3. T003 Onboarding hint → validate US2
+4. **STOP and validate** — coin warning + onboarding hint working
+5. Continue or ship
 
 ### Incremental Delivery
 
-1. Phase 1 → Phase 3 (US1) → Phase 4 (US2): P1 complete, ship ✅
-2. Phase 2 (constants) → Phase 5 (US3) → Phase 6 (US4) → Phase 7 (US5): P2 complete, ship ✅
-3. Phase 8 (US6) → Phase 9 (US7) → Phase 10 (US8): P3 complete, ship ✅
-4. Phase 11 (US9) → Phase 12: P4 complete, ship ✅
+1. T001 → baseline
+2. T002 → US1 ✓
+3. T003 → US2 ✓
+4. T004 → US3 ✓
+5. T005 → T006 → US4 ✓
+6. T007 → T008 + T009 → US5 ✓
+7. T010–T013 → US6 ✓
+8. T014 → tests + lint pass
 
 ---
 
-## Notes
+## Summary
 
-- [P] tasks = different files, no blocking dependencies on each other within same phase
-- HUD.tsx is modified by US1, US3, and US8 — work them sequentially in that priority order
-- GameBoard.tsx is modified by US4, US5, US8, US9 — sequential within each phase
-- No new component files created; all changes are edits to existing files
-- No GameState schema changes; no new npm dependencies
-- Commit after each user story phase for clean git history and easy revert per story
+| Phase | Story | Tasks | Files |
+|-------|-------|-------|-------|
+| 2 | US1 Low-Balance Warning | T002 | HUD.tsx |
+| 3 | US2 Onboarding Hint | T003 | GameBoard.tsx |
+| 4 | US3 Plant Text | T004 | PlotCard.tsx |
+| 5 | US4 Disaster Drama | T005, T006 | DailyLog.tsx, DaySummaryModal.tsx |
+| 6 | US5 Bankruptcy Insight | T007, T008, T009 | BankruptcyScreen.tsx, App.tsx |
+| 7 | US6 Visual Polish | T010–T013 | FarmGrid.tsx, UpgradeCard.tsx, GameBoard.tsx, HUD.tsx |
+| — | Validation | T014 | — |
+
+**Total**: 14 tasks across 8 modified files. No new files. No schema changes.
