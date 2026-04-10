@@ -1,4 +1,4 @@
-import { LAND_LEASE_FEE, TAX_RATE } from '../engine/constants';
+import { LAND_LEASE_FEE, TAX_RATE, LOW_BALANCE_WARNING_THRESHOLD, LOW_BALANCE_CRITICAL_THRESHOLD } from '../engine/constants';
 
 interface HUDProps {
   currentDay: number;
@@ -24,6 +24,21 @@ export function HUD({
   isProcessing,
   hasLastTurn,
 }: HUDProps) {
+  const isCritical = coinBalance <= LOW_BALANCE_CRITICAL_THRESHOLD;
+  const isWarning  = !isCritical && coinBalance <= LOW_BALANCE_WARNING_THRESHOLD;
+
+  const balanceChipBorder = isCritical
+    ? 'border-farm-red/70 bg-farm-red/10 animate-pulse'
+    : isWarning
+    ? 'border-amber-500/60 bg-amber-900/20'
+    : 'border-[#5C3D1E]/60';
+
+  const balanceTextColor = isCritical
+    ? 'text-farm-red'
+    : isWarning
+    ? 'text-amber-400'
+    : 'text-farm-gold';
+
   return (
     <header
       aria-label="Game status"
@@ -45,13 +60,26 @@ export function HUD({
           </div>
         </div>
 
-        {/* Balance chip — cost sub-label always visible beneath the number */}
-        <div className="flex items-center gap-1.5 bg-[#261808] border border-[#5C3D1E]/60 px-2.5 py-1 rounded">
+        {/* Balance chip — two-tier danger state + always-visible cost sub-label */}
+        <div
+          aria-live="polite"
+          aria-label={
+            isCritical ? `${coinBalance} coins — critical, bankruptcy imminent`
+            : isWarning ? `${coinBalance} coins — low balance warning`
+            : `${coinBalance} coins`
+          }
+          className={`flex items-center gap-1.5 bg-[#261808] border px-2.5 py-1 rounded ${balanceChipBorder}`}
+        >
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
           <div className="flex flex-col leading-none">
-            <span className="font-pixel text-[18px] text-farm-gold">{coinBalance}</span>
+            <div className="flex items-center gap-1">
+              {(isWarning || isCritical) && (
+                <span aria-hidden="true" className="text-sm leading-none">⚠️</span>
+              )}
+              <span className={`font-pixel text-[18px] ${balanceTextColor}`}>{coinBalance}</span>
+            </div>
             <span
-              aria-label={`Land lease: ${LAND_LEASE_FEE} coins per day, tax: ${TAX_RATE * 100}%`}
+              aria-hidden="true"
               className="font-pixel text-[9px] text-farm-stone/50 whitespace-nowrap mt-0.5"
             >
               −{LAND_LEASE_FEE}🪙/day · {TAX_RATE * 100}% tax

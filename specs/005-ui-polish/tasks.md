@@ -72,7 +72,7 @@
 
 ### Implementation for User Story 3
 
-- [ ] T007 [US3] Add two-tier warning state to coin balance chip in `src/components/HUD.tsx`: when `coinBalance ≤ LOW_BALANCE_WARNING_THRESHOLD` apply amber styling and a ⚠️ icon; when `coinBalance ≤ LOW_BALANCE_CRITICAL_THRESHOLD` escalate to `text-farm-red` with `animate-pulse`
+- [x] T007 [US3] Add two-tier warning state to coin balance chip in `src/components/HUD.tsx`: when `coinBalance ≤ LOW_BALANCE_WARNING_THRESHOLD` apply amber styling and a ⚠️ icon; when `coinBalance ≤ LOW_BALANCE_CRITICAL_THRESHOLD` escalate to `text-farm-red` with `animate-pulse`
 
 **Checkpoint**: US3 fully functional — coin display provides early and critical danger signals before bankruptcy
 
