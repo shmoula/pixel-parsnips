@@ -136,7 +136,7 @@ export function GameBoard({
             onPlant={handlePlot}
             onApplyFertilizer={onApplyFertilizer}
             onClearPestDamage={onClearPestDamage}
-            selectedCrop={selectedCrop}
+            isPlantingMode={selectedCrop !== null}
           />
         </main>
 

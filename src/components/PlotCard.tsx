@@ -51,6 +51,8 @@ interface PlotCardProps {
   onPlant?: (plotId: number) => void;
   onApplyFertilizer?: (plotId: number) => void;
   onClearPestDamage?: (plotId: number) => void;
+  /** True when a seed is selected and the player needs to tap an empty plot to plant it. */
+  isPlantingMode?: boolean;
 }
 
 function PestDamagedPlot({ plot, onClearPestDamage }: {
@@ -190,7 +192,7 @@ function GrowingCropCard({ plot }: {
   );
 }
 
-export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer, onClearPestDamage }: PlotCardProps) {
+export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer, onClearPestDamage, isPlantingMode = false }: PlotCardProps) {
   // Highest priority: pest damage blocks everything until acknowledged
   if (plot.pestDamaged) {
     return <PestDamagedPlot plot={plot} onClearPestDamage={onClearPestDamage} />;
@@ -212,28 +214,34 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlan
   }
 
   // T015 — EmptyPlot: dark tilled soil with hover CTA
+  // US5 — when isPlantingMode, brighten border + add gold ring + tinted bg to invite tap
   return (
     <button
       type="button"
       aria-label={`Empty plot ${plot.id + 1} — click to plant`}
       onClick={() => onPlant?.(plot.id)}
-      className="
-        group
-        flex flex-col items-center justify-center
-        w-full aspect-square rounded-lg
-        border border-[#3D2510]/80
-        hover:border-farm-gold/50 hover:brightness-125
-        cursor-pointer select-none
-        transition-all duration-150
-      "
+      className={[
+        'group flex flex-col items-center justify-center',
+        'w-full aspect-square rounded-lg',
+        'cursor-pointer select-none transition-all duration-150',
+        isPlantingMode
+          ? 'border border-farm-gold/70 bg-farm-gold/10 ring-1 ring-farm-gold/50 hover:brightness-125'
+          : 'border border-[#3D2510]/80 hover:border-farm-gold/50 hover:brightness-125',
+      ].join(' ')}
       style={{
-        background: 'repeating-linear-gradient(180deg, #2A1A0E 0px, #2A1A0E 5px, #221408 5px, #221408 7px)',
+        background: isPlantingMode
+          ? undefined
+          : 'repeating-linear-gradient(180deg, #2A1A0E 0px, #2A1A0E 5px, #221408 5px, #221408 7px)',
       }}
     >
-      {/* Persistent affordance: visible at rest (opacity-30) so touch users know the plot is tappable;
-          full opacity on hover/focus. Disappears only when a crop is growing or plot is exhausted —
-          pest-damaged plots have their own Clear button so this empty branch is never reached. */}
-      <span className="opacity-30 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity text-xs font-pixel text-farm-gold">
+      {/* Persistent affordance: opacity-30 at rest, full on hover/focus.
+          Bumped to full opacity immediately when in planting mode. */}
+      <span className={[
+        'transition-opacity text-xs font-pixel text-farm-gold',
+        isPlantingMode
+          ? 'opacity-100'
+          : 'opacity-30 group-hover:opacity-100 group-focus-within:opacity-100',
+      ].join(' ')}>
         🌱 Plant
       </span>
     </button>

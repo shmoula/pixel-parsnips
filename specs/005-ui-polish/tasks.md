@@ -100,9 +100,9 @@
 
 ### Implementation for User Story 5
 
-- [ ] T009 [US5] Add `isPlantingMode: boolean` prop to `src/components/FarmGrid.tsx`; when true, apply a `ring-2 ring-farm-gold` (or similar) border/glow to the grid container element
-- [ ] T010 [US5] In `src/components/GameBoard.tsx`, derive `isPlantingMode = selectedCrop !== null` and pass it as a prop to `FarmGrid`
-- [ ] T011 [P] [US5] Add `isPlantingMode: boolean` prop to `src/components/PlotCard.tsx`; when true and the plot is empty, apply a bright invitation highlight (e.g., `ring-1 ring-farm-gold bg-farm-gold/10`) in addition to the existing affordance indicator from T006; FarmGrid will pass this prop through to each PlotCard once T009 and T010 are complete
+- [x] T009 [US5] Add `isPlantingMode: boolean` prop to `src/components/FarmGrid.tsx`; when true, apply a `ring-2 ring-farm-gold` (or similar) border/glow to the grid container element
+- [x] T010 [US5] In `src/components/GameBoard.tsx`, derive `isPlantingMode = selectedCrop !== null` and pass it as a prop to `FarmGrid`
+- [x] T011 [P] [US5] Add `isPlantingMode: boolean` prop to `src/components/PlotCard.tsx`; when true and the plot is empty, apply a bright invitation highlight (e.g., `ring-1 ring-farm-gold bg-farm-gold/10`) in addition to the existing affordance indicator from T006; FarmGrid will pass this prop through to each PlotCard once T009 and T010 are complete
 
 **Checkpoint**: US5 fully functional — planting mode gives clear two-layer visual feedback (grid + plot level)
 

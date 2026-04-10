@@ -1,4 +1,4 @@
-import type { PlotState, CropId } from '../engine/types';
+import type { PlotState } from '../engine/types';
 import { PlotCard } from './PlotCard';
 
 interface FarmGridProps {
@@ -8,13 +8,18 @@ interface FarmGridProps {
   onPlant?: (plotId: number) => void;
   onApplyFertilizer?: (plotId: number) => void;
   onClearPestDamage?: (plotId: number) => void;
-  selectedCrop?: CropId | null;
+  /** True when a seed has been purchased and the player must tap an empty plot to plant it. */
+  isPlantingMode?: boolean;
 }
 
-export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer, onClearPestDamage }: FarmGridProps) {
+export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer, onClearPestDamage, isPlantingMode = false }: FarmGridProps) {
   return (
     // T017 — textured farm canvas: dark tilled soil + grain filter + fence border + decor
-    <div className="relative rounded-xl overflow-hidden p-3 bg-[#2A1A0E] [filter:url(#pp-grain)] shadow-inner">
+    // US5 — ring/glow added to container when player is in planting mode
+    <div className={[
+      'relative rounded-xl overflow-hidden p-3 bg-[#2A1A0E] [filter:url(#pp-grain)] shadow-inner',
+      isPlantingMode ? 'ring-2 ring-farm-gold/70 shadow-[0_0_12px_2px_rgba(245,200,66,0.25)]' : '',
+    ].join(' ')}>
 
       {/* Decorative fence border frame */}
       <div
@@ -86,6 +91,7 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, onPla
               onPlant={onPlant}
               onApplyFertilizer={onApplyFertilizer}
               onClearPestDamage={onClearPestDamage}
+              isPlantingMode={isPlantingMode}
             />
           ))}
         </div>
