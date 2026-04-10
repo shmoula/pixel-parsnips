@@ -74,10 +74,10 @@ No project initialization required — all changes are targeted edits to existin
 
 **Independent Test**: Set `lastDailyLog.weatherId` to `'blight'` in state, open Day Summary — modal must be visually distinct from a normal-day summary.
 
-- [ ] T005 [US4] Export `DISASTER_WEATHER_IDS` from `src/components/DailyLog.tsx`
+- [x] T005 [US4] Export `DISASTER_WEATHER_IDS` from `src/components/DailyLog.tsx`
   - Change: `const DISASTER_WEATHER_IDS` → `export const DISASTER_WEATHER_IDS`
 
-- [ ] T006 [US4] Import `DISASTER_WEATHER_IDS`, derive `isDisaster`, apply red-tinted modal background, and prepend disaster headline in `src/components/DaySummaryModal.tsx` (depends on T005)
+- [x] T006 [US4] Import `DISASTER_WEATHER_IDS`, derive `isDisaster`, apply red-tinted modal background, and prepend disaster headline in `src/components/DaySummaryModal.tsx` (depends on T005)
   - `const isDisaster = DISASTER_WEATHER_IDS.has(log.weatherId);`
   - Modal container: `isDisaster ? 'bg-[#2A0A0A]' : 'bg-farm-soil'`
   - Prepend before `<DailyLog>`:

@@ -16,7 +16,7 @@ const WEATHER_EMOJI: Record<string, string> = {
   flash_drought: '☀️🔥',
 };
 
-const DISASTER_WEATHER_IDS = new Set(['blight', 'pest_infestation', 'flash_drought']);
+export const DISASTER_WEATHER_IDS = new Set(['blight', 'pest_infestation', 'flash_drought']);
 
 function LogAccountingRows({ log }: { log: DailyLogEntry }) {
   return (
