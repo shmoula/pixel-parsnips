@@ -230,7 +230,7 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlan
         background: 'repeating-linear-gradient(180deg, #2A1A0E 0px, #2A1A0E 5px, #221408 5px, #221408 7px)',
       }}
     >
-      <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-pixel text-farm-gold">
+      <span className="text-xs font-pixel text-farm-gold">
         🌱 Plant
       </span>
     </button>

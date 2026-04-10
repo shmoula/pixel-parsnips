@@ -59,7 +59,7 @@ No project initialization required — all changes are targeted edits to existin
 
 **Independent Test**: Load game with empty plots, observe without hovering — 🌱 Plant text must be visible on every empty plot.
 
-- [ ] T004 [US3] Remove `opacity-0 group-hover:opacity-100 transition-opacity` from the Plant label span in `EmptyPlot` in `src/components/PlotCard.tsx`
+- [x] T004 [US3] Remove `opacity-0 group-hover:opacity-100 transition-opacity` from the Plant label span in `EmptyPlot` in `src/components/PlotCard.tsx`
   - Before: `<span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-pixel text-farm-gold">`
   - After: `<span className="text-xs font-pixel text-farm-gold">`
   - Retain `hover:border-farm-gold/50 hover:brightness-125` on the container button (unchanged)
