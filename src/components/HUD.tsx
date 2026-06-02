@@ -81,7 +81,7 @@ export function HUD({
       <div className="hidden sm:flex items-center gap-3 ml-auto">
         <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
           Lease {season.leasePerDay}🪙/day
-          {showLeasePreview && (
+          {showLeasePreview && nextSeasonLease !== null && (
             <span className="ml-1 text-farm-gold/70">
               (rises to {nextSeasonLease} next season)
             </span>
