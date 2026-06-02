@@ -50,4 +50,14 @@ describe('getSeasonForDay — Seasons 1–4 (table-based)', () => {
   it('exports SEASON_LENGTH = 20', () => {
     expect(SEASON_LENGTH).toBe(20);
   });
+
+  it('returns Season 4 for Day 61 (first day of Season 4)', () => {
+    expect(getSeasonForDay(61).number).toBe(4);
+  });
+
+  it('returns Season 4 as a temporary fallback for days beyond the finite arc (> 80)', () => {
+    // Task 2 will replace this fallback with the Endless formula (N ≥ 5).
+    expect(getSeasonForDay(81).number).toBe(4);
+    expect(getSeasonForDay(999).number).toBe(4);
+  });
 });
