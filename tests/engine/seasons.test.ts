@@ -55,9 +55,45 @@ describe('getSeasonForDay — Seasons 1–4 (table-based)', () => {
     expect(getSeasonForDay(61).number).toBe(4);
   });
 
-  it('returns Season 4 as a temporary fallback for days beyond the finite arc (> 80)', () => {
-    // Task 2 will replace this fallback with the Endless formula (N ≥ 5).
-    expect(getSeasonForDay(81).number).toBe(4);
-    expect(getSeasonForDay(999).number).toBe(4);
+});
+
+describe('getSeasonForDay — Endless formula (N ≥ 5)', () => {
+  it('returns Endless Season 5 for Day 81', () => {
+    const s = getSeasonForDay(81);
+    expect(s.number).toBe(5);
+    expect(s.name).toBe('Deep Winter');
+    expect(s.startDay).toBe(81);
+    expect(s.endDay).toBe(100);
+    expect(s.leasePerDay).toBe(32); // 30 + 2*(5-4)
+    expect(s.disasterTotalPct).toBeCloseTo(0.37); // 0.35 + 0.02*(5-4)
+    expect(s.target).toBe(800); // 600 + 200
+  });
+
+  it('returns Endless Season 6 for Day 101', () => {
+    const s = getSeasonForDay(101);
+    expect(s.number).toBe(6);
+    expect(s.startDay).toBe(101);
+    expect(s.endDay).toBe(120);
+    expect(s.leasePerDay).toBe(34);
+    expect(s.disasterTotalPct).toBeCloseTo(0.39);
+    expect(s.target).toBe(1000);
+  });
+
+  it('returns Endless Season 5 for Day 100 (last day of Endless 5)', () => {
+    expect(getSeasonForDay(100).number).toBe(5);
+  });
+
+  it('caps disasterTotalPct at 0.50 for very high Endless seasons', () => {
+    // Season N where 0.35 + 0.02*(N-4) > 0.50 → N - 4 > 7.5 → N >= 12
+    // Season 12 → Days 221..240 → pick Day 221
+    const s = getSeasonForDay(221);
+    expect(s.number).toBe(12);
+    expect(s.disasterTotalPct).toBeCloseTo(0.50);
+  });
+
+  it('continues to escalate lease and target past the disaster cap', () => {
+    const s = getSeasonForDay(221); // Endless Season 12
+    expect(s.leasePerDay).toBe(30 + 2 * (12 - 4)); // 46
+    expect(s.target).toBe(600 + 200 * (12 - 4)); // 2200
   });
 });

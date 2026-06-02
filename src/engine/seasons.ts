@@ -19,13 +19,29 @@ export const SEASON_TABLE: SeasonConfig[] = [
 ];
 
 /**
- * Returns the active SeasonConfig for the given calendar day.
- * For day > 80 (Endless), see Task 2 — this initial version covers Seasons 1–4 only.
+ * Returns the active SeasonConfig for any calendar day ≥ 1.
+ * Days 1–80 use SEASON_TABLE; days ≥ 81 use the Endless formula:
+ *   - Season N = 5 + floor((day - 81) / 20)
+ *   - startDay = 81 + 20 * (N - 5)
+ *   - endDay   = startDay + 19
+ *   - leasePerDay      = 30 + 2 * (N - 4)
+ *   - disasterTotalPct = min(0.35 + 0.02 * (N - 4), 0.50)
+ *   - target           = 600 + 200 * (N - 4)
  */
 export function getSeasonForDay(day: number): SeasonConfig {
   for (const s of SEASON_TABLE) {
     if (day >= s.startDay && day <= s.endDay) return s;
   }
-  // Temporary fallback for days > 80 — implemented in Task 2.
-  return SEASON_TABLE[SEASON_TABLE.length - 1];
+  // Endless Season N (N ≥ 5)
+  const n = 5 + Math.floor((day - 81) / 20);
+  const startDay = 81 + 20 * (n - 5);
+  return {
+    number: n,
+    name: 'Deep Winter',
+    startDay,
+    endDay: startDay + 19,
+    leasePerDay: 30 + 2 * (n - 4),
+    disasterTotalPct: Math.min(0.35 + 0.02 * (n - 4), 0.50),
+    target: 600 + 200 * (n - 4),
+  };
 }
