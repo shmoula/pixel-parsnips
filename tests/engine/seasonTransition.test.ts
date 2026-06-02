@@ -72,3 +72,26 @@ describe('processTurn — Season 4 endgame (US5)', () => {
     expect(result.state.phase).toBe('season_failed');
   });
 });
+
+describe('processTurn — bankruptcy dominates season_failed', () => {
+  it('mid-season bankruptcy (Day 12) sets phase to bankrupt, not any season phase', () => {
+    const state: GameState = { ...initialGameState(), currentDay: 12, coinBalance: 5 };
+    const result = processTurn(state, 'sunny');
+    expect(result.state.phase).toBe('bankrupt');
+  });
+
+  it('Day 20 bankruptcy (insufficient for lease) sets phase to bankrupt, not season_failed', () => {
+    // Coin balance below lease (15) on Day 20 — must trigger bankrupt path, not target check
+    const state: GameState = { ...initialGameState(), currentDay: 20, coinBalance: 5 };
+    const result = processTurn(state, 'sunny');
+    expect(result.state.phase).toBe('bankrupt');
+    expect(result.state.phase).not.toBe('season_failed');
+  });
+
+  it('Day 20 marginal pass (balance just barely below target) sets season_failed', () => {
+    const state: GameState = { ...initialGameState(), currentDay: 20, coinBalance: 165 };
+    const result = processTurn(state, 'sunny');
+    // 165 - 15 lease = 150 → tax 7 (floor) → closing 143 < 150 → season_failed
+    expect(result.state.phase).toBe('season_failed');
+  });
+});
