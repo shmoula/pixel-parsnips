@@ -347,12 +347,21 @@ export function processTurn(
   let nextDayAfterTransition = currentDay; // 'currentDay' here is the already-incremented value
   if (state.currentDay === season.endDay) {
     if (coinBalance >= season.target) {
-      // Target met — Seasons 1–3 advance; Season 4 handled in Task 9
-      seasonPhase = 'season_passed';
-      // currentDay was already incremented in Step 8 — keep that.
+      // Target met
+      if (state.endlessMode) {
+        // Endless mode: silent advance, no transition modal
+        seasonPhase = 'playing';
+      } else if (season.number === 4) {
+        seasonPhase = 'season_4_won';
+        nextDayAfterTransition = state.currentDay; // wait for player choice
+      } else {
+        seasonPhase = 'season_passed';
+        // currentDay was already incremented in Step 8
+      }
     } else {
+      // Target missed — applies regardless of endlessMode
       seasonPhase = 'season_failed';
-      nextDayAfterTransition = state.currentDay; // do not advance past failure
+      nextDayAfterTransition = state.currentDay;
     }
   }
 

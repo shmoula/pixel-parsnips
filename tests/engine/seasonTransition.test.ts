@@ -33,3 +33,42 @@ describe('processTurn — Season 1 end-of-day-20 transition', () => {
     expect(result.state.phase).toBe('playing');
   });
 });
+
+function stateAtDay80(balance: number): GameState {
+  return { ...initialGameState(), currentDay: 80, coinBalance: balance };
+}
+
+describe('processTurn — Season 4 endgame (US5)', () => {
+  it('sets phase to season_4_won when Day 80 target met and endlessMode is false', () => {
+    // Day 80 lease = 30, tax 5% — opening must satisfy (b - 30) * 0.95 >= 600 → b >= 661.58 → 662
+    const state = stateAtDay80(700);
+    const result = processTurn(state, 'sunny');
+    expect(result.state.phase).toBe('season_4_won');
+    expect(result.state.currentDay).toBe(80); // does not advance
+  });
+
+  it('stays in playing phase on Day 80 when endlessMode is true and target met', () => {
+    const state = { ...stateAtDay80(700), endlessMode: true };
+    const result = processTurn(state, 'sunny');
+    expect(result.state.phase).toBe('playing');
+    expect(result.state.currentDay).toBe(81); // advances normally
+  });
+
+  it('sets phase to season_failed on Day 80 when target missed (endlessMode false)', () => {
+    const state = stateAtDay80(500);
+    const result = processTurn(state, 'sunny');
+    expect(result.state.phase).toBe('season_failed');
+  });
+
+  it('sets phase to season_failed on Day 100 when Endless Season 5 target missed', () => {
+    // Endless S5 target = 800, lease 32. Need balance < target after costs.
+    const state: GameState = {
+      ...initialGameState(),
+      currentDay: 100,
+      coinBalance: 500,
+      endlessMode: true,
+    };
+    const result = processTurn(state, 'sunny');
+    expect(result.state.phase).toBe('season_failed');
+  });
+});
