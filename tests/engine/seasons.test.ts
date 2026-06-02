@@ -1,0 +1,53 @@
+import { describe, it, expect } from 'vitest';
+import { getSeasonForDay, SEASON_LENGTH } from '../../src/engine/seasons';
+
+describe('getSeasonForDay — Seasons 1–4 (table-based)', () => {
+  it('returns Season 1 (Spring Thaw) for Day 1', () => {
+    const s = getSeasonForDay(1);
+    expect(s.number).toBe(1);
+    expect(s.name).toBe('Spring Thaw');
+    expect(s.startDay).toBe(1);
+    expect(s.endDay).toBe(20);
+    expect(s.leasePerDay).toBe(15);
+    expect(s.disasterTotalPct).toBeCloseTo(0.15);
+    expect(s.target).toBe(150);
+  });
+
+  it('returns Season 1 for Day 20 (the last day of Season 1)', () => {
+    expect(getSeasonForDay(20).number).toBe(1);
+  });
+
+  it('returns Season 2 (Summer Heat) for Day 21', () => {
+    const s = getSeasonForDay(21);
+    expect(s.number).toBe(2);
+    expect(s.name).toBe('Summer Heat');
+    expect(s.startDay).toBe(21);
+    expect(s.endDay).toBe(40);
+    expect(s.leasePerDay).toBe(20);
+    expect(s.disasterTotalPct).toBeCloseTo(0.20);
+    expect(s.target).toBe(250);
+  });
+
+  it('returns Season 3 (Autumn Pressure) for Day 41', () => {
+    const s = getSeasonForDay(41);
+    expect(s.number).toBe(3);
+    expect(s.name).toBe('Autumn Pressure');
+    expect(s.leasePerDay).toBe(25);
+    expect(s.disasterTotalPct).toBeCloseTo(0.28);
+    expect(s.target).toBe(400);
+  });
+
+  it('returns Season 4 (Winter Crunch) for Day 80 (last day of finite arc)', () => {
+    const s = getSeasonForDay(80);
+    expect(s.number).toBe(4);
+    expect(s.name).toBe('Winter Crunch');
+    expect(s.endDay).toBe(80);
+    expect(s.leasePerDay).toBe(30);
+    expect(s.disasterTotalPct).toBeCloseTo(0.35);
+    expect(s.target).toBe(600);
+  });
+
+  it('exports SEASON_LENGTH = 20', () => {
+    expect(SEASON_LENGTH).toBe(20);
+  });
+});
