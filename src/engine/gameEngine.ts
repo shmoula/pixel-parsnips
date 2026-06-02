@@ -342,6 +342,20 @@ export function processTurn(
   // Step 8: Increment currentDay
   const currentDay = state.currentDay + 1;
 
+  // Step 8.4: Season-end check
+  let seasonPhase: GameState['phase'] = 'playing';
+  let nextDayAfterTransition = currentDay; // 'currentDay' here is the already-incremented value
+  if (state.currentDay === season.endDay) {
+    if (coinBalance >= season.target) {
+      // Target met — Seasons 1–3 advance; Season 4 handled in Task 9
+      seasonPhase = 'season_passed';
+      // currentDay was already incremented in Step 8 — keep that.
+    } else {
+      seasonPhase = 'season_failed';
+      nextDayAfterTransition = state.currentDay; // do not advance past failure
+    }
+  }
+
   // Step 8.6: Decrement flash drought counter each calendar day EXCEPT the turn it fires
   // (skip on flash_drought turn so N+1 and N+2 planting days both receive the penalty)
   const flashDroughtDaysRemaining = (weatherId !== 'flash_drought' && flashDroughtDaysAfterEvent > 0)
@@ -382,10 +396,11 @@ export function processTurn(
     ...state,
     plots: recoveredPlots,
     coinBalance,
-    currentDay,
+    currentDay: nextDayAfterTransition,
     flashDroughtDaysRemaining,
     peakBalance,
     lastDailyLog: log,
+    phase: seasonPhase,
   };
 
   return { state: nextState, log, isBankrupt: false };
