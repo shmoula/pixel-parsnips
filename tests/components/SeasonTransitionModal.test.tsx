@@ -6,10 +6,11 @@ import { getSeasonForDay } from '../../src/engine/seasons';
 
 describe('SeasonTransitionModal — passed variant', () => {
   it('shows "Season 1 — Complete" with next-season preview', () => {
+    // Production semantics: processTurn increments currentDay to 21 before setting phase: 'season_passed'
     render(
       <SeasonTransitionModal
         variant="passed"
-        currentDay={20}
+        currentDay={21}
         coinBalance={200}
         peakBalance={250}
         onContinue={vi.fn()}
@@ -28,7 +29,7 @@ describe('SeasonTransitionModal — passed variant', () => {
     render(
       <SeasonTransitionModal
         variant="passed"
-        currentDay={20}
+        currentDay={21}
         coinBalance={200}
         peakBalance={250}
         onContinue={onContinue}
@@ -38,6 +39,23 @@ describe('SeasonTransitionModal — passed variant', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Begin Season 2/i }));
     expect(onContinue).toHaveBeenCalledOnce();
+  });
+
+  it('shows just-completed Season 1 even when currentDay has advanced to 21', () => {
+    // Production semantics: processTurn increments currentDay to 21 before setting phase: 'season_passed'
+    render(
+      <SeasonTransitionModal
+        variant="passed"
+        currentDay={21}
+        coinBalance={200}
+        peakBalance={250}
+        onContinue={vi.fn()}
+        onEndRun={vi.fn()}
+        onRestart={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/Season 1 — Complete/i)).toBeInTheDocument();
+    expect(screen.getByText(/Spring Thaw/i)).toBeInTheDocument(); // just-completed season name
   });
 });
 
@@ -168,7 +186,7 @@ describe('SeasonTransitionModal — Escape key handling', () => {
     render(
       <SeasonTransitionModal
         variant="passed"
-        currentDay={20}
+        currentDay={21}
         coinBalance={200}
         peakBalance={250}
         onContinue={onContinue}
@@ -220,7 +238,7 @@ describe('SeasonTransitionModal — accessibility', () => {
     const { container } = render(
       <SeasonTransitionModal
         variant="passed"
-        currentDay={20}
+        currentDay={21}
         coinBalance={200}
         peakBalance={250}
         onContinue={vi.fn()}

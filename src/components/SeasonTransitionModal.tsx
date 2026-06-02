@@ -26,8 +26,12 @@ export function SeasonTransitionModal({
   onEndRun,
   onRestart,
 }: SeasonTransitionModalProps) {
-  const justCompleted = getSeasonForDay(currentDay);
-  const nextSeason = getSeasonForDay(currentDay + 1);
+  const justCompleted = variant === 'passed'
+    ? getSeasonForDay(currentDay - 1)
+    : getSeasonForDay(currentDay);
+  const nextSeason = variant === 'passed'
+    ? getSeasonForDay(currentDay)         // currentDay IS already the first day of next season
+    : getSeasonForDay(currentDay + 1);    // for failed/victory, +1 to peek at next
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
 
   const escapeHandler = variant === 'passed' ? onContinue : variant === 'failed' ? onRestart : onEndRun;

@@ -55,4 +55,9 @@ describe('HUD — Day 18+ warning and Day 20 preview (US6)', () => {
     render(<HUD {...baseProps} currentDay={80} coinBalance={600} endlessMode={true} />);
     expect(screen.getByText(/rises to 32 next season/i)).toBeInTheDocument();
   });
+
+  it('shows correct Endless lease preview on Day 100 (Endless Season 5 endDay → Endless Season 6 lease)', () => {
+    render(<HUD {...baseProps} currentDay={100} coinBalance={800} endlessMode={true} />);
+    expect(screen.getByText(/rises to 34 next season/i)).toBeInTheDocument();
+  });
 });
