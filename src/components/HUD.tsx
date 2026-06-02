@@ -1,4 +1,4 @@
-import { LAND_LEASE_FEE, TAX_RATE } from '../engine/constants';
+import { TAX_RATE } from '../engine/constants';
 
 interface HUDProps {
   currentDay: number;
@@ -49,7 +49,7 @@ export function HUD({
       {/* Centre-right: Lease + Tax — hidden on small screens to save space */}
       <div className="hidden sm:flex items-center gap-3 ml-auto">
         <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
-          Lease {LAND_LEASE_FEE}🪙/day
+          Lease 🪙/day
         </span>
         <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
           Tax {TAX_RATE * 100}%

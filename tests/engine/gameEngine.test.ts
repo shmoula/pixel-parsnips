@@ -10,7 +10,7 @@ import {
   applyFertilizer,
   clearPestDamage,
 } from '../../src/engine/gameEngine';
-import { LAND_LEASE_FEE, EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST } from '../../src/engine/constants';
+import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST } from '../../src/engine/constants';
 import type { GameState } from '../../src/engine/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -294,7 +294,7 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
 
   it('does NOT trigger bankruptcy when coinBalance === LAND_LEASE_FEE (exact boundary)', () => {
     // 15 is exactly the fee; 15 < 15 is false → not bankrupt
-    const state = { ...initialGameState(), coinBalance: LAND_LEASE_FEE };
+    const state = { ...initialGameState(), coinBalance: 15 };
     const { state: after, isBankrupt } = processTurn(state, 'sunny');
     expect(isBankrupt).toBe(false);
     expect(after.phase).toBe('playing');
@@ -303,7 +303,7 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
   });
 
   it('triggers bankruptcy when coinBalance === LAND_LEASE_FEE - 1', () => {
-    const state = { ...initialGameState(), coinBalance: LAND_LEASE_FEE - 1 }; // 14
+    const state = { ...initialGameState(), coinBalance: 14 }; // 14
     const { isBankrupt } = processTurn(state, 'sunny');
     expect(isBankrupt).toBe(true);
   });
@@ -1316,6 +1316,34 @@ describe('clearPestDamage (US3)', () => {
       expect(cleared.state.plots[0].pestDamaged).toBe(false); // cleared
       expect(cleared.state.plots[1].pestDamaged).toBe(true);  // untouched
     }
+  });
+});
+
+// ── processTurn — seasonal lease (US4) ───────────────────────────────────────
+
+describe('processTurn — seasonal lease (US4)', () => {
+  it('deducts 15 coins lease on Day 1 (Season 1)', () => {
+    const state: GameState = { ...initialGameState(), coinBalance: 100 };
+    const result = processTurn(state, 'sunny');
+    expect(result.log.landLeaseDeducted).toBe(15);
+  });
+
+  it('deducts 20 coins lease on Day 25 (Season 2)', () => {
+    const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 25 };
+    const result = processTurn(state, 'sunny');
+    expect(result.log.landLeaseDeducted).toBe(20);
+  });
+
+  it('deducts 25 coins lease on Day 45 (Season 3)', () => {
+    const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 45 };
+    const result = processTurn(state, 'sunny');
+    expect(result.log.landLeaseDeducted).toBe(25);
+  });
+
+  it('deducts 30 coins lease on Day 65 (Season 4)', () => {
+    const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 65 };
+    const result = processTurn(state, 'sunny');
+    expect(result.log.landLeaseDeducted).toBe(30);
   });
 });
 

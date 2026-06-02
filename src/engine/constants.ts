@@ -10,7 +10,6 @@ import type {
 export const SCHEMA_VERSION = 4;
 export const STARTING_BALANCE = 100;
 export const PLOT_COUNT = 12;
-export const LAND_LEASE_FEE = 15;
 export const TAX_RATE = 0.05;
 export const MAX_UPGRADE_TIER = 3;
 export const EXHAUSTION_THRESHOLD = 3;

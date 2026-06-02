@@ -2,7 +2,6 @@ import {
   SCHEMA_VERSION,
   STARTING_BALANCE,
   PLOT_COUNT,
-  LAND_LEASE_FEE,
   MAX_UPGRADE_TIER,
   CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
@@ -14,6 +13,7 @@ import {
   FERTILIZER_COST,
   coins,
 } from './constants';
+import { getSeasonForDay } from './seasons';
 import type {
   GameState,
   PlotState,
@@ -298,7 +298,9 @@ export function processTurn(
   let coinBalance = openingBalance + totalHarvestIncome;
 
   // Step 5: Bankruptcy check — if balance < lease fee, game over
-  if (coinBalance < LAND_LEASE_FEE) {
+  const season = getSeasonForDay(state.currentDay);
+  const leaseForDay = season.leasePerDay;
+  if (coinBalance < leaseForDay) {
     const log: DailyLogEntry = {
       day: state.currentDay,
       weatherId,
@@ -327,8 +329,8 @@ export function processTurn(
   }
 
   // Step 6: Deduct land lease fee
-  coinBalance -= LAND_LEASE_FEE;
-  const landLeaseDeducted = LAND_LEASE_FEE;
+  coinBalance -= leaseForDay;
+  const landLeaseDeducted = leaseForDay;
 
   // Step 7: Compute and deduct tax (5% of post-lease balance, floor-rounded)
   const taxDeducted = coins(coinBalance * TAX_RATE);
