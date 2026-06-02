@@ -91,6 +91,7 @@ export function GameBoard({
         onLastTurn={() => setIsSummaryOpen(true)}
         isProcessing={isProcessing}
         hasLastTurn={lastDailyLog !== null}
+        endlessMode={state.endlessMode}
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}
