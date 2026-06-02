@@ -3,6 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useGameEngine } from '../../src/engine/useGameEngine';
 import { SCHEMA_VERSION } from '../../src/engine/constants';
 import { initialGameState } from '../../src/engine/gameEngine';
+import type { GameState } from '../../src/engine/types';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 
@@ -348,6 +349,60 @@ describe('useGameEngine — fertilizer hook integration (T016, US2)', () => {
   });
 });
 
+describe('useGameEngine — continueSeason and endRun (US2, US5)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('continueSeason from season_passed advances day and returns to playing', () => {
+    const passedState: GameState = {
+      ...initialGameState(),
+      currentDay: 21, // already advanced by processTurn — phase carries the season_passed signal
+      phase: 'season_passed',
+      coinBalance: 200,
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 4, state: passedState }));
+
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.phase).toBe('season_passed');
+    act(() => { result.current.continueSeason(); });
+    expect(result.current.state.phase).toBe('playing');
+    expect(result.current.state.currentDay).toBe(21);
+  });
+
+  it('continueSeason from season_4_won flips endlessMode and advances to Day 81', () => {
+    const victoryState: GameState = {
+      ...initialGameState(),
+      currentDay: 80, // not yet advanced (season_4_won pauses on Day 80)
+      phase: 'season_4_won',
+      coinBalance: 700,
+      endlessMode: false,
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 4, state: victoryState }));
+
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.continueSeason(); });
+    expect(result.current.state.endlessMode).toBe(true);
+    expect(result.current.state.currentDay).toBe(81);
+    expect(result.current.state.phase).toBe('playing');
+  });
+
+  it('endRunVictory resets to fresh state', () => {
+    const victoryState: GameState = {
+      ...initialGameState(),
+      currentDay: 80,
+      phase: 'season_4_won',
+      coinBalance: 700,
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 4, state: victoryState }));
+
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.endRunVictory(); });
+    expect(result.current.state.currentDay).toBe(1);
+    expect(result.current.state.coinBalance).toBe(100);
+  });
+});
+
 describe('useGameEngine — schema 3 → 4 migration (US7)', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -393,7 +448,6 @@ describe('useGameEngine — schema 3 → 4 migration (US7)', () => {
       phase: 'bankrupt' as const,
     };
     // strip endlessMode to simulate a true v3 save
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { endlessMode: _drop, ...v3Stripped } = v3State as typeof v3State & { endlessMode: boolean };
     localStorage.setItem(
       'pixel-parsnips-state',

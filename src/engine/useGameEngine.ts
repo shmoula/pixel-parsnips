@@ -62,6 +62,8 @@ export interface GameEngineHook {
   clearPestDamage: (plotId: number) => boolean;
   getFertilizerCount: () => number;
   restart: () => void;
+  continueSeason: () => void;
+  endRunVictory: () => void;
   getSeedPrice: (cropId: CropId) => number;
   getNextUpgradeCost: () => number | null;
   getOccupiedPlotCount: () => number;
@@ -150,6 +152,22 @@ export function useGameEngine(): GameEngineHook {
     setState(fresh);
   }, []);
 
+  const continueSeason = useCallback(() => {
+    setState(prev => {
+      if (prev.phase === 'season_passed') {
+        return { ...prev, phase: 'playing' };
+      }
+      if (prev.phase === 'season_4_won') {
+        return { ...prev, phase: 'playing', endlessMode: true, currentDay: prev.currentDay + 1 };
+      }
+      return prev;
+    });
+  }, []);
+
+  const endRunVictory = useCallback(() => {
+    setState(initialGameState());
+  }, []);
+
   const getSeedPrice = useCallback(
     (cropId: CropId): number => computeSeedCost(cropId, state.upgradeTier),
     [state.upgradeTier]
@@ -182,6 +200,8 @@ export function useGameEngine(): GameEngineHook {
     clearPestDamage,
     getFertilizerCount,
     restart,
+    continueSeason,
+    endRunVictory,
     getSeedPrice,
     getNextUpgradeCost,
     getOccupiedPlotCount,
