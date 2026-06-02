@@ -94,11 +94,15 @@ export interface GameState {
   seedInventory: SeedInventory;
   upgradeTier: UpgradeTier;
   lastDailyLog: DailyLogEntry | null;
-  phase: 'playing' | 'bankrupt';
+  phase: 'playing' | 'bankrupt'
+       | 'season_passed' | 'season_4_won' | 'season_failed';
   peakBalance: number;
   fertilizerInventory: number;
   /** Calendar days remaining in the active Flash Drought window (0 = inactive). */
   flashDroughtDaysRemaining: number;
+  /** True after the player accepts "Continue" on the Season 4 victory screen.
+   *  Disables further target checks; lease/disaster keep escalating per formula. */
+  endlessMode: boolean;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────

@@ -57,6 +57,7 @@ export function initialGameState(): GameState {
     peakBalance: STARTING_BALANCE,
     fertilizerInventory: 0,
     flashDroughtDaysRemaining: 0,
+    endlessMode: false,
   };
 }
 

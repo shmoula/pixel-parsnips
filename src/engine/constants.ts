@@ -7,7 +7,7 @@ import type {
 
 // ── Scalar constants ──────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const STARTING_BALANCE = 100;
 export const PLOT_COUNT = 12;
 export const LAND_LEASE_FEE = 15;

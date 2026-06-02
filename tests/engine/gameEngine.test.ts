@@ -26,6 +26,19 @@ function withSeeds(
   };
 }
 
+// ── initialGameState — schema 4 fields ────────────────────────────────────────
+
+describe('initialGameState — schema 4 fields', () => {
+  it('starts with endlessMode: false', () => {
+    const s = initialGameState();
+    expect(s.endlessMode).toBe(false);
+  });
+
+  it('has schemaVersion 4', () => {
+    expect(initialGameState().schemaVersion).toBe(4);
+  });
+});
+
 // ── plantSeed ─────────────────────────────────────────────────────────────────
 
 describe('plantSeed', () => {
