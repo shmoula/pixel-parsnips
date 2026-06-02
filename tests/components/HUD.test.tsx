@@ -29,3 +29,30 @@ describe('HUD — Season indicator (US1)', () => {
     expect(screen.getByText(/87 \/ 150 target/i)).toBeInTheDocument();
   });
 });
+
+describe('HUD — Day 18+ warning and Day 20 preview (US6)', () => {
+  it('shows "3 days left" warning at Day 18 when target not met', () => {
+    render(<HUD {...baseProps} currentDay={18} coinBalance={50} />);
+    expect(screen.getByText(/3 days left/i)).toBeInTheDocument();
+  });
+
+  it('suppresses warning at Day 18 when target already met', () => {
+    render(<HUD {...baseProps} currentDay={18} coinBalance={200} />);
+    expect(screen.queryByText(/days left/i)).not.toBeInTheDocument();
+  });
+
+  it('shows lease preview on Day 20 of Season 1', () => {
+    render(<HUD {...baseProps} currentDay={20} coinBalance={150} />);
+    expect(screen.getByText(/rises to 20 next season/i)).toBeInTheDocument();
+  });
+
+  it('does NOT show lease preview on Day 80 (Season 4) when endlessMode is false', () => {
+    render(<HUD {...baseProps} currentDay={80} coinBalance={600} endlessMode={false} />);
+    expect(screen.queryByText(/rises to .* next season/i)).not.toBeInTheDocument();
+  });
+
+  it('shows lease preview on Day 80 when endlessMode is true', () => {
+    render(<HUD {...baseProps} currentDay={80} coinBalance={600} endlessMode={true} />);
+    expect(screen.getByText(/rises to 32 next season/i)).toBeInTheDocument();
+  });
+});

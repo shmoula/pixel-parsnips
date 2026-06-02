@@ -1,5 +1,13 @@
 import { TAX_RATE } from '../engine/constants';
-import { getSeasonForDay } from '../engine/seasons';
+import { getSeasonForDay, type SeasonConfig } from '../engine/seasons';
+
+/** Returns the next-season lease cost, or null if there is no next season to preview. */
+function getNextSeasonLease(season: SeasonConfig, endlessMode: boolean): number | null {
+  const hasNextSeason = season.number !== 4 || endlessMode;
+  if (!hasNextSeason) return null;
+  if (season.number === 4 && endlessMode) return 32; // Endless Season 5 lease
+  return season.leasePerDay + 5;                     // Seasons 1→2→3→4 step is +5
+}
 
 interface HUDProps {
   currentDay: number;
@@ -26,11 +34,15 @@ export function HUD({
   onLastTurn,
   isProcessing,
   hasLastTurn,
-  endlessMode: _endlessMode, // wired through; consumed in T012
+  endlessMode,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
   const dayIntoSeason = currentDay - season.startDay + 1;
   const targetMet = coinBalance >= season.target;
+  const daysRemainingInSeason = season.endDay - currentDay + 1;
+  const showWarning = currentDay >= season.startDay + 17 && !targetMet && currentDay <= season.endDay;
+  const showLeasePreview = currentDay === season.endDay;
+  const nextSeasonLease = showLeasePreview ? getNextSeasonLease(season, endlessMode) : null;
 
   return (
     <header
@@ -58,6 +70,9 @@ export function HUD({
             aria-label={`Coins: ${coinBalance}, season target: ${season.target}`}
           >
             {coinBalance} / {season.target} target
+            {showWarning && (
+              <span className="ml-1 text-farm-red">— {daysRemainingInSeason} days left</span>
+            )}
           </span>
         </div>
       </div>
@@ -66,6 +81,11 @@ export function HUD({
       <div className="hidden sm:flex items-center gap-3 ml-auto">
         <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
           Lease {season.leasePerDay}🪙/day
+          {showLeasePreview && (
+            <span className="ml-1 text-farm-gold/70">
+              (rises to {nextSeasonLease} next season)
+            </span>
+          )}
         </span>
         <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
           Tax {TAX_RATE * 100}%
