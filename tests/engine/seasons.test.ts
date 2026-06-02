@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getSeasonForDay, SEASON_LENGTH } from '../../src/engine/seasons';
+import { getSeasonForDay, SEASON_LENGTH, getDisasterBandsForSeason } from '../../src/engine/seasons';
 
 describe('getSeasonForDay — Seasons 1–4 (table-based)', () => {
   it('returns Season 1 (Spring Thaw) for Day 1', () => {
@@ -95,5 +95,58 @@ describe('getSeasonForDay — Endless formula (N ≥ 5)', () => {
     const s = getSeasonForDay(221); // Endless Season 12
     expect(s.leasePerDay).toBe(30 + 2 * (12 - 4)); // 46
     expect(s.target).toBe(600 + 200 * (12 - 4)); // 2200
+  });
+});
+
+describe('getDisasterBandsForSeason', () => {
+  it('Season 1 returns the baseline bands (matches existing constants)', () => {
+    const bands = getDisasterBandsForSeason(getSeasonForDay(1));
+    // Baseline: blight 0–0.05, pest 0.05–0.10, flash_drought 0.10–0.15
+    expect(bands[0]).toEqual({ threshold: 0.05, id: 'blight' });
+    expect(bands[1]).toEqual({ threshold: 0.10, id: 'pest_infestation' });
+    expect(bands[2]).toEqual({ threshold: 0.15, id: 'flash_drought' });
+  });
+
+  it('Season 2 scales disaster bands proportionally to 20% total', () => {
+    const bands = getDisasterBandsForSeason(getSeasonForDay(21));
+    // Each disaster band scales by 20/15 = 1.333..., so each disaster slice = 0.0667
+    expect(bands[0].threshold).toBeCloseTo(20 / 300, 5); // blight slice 0.0667
+    expect(bands[1].threshold).toBeCloseTo(40 / 300, 5); // through pest 0.1333
+    expect(bands[2].threshold).toBeCloseTo(60 / 300, 5); // through flash_drought 0.20
+  });
+
+  it('preserves the 1:1:1 disaster ratio across seasons', () => {
+    const s4 = getSeasonForDay(80);
+    const bands = getDisasterBandsForSeason(s4);
+    const blightWidth = bands[0].threshold;
+    const pestWidth = bands[1].threshold - bands[0].threshold;
+    const droughtWidth = bands[2].threshold - bands[1].threshold;
+    expect(blightWidth).toBeCloseTo(pestWidth, 5);
+    expect(pestWidth).toBeCloseTo(droughtWidth, 5);
+  });
+
+  it('total disaster band width equals season.disasterTotalPct', () => {
+    const s = getSeasonForDay(41); // Season 3, 0.28
+    const bands = getDisasterBandsForSeason(s);
+    expect(bands[2].threshold).toBeCloseTo(0.28, 5);
+  });
+
+  it('non-disaster bands fill the remaining probability up to 1.0', () => {
+    const s = getSeasonForDay(21); // Season 2, 0.20 disaster
+    const bands = getDisasterBandsForSeason(s);
+    // Last band threshold must be exactly 1.0 (perfect_sun)
+    expect(bands[bands.length - 1].threshold).toBeCloseTo(1.0, 5);
+    // Last band id is perfect_sun (same as baseline)
+    expect(bands[bands.length - 1].id).toBe('perfect_sun');
+  });
+
+  it('non-disaster bands keep their original equal-width spacing', () => {
+    const s = getSeasonForDay(21);
+    const bands = getDisasterBandsForSeason(s);
+    // After the 3 disasters there are 5 weather bands (drought, overcast, sunny, warm_breeze, perfect_sun)
+    // each must occupy (1.0 - 0.20) / 5 = 0.16 of probability space
+    const nonDisasterTotal = 1.0 - 0.20;
+    const expectedWidth = nonDisasterTotal / 5;
+    expect(bands[4].threshold - bands[3].threshold).toBeCloseTo(expectedWidth, 5);
   });
 });

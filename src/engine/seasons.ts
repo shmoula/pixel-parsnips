@@ -1,3 +1,6 @@
+import type { WeatherId } from './types';
+import { WEATHER_PROBABILITY_BANDS } from './constants';
+
 export const SEASON_LENGTH = 20;
 
 export interface SeasonConfig {
@@ -44,4 +47,40 @@ export function getSeasonForDay(day: number): SeasonConfig {
     disasterTotalPct: Math.min(0.35 + 0.02 * (n - 4), 0.50),
     target: 600 + 200 * (n - 4),
   };
+}
+
+/**
+ * Returns weather probability bands for the given season.
+ * Disaster bands (blight, pest, flash_drought) scale proportionally so their
+ * total width equals `season.disasterTotalPct`, preserving the 1:1:1 ratio.
+ * Non-disaster bands keep equal-width spacing in the remaining probability space.
+ */
+export function getDisasterBandsForSeason(
+  season: SeasonConfig
+): Array<{ threshold: number; id: WeatherId }> {
+  const disasterIds = WEATHER_PROBABILITY_BANDS.slice(0, 3).map(b => b.id);
+  const nonDisasterIds = WEATHER_PROBABILITY_BANDS.slice(3).map(b => b.id);
+
+  const disasterTotal = season.disasterTotalPct;
+  const perDisasterWidth = disasterTotal / disasterIds.length;
+
+  const nonDisasterTotal = 1.0 - disasterTotal;
+  const perNonDisasterWidth = nonDisasterTotal / nonDisasterIds.length;
+
+  // Round helper to avoid floating-point drift (10 significant decimal places)
+  const round = (n: number): number => Math.round(n * 1e10) / 1e10;
+
+  const bands: Array<{ threshold: number; id: WeatherId }> = [];
+  let cursor = 0;
+  for (const id of disasterIds) {
+    cursor = round(cursor + perDisasterWidth);
+    bands.push({ threshold: cursor, id });
+  }
+  for (const id of nonDisasterIds) {
+    cursor = round(cursor + perNonDisasterWidth);
+    bands.push({ threshold: cursor, id });
+  }
+  // Floating-point safety: clamp the final band to exactly 1.0
+  bands[bands.length - 1] = { threshold: 1.0, id: bands[bands.length - 1].id };
+  return bands;
 }
