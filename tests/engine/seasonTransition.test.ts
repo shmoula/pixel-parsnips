@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initialGameState, processTurn } from '../../src/engine/gameEngine';
+import { initialGameState, processTurn, plantSeed } from '../../src/engine/gameEngine';
 import type { GameState } from '../../src/engine/types';
 
 /** Construct a state landing on the season-end day with a given balance.
@@ -93,5 +93,52 @@ describe('processTurn — bankruptcy dominates season_failed', () => {
     const result = processTurn(state, 'sunny');
     // 165 - 15 lease = 150 → tax 7 (floor) → closing 143 < 150 → season_failed
     expect(result.state.phase).toBe('season_failed');
+  });
+});
+
+describe('processTurn — 80-day deterministic run canary (regression)', () => {
+  it('a player who plants Pumpkins every turn at Tier 3 reaches season_4_won by Day 80', () => {
+    // Set up a player who has skipped to a strong economic position:
+    // - Tier 3 tools (60% seed discount)
+    // - Plenty of pumpkin seeds
+    // - Sunny weather every day for deterministic balance projection
+    let state: GameState = {
+      ...initialGameState(),
+      upgradeTier: 3,
+      coinBalance: 500,
+      seedInventory: { radish: 0, parsnip: 0, pumpkin: 200 },
+    };
+
+    // Helper: plant pumpkins on every empty/non-exhausted/non-pest-damaged plot
+    const fillEmptyPlots = (s: GameState): GameState => {
+      let next = s;
+      for (let plotId = 0; plotId < 12; plotId++) {
+        const p = next.plots[plotId];
+        if (p.cropId === null && p.exhaustedSinceDay === null && !p.pestDamaged) {
+          const r = plantSeed(next, plotId, 'pumpkin');
+          if (r.ok) next = r.state;
+        }
+      }
+      return next;
+    };
+
+    state = fillEmptyPlots(state);
+
+    // Advance 80 days with sunny weather, replanting after each turn
+    for (let d = 0; d < 80; d++) {
+      const result = processTurn(state, 'sunny');
+      state = result.state;
+      if (state.phase === 'bankrupt' || state.phase === 'season_failed' || state.phase === 'season_4_won') break;
+      // Auto-acknowledge season transitions like a player tapping "Begin Season N+1"
+      if (state.phase === 'season_passed') {
+        state = { ...state, phase: 'playing' };
+      }
+      state = fillEmptyPlots(state);
+    }
+
+    // Expected end state: season_4_won at Day 80 with balance >= Season 4 target
+    expect(state.phase).toBe('season_4_won');
+    expect(state.currentDay).toBe(80);
+    expect(state.coinBalance).toBeCloseTo(1277, -1);
   });
 });
