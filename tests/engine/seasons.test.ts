@@ -149,4 +149,19 @@ describe('getDisasterBandsForSeason', () => {
     const expectedWidth = nonDisasterTotal / 5;
     expect(bands[4].threshold - bands[3].threshold).toBeCloseTo(expectedWidth, 5);
   });
+
+  it('handles the Endless disaster cap (0.50) correctly', () => {
+    const s = getSeasonForDay(221); // Endless Season 12, disasterTotalPct = 0.50
+    const bands = getDisasterBandsForSeason(s);
+    // Disaster total width should equal 0.50 within tolerance
+    expect(bands[2].threshold).toBeCloseTo(0.50, 5);
+    // 1:1:1 ratio preserved
+    const blightWidth = bands[0].threshold;
+    const pestWidth = bands[1].threshold - bands[0].threshold;
+    const droughtWidth = bands[2].threshold - bands[1].threshold;
+    expect(blightWidth).toBeCloseTo(pestWidth, 5);
+    expect(pestWidth).toBeCloseTo(droughtWidth, 5);
+    // Final band still lands at exactly 1.0
+    expect(bands[bands.length - 1].threshold).toBeCloseTo(1.0, 5);
+  });
 });

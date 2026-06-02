@@ -49,6 +49,9 @@ export function getSeasonForDay(day: number): SeasonConfig {
   };
 }
 
+/** WeatherIds that count as disasters for season-based scaling. */
+const DISASTER_WEATHER_IDS: ReadonlyArray<WeatherId> = ['blight', 'pest_infestation', 'flash_drought'];
+
 /**
  * Returns weather probability bands for the given season.
  * Disaster bands (blight, pest, flash_drought) scale proportionally so their
@@ -58,8 +61,8 @@ export function getSeasonForDay(day: number): SeasonConfig {
 export function getDisasterBandsForSeason(
   season: SeasonConfig
 ): Array<{ threshold: number; id: WeatherId }> {
-  const disasterIds = WEATHER_PROBABILITY_BANDS.slice(0, 3).map(b => b.id);
-  const nonDisasterIds = WEATHER_PROBABILITY_BANDS.slice(3).map(b => b.id);
+  const disasterIds = WEATHER_PROBABILITY_BANDS.filter(b => DISASTER_WEATHER_IDS.includes(b.id)).map(b => b.id);
+  const nonDisasterIds = WEATHER_PROBABILITY_BANDS.filter(b => !DISASTER_WEATHER_IDS.includes(b.id)).map(b => b.id);
 
   const disasterTotal = season.disasterTotalPct;
   const perDisasterWidth = disasterTotal / disasterIds.length;
