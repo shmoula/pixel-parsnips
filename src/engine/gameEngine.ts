@@ -5,7 +5,6 @@ import {
   MAX_UPGRADE_TIER,
   CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
-  WEATHER_PROBABILITY_BANDS,
   UPGRADE_TIER_DEFINITIONS,
   TAX_RATE,
   EXHAUSTION_THRESHOLD,
@@ -13,7 +12,7 @@ import {
   FERTILIZER_COST,
   coins,
 } from './constants';
-import { getSeasonForDay } from './seasons';
+import { getSeasonForDay, getDisasterBandsForSeason } from './seasons';
 import type {
   GameState,
   PlotState,
@@ -198,22 +197,27 @@ export function buyUpgrade(state: GameState): UpgradeResult {
 export function processTurn(
   state: GameState,
   weatherRoll?: WeatherId,
-  pestDestructionOverride?: number[]
+  pestDestructionOverride?: number[],
+  weatherRollOverride?: number
 ): TurnResult {
+  // Compute season once — reused for both lease and weather band selection
+  const season = getSeasonForDay(state.currentDay);
+
   // Step 1: Decrement daysRemaining on all occupied plots
   const plots = state.plots.map(plot => {
     if (plot.cropId === null || plot.daysRemaining === null) return plot;
     return { ...plot, daysRemaining: plot.daysRemaining - 1 };
   });
 
-  // Step 2: Resolve weather — inject via weatherRoll for tests, else continuous-band random
+  // Step 2: Resolve weather — inject via weatherRoll for tests, else seasonal-band random
   const weatherId: WeatherId = (() => {
     if (weatherRoll) return weatherRoll;
-    const roll = Math.random();
-    for (const band of WEATHER_PROBABILITY_BANDS) {
+    const bands = getDisasterBandsForSeason(season);
+    const roll = weatherRollOverride ?? Math.random();
+    for (const band of bands) {
       if (roll < band.threshold) return band.id;
     }
-    return 'perfect_sun'; // guard: roll === 1.0 exactly
+    return 'perfect_sun';
   })();
   const weather = WEATHER_DEFINITIONS[weatherId];
 
@@ -298,7 +302,6 @@ export function processTurn(
   let coinBalance = openingBalance + totalHarvestIncome;
 
   // Step 5: Bankruptcy check — if balance < lease fee, game over
-  const season = getSeasonForDay(state.currentDay);
   const leaseForDay = season.leasePerDay;
   if (coinBalance < leaseForDay) {
     const log: DailyLogEntry = {

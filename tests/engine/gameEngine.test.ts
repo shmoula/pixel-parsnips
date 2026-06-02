@@ -1390,3 +1390,27 @@ describe('processTurn — edge cases (T022)', () => {
     expect(roundTripped.fertilizerInventory).toBe(2);
   });
 });
+
+describe('processTurn — seasonal disaster bands (US4)', () => {
+  it('weather roll 0.18 returns a non-disaster in Season 1', () => {
+    // Season 1 disaster bands: blight 0–0.05, pest 0.05–0.10, flash 0.10–0.15
+    // Roll 0.18 falls into the first non-disaster band (drought, 0.15–0.32)
+    const state: GameState = { ...initialGameState(), coinBalance: 100 };
+    const result = processTurn(state, undefined, undefined, 0.18);
+    expect(result.log.weatherId).toBe('drought');
+  });
+
+  it('weather roll 0.18 returns Flash Drought in Season 2', () => {
+    // Season 2 disaster total = 0.20 → flash_drought band ends at 0.20
+    const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 25 };
+    const result = processTurn(state, undefined, undefined, 0.18);
+    expect(result.log.weatherId).toBe('flash_drought');
+  });
+
+  it('weather roll 0.04 returns Blight in any season (disaster proportions preserved)', () => {
+    const state1: GameState = { ...initialGameState(), coinBalance: 100 };
+    const state3: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 45 };
+    expect(processTurn(state1, undefined, undefined, 0.04).log.weatherId).toBe('blight');
+    expect(processTurn(state3, undefined, undefined, 0.04).log.weatherId).toBe('blight');
+  });
+});
