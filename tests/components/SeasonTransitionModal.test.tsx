@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { axe } from 'vitest-axe';
 import { SeasonTransitionModal } from '../../src/components/SeasonTransitionModal';
 import { getSeasonForDay } from '../../src/engine/seasons';
 
@@ -211,5 +212,52 @@ describe('SeasonTransitionModal — Escape key handling', () => {
     );
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onEndRun).toHaveBeenCalledOnce();
+  });
+});
+
+describe('SeasonTransitionModal — accessibility', () => {
+  it('passed variant has no axe violations', async () => {
+    const { container } = render(
+      <SeasonTransitionModal
+        variant="passed"
+        currentDay={20}
+        coinBalance={200}
+        peakBalance={250}
+        onContinue={vi.fn()}
+        onEndRun={vi.fn()}
+        onRestart={vi.fn()}
+      />
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('failed variant has no axe violations', async () => {
+    const { container } = render(
+      <SeasonTransitionModal
+        variant="failed"
+        currentDay={20}
+        coinBalance={138}
+        peakBalance={150}
+        onContinue={vi.fn()}
+        onEndRun={vi.fn()}
+        onRestart={vi.fn()}
+      />
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('victory variant has no axe violations', async () => {
+    const { container } = render(
+      <SeasonTransitionModal
+        variant="victory"
+        currentDay={80}
+        coinBalance={700}
+        peakBalance={891}
+        onContinue={vi.fn()}
+        onEndRun={vi.fn()}
+        onRestart={vi.fn()}
+      />
+    );
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
