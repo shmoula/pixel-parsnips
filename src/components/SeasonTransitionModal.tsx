@@ -1,3 +1,4 @@
+import { useEffect, useRef, type RefObject } from 'react';
 import { getSeasonForDay } from '../engine/seasons';
 
 export type SeasonTransitionVariant = 'passed' | 'failed' | 'victory';
@@ -27,6 +28,19 @@ export function SeasonTransitionModal({
 }: SeasonTransitionModalProps) {
   const justCompleted = getSeasonForDay(currentDay);
   const nextSeason = getSeasonForDay(currentDay + 1);
+  const primaryButtonRef = useRef<HTMLButtonElement>(null);
+
+  const escapeHandler = variant === 'passed' ? onContinue : variant === 'failed' ? onRestart : onEndRun;
+
+  useEffect(() => {
+    primaryButtonRef.current?.focus();
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') escapeHandler();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [escapeHandler]);
 
   return (
     <div
@@ -48,6 +62,7 @@ export function SeasonTransitionModal({
             nextSeason={nextSeason}
             coinBalance={coinBalance}
             onContinue={onContinue}
+            primaryButtonRef={primaryButtonRef}
           />
         )}
         {variant === 'failed' && (
@@ -57,15 +72,18 @@ export function SeasonTransitionModal({
             peakBalance={peakBalance}
             currentDay={currentDay}
             onRestart={onRestart}
+            primaryButtonRef={primaryButtonRef}
           />
         )}
         {variant === 'victory' && (
           <VictoryVariant
+            justCompleted={justCompleted}
             coinBalance={coinBalance}
             peakBalance={peakBalance}
             currentDay={currentDay}
             onEndRun={onEndRun}
             onContinue={onContinue}
+            primaryButtonRef={primaryButtonRef}
           />
         )}
       </div>
@@ -78,11 +96,13 @@ function PassedVariant({
   nextSeason,
   coinBalance,
   onContinue,
+  primaryButtonRef,
 }: {
   justCompleted: ReturnType<typeof getSeasonForDay>;
   nextSeason: ReturnType<typeof getSeasonForDay>;
   coinBalance: number;
   onContinue: () => void;
+  primaryButtonRef: RefObject<HTMLButtonElement>;
 }) {
   return (
     <>
@@ -104,6 +124,7 @@ function PassedVariant({
         <div>• Target: {nextSeason.target} coins by Day {nextSeason.endDay}</div>
       </div>
       <button
+        ref={primaryButtonRef}
         type="button"
         onClick={onContinue}
         className="
@@ -124,12 +145,14 @@ function FailedVariant({
   peakBalance,
   currentDay,
   onRestart,
+  primaryButtonRef,
 }: {
   justCompleted: ReturnType<typeof getSeasonForDay>;
   coinBalance: number;
   peakBalance: number;
   currentDay: number;
   onRestart: () => void;
+  primaryButtonRef: RefObject<HTMLButtonElement>;
 }) {
   const gap = justCompleted.target - coinBalance;
   const gapPct = gap / justCompleted.target;
@@ -151,6 +174,7 @@ function FailedVariant({
         <div>• Peak balance: {peakBalance}</div>
       </div>
       <button
+        ref={primaryButtonRef}
         type="button"
         onClick={onRestart}
         className="
@@ -166,17 +190,21 @@ function FailedVariant({
 }
 
 function VictoryVariant({
+  justCompleted,
   coinBalance,
   peakBalance,
   currentDay,
   onEndRun,
   onContinue,
+  primaryButtonRef,
 }: {
+  justCompleted: ReturnType<typeof getSeasonForDay>;
   coinBalance: number;
   peakBalance: number;
   currentDay: number;
   onEndRun: () => void;
   onContinue: () => void;
+  primaryButtonRef: RefObject<HTMLButtonElement>;
 }) {
   return (
     <>
@@ -185,7 +213,7 @@ function VictoryVariant({
         You survived a full year.
       </p>
       <div className="bg-farm-ink rounded p-3 font-pixel text-xs flex flex-col gap-1">
-        <div>Final balance: {coinBalance} / 600 target ✓</div>
+        <div>Final balance: {coinBalance} / {justCompleted.target} target ✓</div>
         <div>Total days: {currentDay}</div>
         <div>Peak balance: {peakBalance}</div>
       </div>
@@ -194,6 +222,7 @@ function VictoryVariant({
       </div>
       <div className="flex gap-2 mt-2">
         <button
+          ref={primaryButtonRef}
           type="button"
           onClick={onEndRun}
           className="

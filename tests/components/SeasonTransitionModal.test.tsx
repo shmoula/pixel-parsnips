@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SeasonTransitionModal } from '../../src/components/SeasonTransitionModal';
+import { getSeasonForDay } from '../../src/engine/seasons';
 
 describe('SeasonTransitionModal — passed variant', () => {
   it('shows "Season 1 — Complete" with next-season preview', () => {
@@ -140,5 +141,75 @@ describe('SeasonTransitionModal — victory variant', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
     expect(onContinue).toHaveBeenCalledOnce();
+  });
+
+  it('shows dynamic season target instead of hardcoded 600', () => {
+    // Season 4 ends at day 80, target is 600
+    const season4 = getSeasonForDay(80);
+    render(
+      <SeasonTransitionModal
+        variant="victory"
+        currentDay={80}
+        coinBalance={700}
+        peakBalance={891}
+        onContinue={vi.fn()}
+        onEndRun={vi.fn()}
+        onRestart={vi.fn()}
+      />
+    );
+    expect(screen.getByText(new RegExp(`/ ${season4.target} target`))).toBeInTheDocument();
+  });
+});
+
+describe('SeasonTransitionModal — Escape key handling', () => {
+  it('passed variant: Escape calls onContinue', () => {
+    const onContinue = vi.fn();
+    render(
+      <SeasonTransitionModal
+        variant="passed"
+        currentDay={20}
+        coinBalance={200}
+        peakBalance={250}
+        onContinue={onContinue}
+        onEndRun={vi.fn()}
+        onRestart={vi.fn()}
+      />
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onContinue).toHaveBeenCalledOnce();
+  });
+
+  it('failed variant: Escape calls onRestart', () => {
+    const onRestart = vi.fn();
+    render(
+      <SeasonTransitionModal
+        variant="failed"
+        currentDay={20}
+        coinBalance={50}
+        peakBalance={80}
+        onContinue={vi.fn()}
+        onEndRun={vi.fn()}
+        onRestart={onRestart}
+      />
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onRestart).toHaveBeenCalledOnce();
+  });
+
+  it('victory variant: Escape calls onEndRun (safe choice)', () => {
+    const onEndRun = vi.fn();
+    render(
+      <SeasonTransitionModal
+        variant="victory"
+        currentDay={80}
+        coinBalance={700}
+        peakBalance={891}
+        onContinue={vi.fn()}
+        onEndRun={onEndRun}
+        onRestart={vi.fn()}
+      />
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onEndRun).toHaveBeenCalledOnce();
   });
 });
