@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import type { DailyLogEntry } from '../engine/types';
-import { DailyLog } from './DailyLog';
+import { DailyLog, DISASTER_WEATHER_IDS } from './DailyLog';
 
 interface DaySummaryModalProps {
   log: DailyLogEntry;
@@ -23,6 +23,7 @@ export function DaySummaryModal({ log, onClose }: DaySummaryModalProps) {
   }, [onClose]);
 
   const isQuietDay = log.harvests.length === 0 && log.totalHarvestIncome === 0;
+  const isDisaster = DISASTER_WEATHER_IDS.has(log.weatherId);
 
   return ReactDOM.createPortal(
     <div
@@ -30,14 +31,19 @@ export function DaySummaryModal({ log, onClose }: DaySummaryModalProps) {
       onClick={onClose}
     >
       <div
-        className="
-          bg-farm-soil rounded-2xl p-4
-          max-w-sm w-full mx-4 shadow-xl
-          max-h-[80vh] flex flex-col
-        "
+        className={[
+          'rounded-2xl p-4 max-w-sm w-full mx-4 shadow-xl max-h-[80vh] flex flex-col',
+          isDisaster ? 'bg-[#2A0A0A]' : 'bg-farm-soil',
+        ].join(' ')}
         onClick={e => e.stopPropagation()}
       >
         <div className="overflow-y-auto overscroll-contain flex-1">
+          {isDisaster && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded bg-farm-red/20 border border-farm-red/50 mb-2">
+              <span className="text-xl" aria-hidden="true">⚠️</span>
+              <span className="font-pixel text-xs text-farm-red uppercase tracking-widest">Disaster!</span>
+            </div>
+          )}
           {isQuietDay && (
             <p className="font-pixel text-xs text-farm-stone text-center py-2 mb-1">
               Quiet day — no harvests.

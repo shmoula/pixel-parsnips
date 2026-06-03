@@ -102,10 +102,15 @@ export function GameBoard({
             <p
               role="alert"
               aria-label="Flash Drought warning"
-              className="font-pixel text-xs text-farm-red bg-farm-red/10 border border-farm-red/40 px-3 py-2 rounded"
+              className="font-pixel text-xs text-farm-red bg-farm-red/20 border border-farm-red/70 tracking-wide px-3 py-2 rounded"
             >
               ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
               {state.flashDroughtDaysRemaining} day{state.flashDroughtDaysRemaining === 1 ? '' : 's'} remaining.
+            </p>
+          )}
+          {state.currentDay === 1 && state.plots.every(p => p.cropId === null && !p.pestDamaged && p.exhaustedSinceDay === null) && (
+            <p className="font-pixel text-xs text-farm-sky bg-farm-sky/10 border border-farm-sky/40 px-3 py-2 rounded">
+              🛒 Visit the Shop to buy seeds before advancing the day!
             </p>
           )}
           {selectedCrop && (

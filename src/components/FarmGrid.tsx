@@ -76,7 +76,7 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, onPla
 
       {/* Farm plots grid */}
       <section aria-label="Farm plots">
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-4 md:grid-cols-6">
+        <div className="grid grid-cols-4 gap-2 md:grid-cols-6">
           {plots.map(plot => (
             <PlotCard
               key={plot.id}

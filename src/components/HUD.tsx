@@ -9,6 +9,27 @@ function getNextSeasonLease(currentDay: number, season: SeasonConfig, endlessMod
   return getSeasonForDay(season.endDay + 1).leasePerDay;
 }
 
+type DangerLevel = 'critical' | 'low' | 'safe';
+
+function getDangerLevel(coinBalance: number, leasePerDay: number): DangerLevel {
+  if (coinBalance <= leasePerDay) return 'critical';
+  if (coinBalance <= leasePerDay * 3) return 'low';
+  return 'safe';
+}
+
+function getBalanceBorderClass(danger: DangerLevel): string {
+  if (danger === 'critical') return 'border-farm-red/80 animate-pulse';
+  if (danger === 'low') return 'border-yellow-600/70';
+  return 'border-[#5C3D1E]/60';
+}
+
+function getBalanceTextClass(danger: DangerLevel, targetMet: boolean): string {
+  if (danger === 'critical') return 'text-farm-red';
+  if (danger === 'low') return 'text-yellow-300';
+  if (targetMet) return 'text-farm-grass';
+  return 'text-farm-gold';
+}
+
 interface HUDProps {
   currentDay: number;
   coinBalance: number;
@@ -44,6 +65,10 @@ export function HUD({
   const showLeasePreview = currentDay === season.endDay;
   const nextSeasonLease = showLeasePreview ? getNextSeasonLease(currentDay, season, endlessMode) : null;
 
+  const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
+  const balanceBorderClass = getBalanceBorderClass(dangerLevel);
+  const balanceTextClass = getBalanceTextClass(dangerLevel, targetMet);
+
   return (
     <header
       aria-label="Game status"
@@ -63,10 +88,10 @@ export function HUD({
             Day {dayIntoSeason} / {season.endDay - season.startDay + 1}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 bg-[#261808] border border-[#5C3D1E]/60 px-2.5 py-1 rounded">
+        <div className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
           <span
-            className={`font-pixel text-sm ${targetMet ? 'text-farm-grass' : 'text-farm-gold'}`}
+            className={`font-pixel text-sm ${balanceTextClass}`}
             aria-label={`Coins: ${coinBalance}, season target: ${season.target}`}
           >
             {coinBalance} / {season.target} target
@@ -134,8 +159,8 @@ export function HUD({
         onClick={onToggleShop}
         className="
           md:hidden
-          font-pixel text-[9px] px-3 py-1.5 rounded uppercase tracking-widest
-          bg-farm-gold text-farm-ink
+          font-pixel text-[9px] px-4 py-2 rounded uppercase tracking-widest
+          bg-farm-gold text-farm-ink ring-1 ring-farm-gold/50
           hover:brightness-110 transition-all
         "
       >

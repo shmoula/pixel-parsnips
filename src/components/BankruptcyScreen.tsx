@@ -1,17 +1,40 @@
 import { getSeasonForDay } from '../engine/seasons';
+import type { DailyLogEntry } from '../engine/types';
 
 interface BankruptcyScreenProps {
   daysPlayed: number;
   peakBalance: number;
+  lastDailyLog?: DailyLogEntry | null;
   onRestart: () => void;
+}
+
+function deriveInsight(
+  log: DailyLogEntry | null | undefined,
+  daysPlayed: number,
+  peakBalance: number,
+): string {
+  if (!log) return 'Plant early and harvest often to build a coin reserve.';
+  if (log.pestDestroyedPlots.length > 0)
+    return 'Pests wiped your plots. Clear them quickly and replant to recover income.';
+  if (log.weatherId === 'blight')
+    return 'Blight destroyed your crops. Fast-growing radishes reduce blight exposure.';
+  if (log.weatherId === 'flash_drought')
+    return 'Flash Drought delayed your harvest. Keep a coin buffer to survive slow turns.';
+  if (daysPlayed < 5)
+    return 'You went bankrupt early. Start with radishes — they pay out in just 1 day.';
+  if (peakBalance < 40)
+    return 'Your balance stayed dangerously low. Aim for a buffer of 3× your lease cost.';
+  return 'Keep a reserve above your daily lease cost to survive bad-weather turns.';
 }
 
 export function BankruptcyScreen({
   daysPlayed,
   peakBalance,
+  lastDailyLog,
   onRestart,
 }: BankruptcyScreenProps) {
   const season = getSeasonForDay(daysPlayed);
+  const insight = deriveInsight(lastDailyLog, daysPlayed, peakBalance);
 
   return (
     <div
@@ -46,6 +69,11 @@ export function BankruptcyScreen({
           <span className="font-pixel text-xs text-farm-stone">Peak Balance</span>
           <span className="font-pixel text-sm text-farm-gold">{peakBalance}🪙</span>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-2 w-full max-w-xs px-4 py-3 bg-farm-ink rounded border border-farm-stone/30">
+        <span className="font-pixel text-[9px] text-farm-stone uppercase tracking-widest">Insight</span>
+        <p className="font-pixel text-xs text-farm-parchment leading-relaxed">{insight}</p>
       </div>
 
       <button
