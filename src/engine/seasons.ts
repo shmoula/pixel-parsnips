@@ -50,7 +50,7 @@ export function getSeasonForDay(day: number): SeasonConfig {
 }
 
 /** WeatherIds that count as disasters for season-based scaling. */
-const DISASTER_WEATHER_IDS: ReadonlyArray<WeatherId> = ['blight', 'pest_infestation', 'flash_drought'];
+export const DISASTER_WEATHER_IDS: ReadonlyArray<WeatherId> = ['blight', 'pest_infestation', 'flash_drought'];
 
 /**
  * Returns weather probability bands for the given season.

@@ -1418,3 +1418,26 @@ describe('processTurn — seasonal disaster bands (US4)', () => {
     expect(processTurn(state3, undefined, undefined, 0.04).log.weatherId).toBe('blight');
   });
 });
+
+describe('processTurn — disastersSurvived counter (007)', () => {
+  it('increments by 1 on a survived blight day', () => {
+    const start = { ...initialGameState(), coinBalance: 500, disastersSurvived: 0 };
+    const result = processTurn(start, 'blight');
+    expect(result.isBankrupt).toBe(false);
+    expect(result.state.disastersSurvived).toBe(1);
+  });
+
+  it('does NOT increment on a non-disaster day', () => {
+    const start = { ...initialGameState(), coinBalance: 500, disastersSurvived: 3 };
+    const result = processTurn(start, 'sunny');
+    expect(result.state.disastersSurvived).toBe(3);
+  });
+
+  it('does NOT increment when a disaster causes bankruptcy that turn', () => {
+    // Balance below seasonal lease (15) so the disaster turn bankrupts.
+    const start = { ...initialGameState(), coinBalance: 5, disastersSurvived: 2 };
+    const result = processTurn(start, 'pest_infestation');
+    expect(result.isBankrupt).toBe(true);
+    expect(result.state.disastersSurvived).toBe(2); // unchanged
+  });
+});
