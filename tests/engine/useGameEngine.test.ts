@@ -403,7 +403,35 @@ describe('useGameEngine — continueSeason and endRun (US2, US5)', () => {
   });
 });
 
-describe('useGameEngine — schema 3 → 4 migration (US7)', () => {
+describe('schema 4 → 5 migration (007 — disastersSurvived)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('migrates a v4 save by adding disastersSurvived: 0', () => {
+    const { disastersSurvived: _, ...v4State } = {
+      ...initialGameState(),
+      schemaVersion: 4,
+      currentDay: 25,
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 4, state: v4State }));
+
+    const { result } = renderHook(() => useGameEngine());
+
+    expect(result.current.state.schemaVersion).toBe(5);
+    expect(result.current.state.disastersSurvived).toBe(0);
+    expect(result.current.state.currentDay).toBe(25); // existing fields preserved
+  });
+
+  it('initialGameState includes disastersSurvived: 0', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.disastersSurvived).toBe(0);
+  });
+});
+
+describe('useGameEngine — schema 3 → 5 migration (US7 chained via 007)', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
@@ -436,7 +464,7 @@ describe('useGameEngine — schema 3 → 4 migration (US7)', () => {
     expect(result.current.state.currentDay).toBe(15);
     expect(result.current.state.coinBalance).toBe(180);
     expect(result.current.state.endlessMode).toBe(false);
-    expect(result.current.state.schemaVersion).toBe(4);
+    expect(result.current.state.schemaVersion).toBe(5);
   });
 
   it('preserves bankrupt phase through migration', () => {
@@ -466,6 +494,6 @@ describe('useGameEngine — schema 3 → 4 migration (US7)', () => {
     );
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.currentDay).toBe(1);
-    expect(result.current.state.schemaVersion).toBe(4);
+    expect(result.current.state.schemaVersion).toBe(5);
   });
 });

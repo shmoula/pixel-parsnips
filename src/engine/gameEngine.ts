@@ -57,6 +57,7 @@ export function initialGameState(): GameState {
     fertilizerInventory: 0,
     flashDroughtDaysRemaining: 0,
     endlessMode: false,
+    disastersSurvived: 0,
   };
 }
 

@@ -103,6 +103,8 @@ export interface GameState {
   /** True after the player accepts "Continue" on the Season 4 victory screen.
    *  Disables further target checks; lease/disaster keep escalating per formula. */
   endlessMode: boolean;
+  /** Count of disaster days (blight, pest_infestation, flash_drought) the run survived without bankruptcy. */
+  disastersSurvived: number;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────

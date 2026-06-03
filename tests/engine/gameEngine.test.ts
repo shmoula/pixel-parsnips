@@ -26,16 +26,20 @@ function withSeeds(
   };
 }
 
-// ── initialGameState — schema 4 fields ────────────────────────────────────────
+// ── initialGameState — schema 5 fields ────────────────────────────────────────
 
-describe('initialGameState — schema 4 fields', () => {
+describe('initialGameState — schema 5 fields', () => {
   it('starts with endlessMode: false', () => {
     const s = initialGameState();
     expect(s.endlessMode).toBe(false);
   });
 
-  it('has schemaVersion 4', () => {
-    expect(initialGameState().schemaVersion).toBe(4);
+  it('has schemaVersion 5', () => {
+    expect(initialGameState().schemaVersion).toBe(5);
+  });
+
+  it('starts with disastersSurvived: 0', () => {
+    expect(initialGameState().disastersSurvived).toBe(0);
   });
 });
 

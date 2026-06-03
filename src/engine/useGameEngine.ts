@@ -15,32 +15,47 @@ import type { GameState, CropId, DailyLogEntry } from './types';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 
+/** Migrates a parsed save envelope to the current schema, or returns null if unsupported. */
+function migrateState(parsed: { schemaVersion: number; state: unknown }): GameState | null {
+  // Schema 5 — current
+  if (parsed.schemaVersion === SCHEMA_VERSION && parsed.state) {
+    return parsed.state as GameState;
+  }
+
+  // Schema 4 → 5 — add disastersSurvived: 0
+  if (parsed.schemaVersion === 4 && parsed.state) {
+    console.info('[PixelParsnips] Migrating save from v4 to v5 (Enriched Run Summary).');
+    return {
+      ...(parsed.state as Omit<GameState, 'disastersSurvived'>),
+      schemaVersion: SCHEMA_VERSION,
+      disastersSurvived: 0,
+    };
+  }
+
+  // Schema 3 → 5 — chained migration (add endlessMode and disastersSurvived)
+  if (parsed.schemaVersion === 3 && parsed.state) {
+    console.info('[PixelParsnips] Migrating save from v3 to v5 (Season System + Enriched Run Summary).');
+    return {
+      ...(parsed.state as Omit<GameState, 'endlessMode' | 'disastersSurvived'>),
+      schemaVersion: SCHEMA_VERSION,
+      endlessMode: false,
+      disastersSurvived: 0,
+    };
+  }
+
+  // Unrecognised / malformed save — discard
+  console.info(
+    `[PixelParsnips] Discarding malformed or unsupported save (v${parsed.schemaVersion}) — starting a new game.`
+  );
+  return null;
+}
+
 function loadState(): GameState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialGameState();
     const parsed = JSON.parse(raw);
-
-    // Schema 4 — current
-    if (parsed?.schemaVersion === SCHEMA_VERSION) {
-      return parsed.state as GameState;
-    }
-
-    // Schema 3 → 4 — add endlessMode: false
-    if (parsed?.schemaVersion === 3 && parsed?.state) {
-      console.info('[PixelParsnips] Migrating save from v3 to v4 (Season System).');
-      return {
-        ...(parsed.state as Omit<GameState, 'endlessMode'>),
-        schemaVersion: SCHEMA_VERSION,
-        endlessMode: false,
-      };
-    }
-
-    // Schemas < 3 — discard (preserves existing policy)
-    console.info(
-      `[PixelParsnips] Save data schema upgraded from v${parsed?.schemaVersion} to v${SCHEMA_VERSION} — starting a new game.`
-    );
-    return initialGameState();
+    return migrateState(parsed) ?? initialGameState();
   } catch {
     return initialGameState();
   }
