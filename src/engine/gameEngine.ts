@@ -2,11 +2,9 @@ import {
   SCHEMA_VERSION,
   STARTING_BALANCE,
   PLOT_COUNT,
-  LAND_LEASE_FEE,
   MAX_UPGRADE_TIER,
   CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
-  WEATHER_PROBABILITY_BANDS,
   UPGRADE_TIER_DEFINITIONS,
   TAX_RATE,
   EXHAUSTION_THRESHOLD,
@@ -14,6 +12,7 @@ import {
   FERTILIZER_COST,
   coins,
 } from './constants';
+import { getSeasonForDay, getDisasterBandsForSeason } from './seasons';
 import type {
   GameState,
   PlotState,
@@ -57,6 +56,7 @@ export function initialGameState(): GameState {
     peakBalance: STARTING_BALANCE,
     fertilizerInventory: 0,
     flashDroughtDaysRemaining: 0,
+    endlessMode: false,
   };
 }
 
@@ -197,22 +197,27 @@ export function buyUpgrade(state: GameState): UpgradeResult {
 export function processTurn(
   state: GameState,
   weatherRoll?: WeatherId,
-  pestDestructionOverride?: number[]
+  pestDestructionOverride?: number[],
+  weatherRollOverride?: number
 ): TurnResult {
+  // Compute season once — reused for both lease and weather band selection
+  const season = getSeasonForDay(state.currentDay);
+
   // Step 1: Decrement daysRemaining on all occupied plots
   const plots = state.plots.map(plot => {
     if (plot.cropId === null || plot.daysRemaining === null) return plot;
     return { ...plot, daysRemaining: plot.daysRemaining - 1 };
   });
 
-  // Step 2: Resolve weather — inject via weatherRoll for tests, else continuous-band random
+  // Step 2: Resolve weather — inject via weatherRoll for tests, else seasonal-band random
   const weatherId: WeatherId = (() => {
     if (weatherRoll) return weatherRoll;
-    const roll = Math.random();
-    for (const band of WEATHER_PROBABILITY_BANDS) {
+    const bands = getDisasterBandsForSeason(season);
+    const roll = weatherRollOverride ?? Math.random();
+    for (const band of bands) {
       if (roll < band.threshold) return band.id;
     }
-    return 'perfect_sun'; // guard: roll === 1.0 exactly
+    return 'perfect_sun';
   })();
   const weather = WEATHER_DEFINITIONS[weatherId];
 
@@ -297,7 +302,8 @@ export function processTurn(
   let coinBalance = openingBalance + totalHarvestIncome;
 
   // Step 5: Bankruptcy check — if balance < lease fee, game over
-  if (coinBalance < LAND_LEASE_FEE) {
+  const leaseForDay = season.leasePerDay;
+  if (coinBalance < leaseForDay) {
     const log: DailyLogEntry = {
       day: state.currentDay,
       weatherId,
@@ -326,8 +332,8 @@ export function processTurn(
   }
 
   // Step 6: Deduct land lease fee
-  coinBalance -= LAND_LEASE_FEE;
-  const landLeaseDeducted = LAND_LEASE_FEE;
+  coinBalance -= leaseForDay;
+  const landLeaseDeducted = leaseForDay;
 
   // Step 7: Compute and deduct tax (5% of post-lease balance, floor-rounded)
   const taxDeducted = coins(coinBalance * TAX_RATE);
@@ -335,6 +341,29 @@ export function processTurn(
 
   // Step 8: Increment currentDay
   const currentDay = state.currentDay + 1;
+
+  // Step 8.4: Season-end check
+  let seasonPhase: GameState['phase'] = 'playing';
+  let nextDayAfterTransition = currentDay; // 'currentDay' here is the already-incremented value
+  if (state.currentDay === season.endDay) {
+    if (coinBalance >= season.target) {
+      // Target met
+      if (state.endlessMode) {
+        // Endless mode: silent advance, no transition modal
+        seasonPhase = 'playing';
+      } else if (season.number === 4) {
+        seasonPhase = 'season_4_won';
+        nextDayAfterTransition = state.currentDay; // wait for player choice
+      } else {
+        seasonPhase = 'season_passed';
+        // currentDay was already incremented in Step 8
+      }
+    } else {
+      // Target missed — applies regardless of endlessMode
+      seasonPhase = 'season_failed';
+      nextDayAfterTransition = state.currentDay;
+    }
+  }
 
   // Step 8.6: Decrement flash drought counter each calendar day EXCEPT the turn it fires
   // (skip on flash_drought turn so N+1 and N+2 planting days both receive the penalty)
@@ -376,10 +405,11 @@ export function processTurn(
     ...state,
     plots: recoveredPlots,
     coinBalance,
-    currentDay,
+    currentDay: nextDayAfterTransition,
     flashDroughtDaysRemaining,
     peakBalance,
     lastDailyLog: log,
+    phase: seasonPhase,
   };
 
   return { state: nextState, log, isBankrupt: false };

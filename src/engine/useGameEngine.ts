@@ -20,13 +20,27 @@ function loadState(): GameState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialGameState();
     const parsed = JSON.parse(raw);
-    if (parsed?.schemaVersion !== SCHEMA_VERSION) {
-      console.info(
-        `[PixelParsnips] Save data schema upgraded from v${parsed?.schemaVersion} to v${SCHEMA_VERSION} — starting a new game.`
-      );
-      return initialGameState();
+
+    // Schema 4 — current
+    if (parsed?.schemaVersion === SCHEMA_VERSION) {
+      return parsed.state as GameState;
     }
-    return parsed.state as GameState;
+
+    // Schema 3 → 4 — add endlessMode: false
+    if (parsed?.schemaVersion === 3 && parsed?.state) {
+      console.info('[PixelParsnips] Migrating save from v3 to v4 (Season System).');
+      return {
+        ...(parsed.state as Omit<GameState, 'endlessMode'>),
+        schemaVersion: SCHEMA_VERSION,
+        endlessMode: false,
+      };
+    }
+
+    // Schemas < 3 — discard (preserves existing policy)
+    console.info(
+      `[PixelParsnips] Save data schema upgraded from v${parsed?.schemaVersion} to v${SCHEMA_VERSION} — starting a new game.`
+    );
+    return initialGameState();
   } catch {
     return initialGameState();
   }
@@ -48,6 +62,8 @@ export interface GameEngineHook {
   clearPestDamage: (plotId: number) => boolean;
   getFertilizerCount: () => number;
   restart: () => void;
+  continueSeason: () => void;
+  endRunVictory: () => void;
   getSeedPrice: (cropId: CropId) => number;
   getNextUpgradeCost: () => number | null;
   getOccupiedPlotCount: () => number;
@@ -136,6 +152,22 @@ export function useGameEngine(): GameEngineHook {
     setState(fresh);
   }, []);
 
+  const continueSeason = useCallback(() => {
+    setState(prev => {
+      if (prev.phase === 'season_passed') {
+        return { ...prev, phase: 'playing' };
+      }
+      if (prev.phase === 'season_4_won') {
+        return { ...prev, phase: 'playing', endlessMode: true, currentDay: prev.currentDay + 1 };
+      }
+      return prev;
+    });
+  }, []);
+
+  const endRunVictory = useCallback(() => {
+    setState(initialGameState());
+  }, []);
+
   const getSeedPrice = useCallback(
     (cropId: CropId): number => computeSeedCost(cropId, state.upgradeTier),
     [state.upgradeTier]
@@ -168,6 +200,8 @@ export function useGameEngine(): GameEngineHook {
     clearPestDamage,
     getFertilizerCount,
     restart,
+    continueSeason,
+    endRunVictory,
     getSeedPrice,
     getNextUpgradeCost,
     getOccupiedPlotCount,

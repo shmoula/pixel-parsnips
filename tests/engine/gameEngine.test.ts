@@ -10,7 +10,7 @@ import {
   applyFertilizer,
   clearPestDamage,
 } from '../../src/engine/gameEngine';
-import { LAND_LEASE_FEE, EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST } from '../../src/engine/constants';
+import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST } from '../../src/engine/constants';
 import type { GameState } from '../../src/engine/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -25,6 +25,19 @@ function withSeeds(
     seedInventory: { ...state.seedInventory, ...seeds },
   };
 }
+
+// ── initialGameState — schema 4 fields ────────────────────────────────────────
+
+describe('initialGameState — schema 4 fields', () => {
+  it('starts with endlessMode: false', () => {
+    const s = initialGameState();
+    expect(s.endlessMode).toBe(false);
+  });
+
+  it('has schemaVersion 4', () => {
+    expect(initialGameState().schemaVersion).toBe(4);
+  });
+});
 
 // ── plantSeed ─────────────────────────────────────────────────────────────────
 
@@ -281,7 +294,7 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
 
   it('does NOT trigger bankruptcy when coinBalance === LAND_LEASE_FEE (exact boundary)', () => {
     // 15 is exactly the fee; 15 < 15 is false → not bankrupt
-    const state = { ...initialGameState(), coinBalance: LAND_LEASE_FEE };
+    const state = { ...initialGameState(), coinBalance: 15 };
     const { state: after, isBankrupt } = processTurn(state, 'sunny');
     expect(isBankrupt).toBe(false);
     expect(after.phase).toBe('playing');
@@ -290,7 +303,7 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
   });
 
   it('triggers bankruptcy when coinBalance === LAND_LEASE_FEE - 1', () => {
-    const state = { ...initialGameState(), coinBalance: LAND_LEASE_FEE - 1 }; // 14
+    const state = { ...initialGameState(), coinBalance: 14 }; // 14
     const { isBankrupt } = processTurn(state, 'sunny');
     expect(isBankrupt).toBe(true);
   });
@@ -1306,6 +1319,34 @@ describe('clearPestDamage (US3)', () => {
   });
 });
 
+// ── processTurn — seasonal lease (US4) ───────────────────────────────────────
+
+describe('processTurn — seasonal lease (US4)', () => {
+  it('deducts 15 coins lease on Day 1 (Season 1)', () => {
+    const state: GameState = { ...initialGameState(), coinBalance: 100 };
+    const result = processTurn(state, 'sunny');
+    expect(result.log.landLeaseDeducted).toBe(15);
+  });
+
+  it('deducts 20 coins lease on Day 25 (Season 2)', () => {
+    const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 25 };
+    const result = processTurn(state, 'sunny');
+    expect(result.log.landLeaseDeducted).toBe(20);
+  });
+
+  it('deducts 25 coins lease on Day 45 (Season 3)', () => {
+    const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 45 };
+    const result = processTurn(state, 'sunny');
+    expect(result.log.landLeaseDeducted).toBe(25);
+  });
+
+  it('deducts 30 coins lease on Day 65 (Season 4)', () => {
+    const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 65 };
+    const result = processTurn(state, 'sunny');
+    expect(result.log.landLeaseDeducted).toBe(30);
+  });
+});
+
 // ── T022: Edge case tests ─────────────────────────────────────────────────────
 
 describe('processTurn — edge cases (T022)', () => {
@@ -1347,5 +1388,29 @@ describe('processTurn — edge cases (T022)', () => {
     expect(roundTripped.plots[0].exhaustedSinceDay).toBe(s.plots[0].exhaustedSinceDay);
     expect(roundTripped.plots[0].consecutiveHarvests).toBe(s.plots[0].consecutiveHarvests);
     expect(roundTripped.fertilizerInventory).toBe(2);
+  });
+});
+
+describe('processTurn — seasonal disaster bands (US4)', () => {
+  it('weather roll 0.18 returns a non-disaster in Season 1', () => {
+    // Season 1 disaster bands: blight 0–0.05, pest 0.05–0.10, flash 0.10–0.15
+    // Roll 0.18 falls into the first non-disaster band (drought, 0.15–0.32)
+    const state: GameState = { ...initialGameState(), coinBalance: 100 };
+    const result = processTurn(state, undefined, undefined, 0.18);
+    expect(result.log.weatherId).toBe('drought');
+  });
+
+  it('weather roll 0.18 returns Flash Drought in Season 2', () => {
+    // Season 2 disaster total = 0.20 → flash_drought band ends at 0.20
+    const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 25 };
+    const result = processTurn(state, undefined, undefined, 0.18);
+    expect(result.log.weatherId).toBe('flash_drought');
+  });
+
+  it('weather roll 0.04 returns Blight in any season (disaster proportions preserved)', () => {
+    const state1: GameState = { ...initialGameState(), coinBalance: 100 };
+    const state3: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 45 };
+    expect(processTurn(state1, undefined, undefined, 0.04).log.weatherId).toBe('blight');
+    expect(processTurn(state3, undefined, undefined, 0.04).log.weatherId).toBe('blight');
   });
 });

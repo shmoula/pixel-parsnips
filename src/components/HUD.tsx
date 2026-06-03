@@ -1,4 +1,13 @@
-import { LAND_LEASE_FEE, TAX_RATE } from '../engine/constants';
+import { TAX_RATE } from '../engine/constants';
+import { getSeasonForDay, type SeasonConfig } from '../engine/seasons';
+
+/** Returns the next-season lease cost, or null if there is no next season to preview. */
+function getNextSeasonLease(currentDay: number, season: SeasonConfig, endlessMode: boolean): number | null {
+  // No "next season" exists at Season 4 endDay unless endless mode is on
+  if (season.number === 4 && !endlessMode) return null;
+  // Look up the lease of the day after this season ends
+  return getSeasonForDay(season.endDay + 1).leasePerDay;
+}
 
 interface HUDProps {
   currentDay: number;
@@ -13,6 +22,8 @@ interface HUDProps {
   isProcessing: boolean;
   /** Whether there is a previous-turn log to reopen. */
   hasLastTurn: boolean;
+  /** Used by T012 to decide whether Day 80 shows a lease preview. */
+  endlessMode: boolean;
 }
 
 export function HUD({
@@ -23,7 +34,16 @@ export function HUD({
   onLastTurn,
   isProcessing,
   hasLastTurn,
+  endlessMode,
 }: HUDProps) {
+  const season = getSeasonForDay(currentDay);
+  const dayIntoSeason = currentDay - season.startDay + 1;
+  const targetMet = coinBalance >= season.target;
+  const daysRemainingInSeason = season.endDay - currentDay + 1;
+  const showWarning = currentDay >= season.startDay + 17 && !targetMet && currentDay <= season.endDay;
+  const showLeasePreview = currentDay === season.endDay;
+  const nextSeasonLease = showLeasePreview ? getNextSeasonLease(currentDay, season, endlessMode) : null;
+
   return (
     <header
       aria-label="Game status"
@@ -33,23 +53,41 @@ export function HUD({
         border-b border-[#5C3D1E]/50
       "
     >
-      {/* Left: Day chip + Balance chip */}
+      {/* Left: Season chip + Day chip + Balance/target chip */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 bg-[#261808] border border-[#5C3D1E]/60 px-2.5 py-1 rounded">
-          <span className="text-base leading-none" aria-hidden="true">☀️</span>
-          <span className="font-pixel text-[10px] text-farm-stone/60 uppercase tracking-widest">Day</span>
-          <span className="font-pixel text-sm text-farm-gold">{currentDay}</span>
+        <div className="flex flex-col leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded">
+          <span className="font-pixel text-[8px] text-farm-stone/60 uppercase tracking-widest">
+            Season {season.number} · {season.name}
+          </span>
+          <span className="font-pixel text-[10px] text-farm-gold">
+            Day {dayIntoSeason} / {season.endDay - season.startDay + 1}
+          </span>
         </div>
         <div className="flex items-center gap-1.5 bg-[#261808] border border-[#5C3D1E]/60 px-2.5 py-1 rounded">
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
-          <span className="font-pixel text-sm text-farm-gold">{coinBalance}</span>
+          <span
+            className={`font-pixel text-sm ${targetMet ? 'text-farm-grass' : 'text-farm-gold'}`}
+            aria-label={`Coins: ${coinBalance}, season target: ${season.target}`}
+          >
+            {coinBalance} / {season.target} target
+            {showWarning && (
+              <span className="ml-1 text-farm-red">
+                  — {daysRemainingInSeason} {daysRemainingInSeason === 1 ? 'day' : 'days'} left
+                </span>
+            )}
+          </span>
         </div>
       </div>
 
-      {/* Centre-right: Lease + Tax — hidden on small screens to save space */}
+      {/* Centre-right: Lease + Tax — hidden on small screens */}
       <div className="hidden sm:flex items-center gap-3 ml-auto">
         <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
-          Lease {LAND_LEASE_FEE}🪙/day
+          Lease {season.leasePerDay}🪙/day
+          {showLeasePreview && nextSeasonLease !== null && (
+            <span className="ml-1 text-farm-gold/70">
+              (rises to {nextSeasonLease} next season)
+            </span>
+          )}
         </span>
         <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
           Tax {TAX_RATE * 100}%
@@ -89,7 +127,7 @@ export function HUD({
         </button>
       </div>
 
-      {/* Shop toggle — mobile only (T008) */}
+      {/* Shop toggle — mobile only */}
       <button
         type="button"
         aria-label="Open shop"

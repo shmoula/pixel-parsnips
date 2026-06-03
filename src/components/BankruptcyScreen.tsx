@@ -1,3 +1,5 @@
+import { getSeasonForDay } from '../engine/seasons';
+
 interface BankruptcyScreenProps {
   daysPlayed: number;
   peakBalance: number;
@@ -9,6 +11,8 @@ export function BankruptcyScreen({
   peakBalance,
   onRestart,
 }: BankruptcyScreenProps) {
+  const season = getSeasonForDay(daysPlayed);
+
   return (
     <div
       role="main"
@@ -33,6 +37,10 @@ export function BankruptcyScreen({
         <div className="flex justify-between px-4 py-2 bg-farm-ink rounded">
           <span className="font-pixel text-xs text-farm-stone">Days Survived</span>
           <span className="font-pixel text-sm text-farm-gold">{daysPlayed}</span>
+        </div>
+        <div className="flex justify-between px-4 py-2 bg-farm-ink rounded">
+          <span className="font-pixel text-xs text-farm-stone">Season reached</span>
+          <span className="font-pixel text-sm text-farm-gold">{season.number} ({season.name})</span>
         </div>
         <div className="flex justify-between px-4 py-2 bg-farm-ink rounded">
           <span className="font-pixel text-xs text-farm-stone">Peak Balance</span>

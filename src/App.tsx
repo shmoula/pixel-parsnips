@@ -1,6 +1,7 @@
 import { useGameEngine } from './engine/useGameEngine';
 import { GameBoard } from './components/GameBoard';
 import { BankruptcyScreen } from './components/BankruptcyScreen';
+import { SeasonTransitionModal } from './components/SeasonTransitionModal';
 
 function GrainFilter() {
   return (
@@ -20,52 +21,58 @@ function GrainFilter() {
 }
 
 function App() {
-  const {
-    state,
-    lastDailyLog,
-    nextDay,
-    plantSeed,
-    buySeed,
-    buyUpgrade,
-    buyFertilizer,
-    applyFertilizer,
-    clearPestDamage,
-    getFertilizerCount,
-    restart,
-    getSeedPrice,
-    getNextUpgradeCost,
-  } = useGameEngine();
+  const engine = useGameEngine();
+  const { state, restart, continueSeason, endRunVictory } = engine;
 
+  // Bankruptcy — terminal run-end (existing behavior)
   if (state.phase === 'bankrupt') {
     return (
       <>
         <GrainFilter />
         <BankruptcyScreen
-        daysPlayed={state.currentDay}
-        peakBalance={state.peakBalance}
-        onRestart={restart}
-      />
+          daysPlayed={state.currentDay}
+          peakBalance={state.peakBalance}
+          onRestart={restart}
+        />
       </>
     );
   }
+
+  // Season transition modals overlay the game board
+  const transitionVariant =
+    state.phase === 'season_passed' ? 'passed' :
+    state.phase === 'season_failed' ? 'failed' :
+    state.phase === 'season_4_won'  ? 'victory' :
+    null;
 
   return (
     <>
       <GrainFilter />
       <GameBoard
-      state={state}
-      lastDailyLog={lastDailyLog}
-      onNextDay={nextDay}
-      onPlantSeed={plantSeed}
-      onBuySeed={cropId => buySeed(cropId, 1)}
-      onBuyUpgrade={buyUpgrade}
-      onBuyFertilizer={() => buyFertilizer(1)}
-      onApplyFertilizer={applyFertilizer}
-      onClearPestDamage={clearPestDamage}
-      getFertilizerCount={getFertilizerCount}
-      getSeedPrice={getSeedPrice}
-      getNextUpgradeCost={getNextUpgradeCost}
-    />
+        state={state}
+        lastDailyLog={engine.lastDailyLog}
+        onNextDay={engine.nextDay}
+        onPlantSeed={engine.plantSeed}
+        onBuySeed={cropId => engine.buySeed(cropId, 1)}
+        onBuyUpgrade={engine.buyUpgrade}
+        onBuyFertilizer={() => engine.buyFertilizer(1)}
+        onApplyFertilizer={engine.applyFertilizer}
+        onClearPestDamage={engine.clearPestDamage}
+        getFertilizerCount={engine.getFertilizerCount}
+        getSeedPrice={engine.getSeedPrice}
+        getNextUpgradeCost={engine.getNextUpgradeCost}
+      />
+      {transitionVariant && (
+        <SeasonTransitionModal
+          variant={transitionVariant}
+          currentDay={state.currentDay}
+          coinBalance={state.coinBalance}
+          peakBalance={state.peakBalance}
+          onContinue={continueSeason}
+          onEndRun={endRunVictory}
+          onRestart={restart}
+        />
+      )}
     </>
   );
 }
