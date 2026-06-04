@@ -4,6 +4,7 @@ import { useGameEngine } from '../../src/engine/useGameEngine';
 import { SCHEMA_VERSION } from '../../src/engine/constants';
 import { initialGameState } from '../../src/engine/gameEngine';
 import type { GameState } from '../../src/engine/types';
+import { loadRecords } from '../../src/engine/records';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 
@@ -496,4 +497,48 @@ describe('useGameEngine — schema 3 → 5 migration (US7 chained via 007)', () 
     expect(result.current.state.currentDay).toBe(1);
     expect(result.current.state.schemaVersion).toBe(5);
   });
+});
+
+describe('useGameEngine — endOfRunRecap (007)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('is null while phase is "playing"', () => {
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.endOfRunRecap).toBeNull();
+  });
+
+  it('populates endOfRunRecap when phase flips to "bankrupt"', () => {
+    // Seed a state that will bankrupt on the next turn.
+    const nearBankrupt = {
+      ...initialGameState(),
+      coinBalance: 0,
+      currentDay: 5,
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 5, state: nearBankrupt }));
+
+    const { result } = renderHook(() => useGameEngine());
+    act(() => result.current.nextDay());
+
+    expect(result.current.state.phase).toBe('bankrupt');
+    expect(result.current.endOfRunRecap).not.toBeNull();
+    expect(result.current.endOfRunRecap!.medal).toBe('none'); // bankrupt in S1
+    expect(result.current.endOfRunRecap!.records.totalRunsCompleted).toBe(1);
+  });
+
+  it('preserves records across restart', () => {
+    const nearBankrupt = { ...initialGameState(), coinBalance: 0, currentDay: 5 };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 5, state: nearBankrupt }));
+    const { result } = renderHook(() => useGameEngine());
+    act(() => result.current.nextDay());
+    expect(result.current.endOfRunRecap).not.toBeNull();
+
+    act(() => result.current.restart());
+
+    expect(result.current.endOfRunRecap).toBeNull();
+    expect(loadRecords().totalRunsCompleted).toBe(1); // still there
+  });
+
+  // TODO: assert recap does not fire on season_passed/season_failed
 });
