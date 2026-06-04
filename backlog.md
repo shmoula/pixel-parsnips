@@ -21,7 +21,7 @@
 |---|------|----------|--------|------|-------|
 | G1 | ✅ **Season System (win condition + arc)** — divide runs into named seasons (~20–30 days) with explicit Survival Targets, season summary, victory state | High | M | p1·I1, p2·A, p3·1, p4·A, p5·3.1/3.6 → **shipped as [006-season-system](specs/006-season-system/spec.md)** | **DONE (2026-06-03).** Shipped with 20-day seasons, p4-style gentle escalation, hard-end on missed target, finite 4-season arc + opt-in Endless mode. 17 tasks, 22 commits, 261 tests. |
 | G2 | ✅ **Escalating difficulty curve (lease + disaster %)** — lease rises with days/season, disaster probability bumps per season | High | S | p1·I2, p2·D, p3·1, p4·A → **shipped with [006-season-system](specs/006-season-system/spec.md)** | **DONE (2026-06-03).** Bundled with G1 per scope decision in brainstorming. Lease 15→20→25→30 across S1–S4; disaster bands scale proportionally (15%→20%→28%→35%). |
-| G3 | **Enriched run/season summary** — season reached, medals/tier, personal bests, contextual failure tip, milestones recap | High | S–M | p1·I6, p2·F, p4·F, p5·3.2 | **Partially landed via [006-season-system](specs/006-season-system/spec.md)**: BankruptcyScreen now shows "Season reached: N (Name)". Remaining: medals/tier, personal bests across runs, contextual failure tip, milestones recap. Bump to next sprint candidate. |
+| G3 | ✅ **Enriched run/season summary** — season reached, medals/tier, personal bests, contextual failure tip, milestones recap | High | S–M | p1·I6, p2·F, p4·F, p5·3.2 → **shipped as [007-enriched-run-summary](specs/007-enriched-run-summary/spec.md)** | **DONE (2026-06-04).** Bronze/Silver/Gold/Platinum medal tied to season reached; three persistent personal bests (days, peak, disasters) under a separate `pixel-parsnips-records` localStorage key; milestones recap with inline "🏆 New Best!" badges; contextual insight was already shipped in 005-ui-polish-core US5. 9 tasks, 9 commits. |
 | G4 | **Daily objectives / milestone banners / farm contracts** — short-term goals each day or season with small coin rewards | High | M | p2·B, p3·2, p4·B, p5·3.5 | Three flavors converge here: per-day objectives (p4), per-season contracts (p3), event milestones (p2). Recommend starting with per-day objectives — cheapest, fastest validation. Contracts can layer on. |
 | G5 | **Crop rebalance — buff Parsnip; consider new Truffle crop** — Parsnip yield 28→32 to make it a real choice; Truffle as season 3+ high-risk option | Medium | S (rebalance) / M (new crop) | p1·I4 | Parsnip buff is a one-line change. Truffle adds a new sprite, balance pass, unlock gate — defer until after G1 ships. |
 | G6 | **Crop rotation bonus** — +25% yield when replanting an exhausted plot with a different crop | Medium | S–M | p4·C | Reinforces existing soil system; breaks Pumpkin-only optimization without new content. |
@@ -68,7 +68,7 @@ These are the items that appear in **3 or more** documents — strongest signal:
 |---|---|---|
 | Season system / win condition | p1, p2, p3, p4, p5 | ✅ **Shipped (006-season-system, 2026-06-03)** |
 | Escalating difficulty | p1, p2, p3, p4 | ✅ **Shipped with seasons** |
-| Enriched run summary | p1, p2, p4, p5 | ⏳ Partial — Season-reached line shipped; medals/personal-bests/tips pending |
+| Enriched run summary | p1, p2, p4, p5 | ✅ **Shipped (007-enriched-run-summary, 2026-06-04)** — Season-reached line + medals + personal bests + first-run line + contextual tip all live on BankruptcyScreen |
 | Daily objectives / contracts | p2, p3, p4, p5 | Pending — Phase 2 candidate |
 | Market events | p1, p3, p4 | Pending — Phase 3 candidate (primary late-game variance lever) |
 
@@ -76,11 +76,11 @@ These are the items that appear in **3 or more** documents — strongest signal:
 
 ## Suggested Phasing
 
-**Phase 1 — "Give the run a shape"** ✅ shipped 2026-06-03 as [006-season-system](specs/006-season-system/spec.md)
-~~G1 Season System~~ ✅ + ~~G2 Escalating Difficulty~~ ✅ + G3 Enriched Summary (partial — Season-reached line only) + G5 Parsnip rebalance (deferred)
+**Phase 1 — "Give the run a shape"** ✅ shipped 2026-06-03 as [006-season-system](specs/006-season-system/spec.md) + 2026-06-04 as [007-enriched-run-summary](specs/007-enriched-run-summary/spec.md)
+~~G1 Season System~~ ✅ + ~~G2 Escalating Difficulty~~ ✅ + ~~G3 Enriched Summary~~ ✅ + G5 Parsnip rebalance (deferred)
 
 **Phase 2 — "Give each day a hook"** ← **next up**
-Finish G3 (medals + personal bests + contextual tip) + G4 Daily Objectives + G12 Harvest Streak + G13 Reputation Tier + F2 Disaster reveal juice + G5 Parsnip rebalance (still trivial, can slot anywhere)
+G4 Daily Objectives + G12 Harvest Streak + G13 Reputation Tier + F2 Disaster reveal juice + G5 Parsnip rebalance (still trivial, can slot anywhere)
 
 **Phase 3 — "Give wealth somewhere to go"** (target: 1–2 sprints)
 G7 Market Events + G8 Infrastructure Upgrades *or* G9 Farm Expansion (pick one to start) + G6 Rotation Bonus
@@ -102,4 +102,4 @@ M1 Rewarded Ads → M2 Founder's Pack → M3 Cosmetic Themes → (later) M4/M5
 
 ---
 
-*Generated 2026-06-02 from p1–p6 analyses. Updated 2026-06-03 after shipping 006-season-system.*
+*Generated 2026-06-02 from p1–p6 analyses. Updated 2026-06-03 after shipping 006-season-system, then 2026-06-04 after shipping 007-enriched-run-summary.*
