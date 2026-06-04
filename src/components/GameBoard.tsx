@@ -57,6 +57,13 @@ export function GameBoard({
     }
   }, [lastDailyLog]);
 
+  // Auto-deselect when the selected crop's inventory runs out.
+  useEffect(() => {
+    if (selectedCrop && state.seedInventory[selectedCrop] === 0) {
+      setSelectedCrop(null);
+    }
+  }, [selectedCrop, state.seedInventory]);
+
   function toggleShop() {
     setIsShopOpen(prev => !prev);
   }
@@ -71,8 +78,8 @@ export function GameBoard({
 
   function handlePlot(plotId: number) {
     if (!selectedCrop) return;
-    const planted = onPlantSeed(plotId, selectedCrop);
-    if (planted) setSelectedCrop(null);
+    onPlantSeed(plotId, selectedCrop);
+    // Selection persists across plants; the effect below clears it when inventory empties.
   }
 
   function handleBuySeed(cropId: CropId) {

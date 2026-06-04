@@ -26,16 +26,20 @@ function withSeeds(
   };
 }
 
-// ── initialGameState — schema 4 fields ────────────────────────────────────────
+// ── initialGameState — schema 5 fields ────────────────────────────────────────
 
-describe('initialGameState — schema 4 fields', () => {
+describe('initialGameState — schema 5 fields', () => {
   it('starts with endlessMode: false', () => {
     const s = initialGameState();
     expect(s.endlessMode).toBe(false);
   });
 
-  it('has schemaVersion 4', () => {
-    expect(initialGameState().schemaVersion).toBe(4);
+  it('has schemaVersion 5', () => {
+    expect(initialGameState().schemaVersion).toBe(5);
+  });
+
+  it('starts with disastersSurvived: 0', () => {
+    expect(initialGameState().disastersSurvived).toBe(0);
   });
 });
 
@@ -1412,5 +1416,28 @@ describe('processTurn — seasonal disaster bands (US4)', () => {
     const state3: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 45 };
     expect(processTurn(state1, undefined, undefined, 0.04).log.weatherId).toBe('blight');
     expect(processTurn(state3, undefined, undefined, 0.04).log.weatherId).toBe('blight');
+  });
+});
+
+describe('processTurn — disastersSurvived counter (007)', () => {
+  it('increments by 1 on a survived blight day', () => {
+    const start = { ...initialGameState(), coinBalance: 500, disastersSurvived: 0 };
+    const result = processTurn(start, 'blight');
+    expect(result.isBankrupt).toBe(false);
+    expect(result.state.disastersSurvived).toBe(1);
+  });
+
+  it('does NOT increment on a non-disaster day', () => {
+    const start = { ...initialGameState(), coinBalance: 500, disastersSurvived: 3 };
+    const result = processTurn(start, 'sunny');
+    expect(result.state.disastersSurvived).toBe(3);
+  });
+
+  it('does NOT increment when a disaster causes bankruptcy that turn', () => {
+    // Balance below seasonal lease (15) so the disaster turn bankrupts.
+    const start = { ...initialGameState(), coinBalance: 5, disastersSurvived: 2 };
+    const result = processTurn(start, 'pest_infestation');
+    expect(result.isBankrupt).toBe(true);
+    expect(result.state.disastersSurvived).toBe(2); // unchanged
   });
 });

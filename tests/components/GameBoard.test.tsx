@@ -6,27 +6,45 @@ import { GameBoard } from '../../src/components/GameBoard';
 import { PlotCard } from '../../src/components/PlotCard';
 import { initialGameState } from '../../src/engine/gameEngine';
 import type { DailyLogEntry, PlotState } from '../../src/engine/types';
+import type { PersonalBests } from '../../src/engine/records';
+
+const emptyRecords: PersonalBests = {
+  schemaVersion: 1,
+  bestDaysSurvived: 0,
+  bestPeakBalance: 0,
+  bestSeasonReached: 0,
+  mostDisastersSurvived: 0,
+  totalRunsCompleted: 0,
+};
+
+const sharedBankruptcyProps = {
+  disastersSurvived: 0,
+  seasonReached: 1,
+  medal: 'none' as const,
+  records: emptyRecords,
+  newBests: new Set<keyof PersonalBests>(),
+};
 
 // ── T022: BankruptcyScreen smoke tests ────────────────────────────────────────
 
 describe('BankruptcyScreen', () => {
   it('renders the days survived count', () => {
     render(
-      <BankruptcyScreen daysPlayed={10} peakBalance={150} onRestart={vi.fn()} />
+      <BankruptcyScreen {...sharedBankruptcyProps} daysPlayed={10} peakBalance={150} onRestart={vi.fn()} />
     );
     expect(screen.getByText(/10/)).toBeInTheDocument();
   });
 
   it('renders the peak balance', () => {
     render(
-      <BankruptcyScreen daysPlayed={10} peakBalance={150} onRestart={vi.fn()} />
+      <BankruptcyScreen {...sharedBankruptcyProps} daysPlayed={10} peakBalance={150} onRestart={vi.fn()} />
     );
     expect(screen.getByText(/150/)).toBeInTheDocument();
   });
 
   it('renders a Restart button', () => {
     render(
-      <BankruptcyScreen daysPlayed={10} peakBalance={150} onRestart={vi.fn()} />
+      <BankruptcyScreen {...sharedBankruptcyProps} daysPlayed={10} peakBalance={150} onRestart={vi.fn()} />
     );
     expect(
       screen.getByRole('button', { name: /restart/i })
@@ -36,7 +54,7 @@ describe('BankruptcyScreen', () => {
   it('calls onRestart when Restart button is clicked', async () => {
     const onRestart = vi.fn();
     render(
-      <BankruptcyScreen daysPlayed={5} peakBalance={80} onRestart={onRestart} />
+      <BankruptcyScreen {...sharedBankruptcyProps} daysPlayed={5} peakBalance={80} onRestart={onRestart} />
     );
     screen.getByRole('button', { name: /restart/i }).click();
     expect(onRestart).toHaveBeenCalledTimes(1);
@@ -145,7 +163,7 @@ describe('GameBoard — smoke tests (T047)', () => {
 
   it('passes WCAG 2.1 AA axe check — BankruptcyScreen', async () => {
     const { container } = render(
-      <BankruptcyScreen daysPlayed={7} peakBalance={120} onRestart={vi.fn()} />
+      <BankruptcyScreen {...sharedBankruptcyProps} daysPlayed={7} peakBalance={120} onRestart={vi.fn()} />
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();

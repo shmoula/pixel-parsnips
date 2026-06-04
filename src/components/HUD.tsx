@@ -2,7 +2,7 @@ import { TAX_RATE } from '../engine/constants';
 import { getSeasonForDay, type SeasonConfig } from '../engine/seasons';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
-function getNextSeasonLease(currentDay: number, season: SeasonConfig, endlessMode: boolean): number | null {
+function getNextSeasonLease(season: SeasonConfig, endlessMode: boolean): number | null {
   // No "next season" exists at Season 4 endDay unless endless mode is on
   if (season.number === 4 && !endlessMode) return null;
   // Look up the lease of the day after this season ends
@@ -63,7 +63,7 @@ export function HUD({
   const daysRemainingInSeason = season.endDay - currentDay + 1;
   const showWarning = currentDay >= season.startDay + 17 && !targetMet && currentDay <= season.endDay;
   const showLeasePreview = currentDay === season.endDay;
-  const nextSeasonLease = showLeasePreview ? getNextSeasonLease(currentDay, season, endlessMode) : null;
+  const nextSeasonLease = showLeasePreview ? getNextSeasonLease(season, endlessMode) : null;
 
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);

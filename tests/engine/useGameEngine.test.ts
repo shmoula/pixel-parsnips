@@ -4,6 +4,7 @@ import { useGameEngine } from '../../src/engine/useGameEngine';
 import { SCHEMA_VERSION } from '../../src/engine/constants';
 import { initialGameState } from '../../src/engine/gameEngine';
 import type { GameState } from '../../src/engine/types';
+import { loadRecords } from '../../src/engine/records';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 
@@ -273,6 +274,72 @@ describe('useGameEngine — branch coverage completions (T048)', () => {
   });
 });
 
+// Action callbacks must return true synchronously on success. Earlier versions
+// read `success` from inside a setState updater and returned it before the
+// updater ran, so success cases falsely reported false. This block locks the
+// fix in place.
+describe('useGameEngine — action callbacks return true on success', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('buySeed returns true when funds are sufficient', () => {
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.buySeed('radish', 1); });
+    expect(ok).toBe(true);
+  });
+
+  it('plantSeed returns true when seed is available', () => {
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.buySeed('radish', 1); });
+    let ok = false;
+    act(() => { ok = result.current.plantSeed(0, 'radish'); });
+    expect(ok).toBe(true);
+  });
+
+  it('buyUpgrade returns true when affordable', () => {
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.buyUpgrade(); });
+    expect(ok).toBe(true);
+  });
+
+  it('buyFertilizer returns true when affordable', () => {
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.buyFertilizer(1); });
+    expect(ok).toBe(true);
+  });
+
+  it('applyFertilizer returns true on an exhausted plot when inventory has stock', () => {
+    const exhausted: GameState = {
+      ...initialGameState(),
+      fertilizerInventory: 1,
+      plots: initialGameState().plots.map((p, i) =>
+        i === 0 ? { ...p, exhaustedSinceDay: 4, consecutiveHarvests: 0 } : p
+      ),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: exhausted }));
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.applyFertilizer(0); });
+    expect(ok).toBe(true);
+  });
+
+  it('clearPestDamage returns true on a pest-damaged plot', () => {
+    const damaged: GameState = {
+      ...initialGameState(),
+      plots: initialGameState().plots.map((p, i) =>
+        i === 0 ? { ...p, pestDamaged: true } : p
+      ),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: damaged }));
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.clearPestDamage(0); });
+    expect(ok).toBe(true);
+  });
+});
+
 // ── T016: buyFertilizer + applyFertilizer hook integration ────────────────────
 
 describe('useGameEngine — fertilizer hook integration (T016, US2)', () => {
@@ -403,7 +470,35 @@ describe('useGameEngine — continueSeason and endRun (US2, US5)', () => {
   });
 });
 
-describe('useGameEngine — schema 3 → 4 migration (US7)', () => {
+describe('schema 4 → 5 migration (007 — disastersSurvived)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('migrates a v4 save by adding disastersSurvived: 0', () => {
+    const { disastersSurvived: _, ...v4State } = {
+      ...initialGameState(),
+      schemaVersion: 4,
+      currentDay: 25,
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 4, state: v4State }));
+
+    const { result } = renderHook(() => useGameEngine());
+
+    expect(result.current.state.schemaVersion).toBe(5);
+    expect(result.current.state.disastersSurvived).toBe(0);
+    expect(result.current.state.currentDay).toBe(25); // existing fields preserved
+  });
+
+  it('initialGameState includes disastersSurvived: 0', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.disastersSurvived).toBe(0);
+  });
+});
+
+describe('useGameEngine — schema 3 → 5 migration (US7 chained via 007)', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
@@ -436,7 +531,7 @@ describe('useGameEngine — schema 3 → 4 migration (US7)', () => {
     expect(result.current.state.currentDay).toBe(15);
     expect(result.current.state.coinBalance).toBe(180);
     expect(result.current.state.endlessMode).toBe(false);
-    expect(result.current.state.schemaVersion).toBe(4);
+    expect(result.current.state.schemaVersion).toBe(5);
   });
 
   it('preserves bankrupt phase through migration', () => {
@@ -466,6 +561,50 @@ describe('useGameEngine — schema 3 → 4 migration (US7)', () => {
     );
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.currentDay).toBe(1);
-    expect(result.current.state.schemaVersion).toBe(4);
+    expect(result.current.state.schemaVersion).toBe(5);
   });
+});
+
+describe('useGameEngine — endOfRunRecap (007)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('is null while phase is "playing"', () => {
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.endOfRunRecap).toBeNull();
+  });
+
+  it('populates endOfRunRecap when phase flips to "bankrupt"', () => {
+    // Seed a state that will bankrupt on the next turn.
+    const nearBankrupt = {
+      ...initialGameState(),
+      coinBalance: 0,
+      currentDay: 5,
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 5, state: nearBankrupt }));
+
+    const { result } = renderHook(() => useGameEngine());
+    act(() => result.current.nextDay());
+
+    expect(result.current.state.phase).toBe('bankrupt');
+    expect(result.current.endOfRunRecap).not.toBeNull();
+    expect(result.current.endOfRunRecap!.medal).toBe('none'); // bankrupt in S1
+    expect(result.current.endOfRunRecap!.records.totalRunsCompleted).toBe(1);
+  });
+
+  it('preserves records across restart', () => {
+    const nearBankrupt = { ...initialGameState(), coinBalance: 0, currentDay: 5 };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 5, state: nearBankrupt }));
+    const { result } = renderHook(() => useGameEngine());
+    act(() => result.current.nextDay());
+    expect(result.current.endOfRunRecap).not.toBeNull();
+
+    act(() => result.current.restart());
+
+    expect(result.current.endOfRunRecap).toBeNull();
+    expect(loadRecords().totalRunsCompleted).toBe(1); // still there
+  });
+
+  // TODO: assert recap does not fire on season_passed/season_failed
 });

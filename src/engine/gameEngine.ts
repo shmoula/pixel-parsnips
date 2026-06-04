@@ -12,7 +12,7 @@ import {
   FERTILIZER_COST,
   coins,
 } from './constants';
-import { getSeasonForDay, getDisasterBandsForSeason } from './seasons';
+import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
 import type {
   GameState,
   PlotState,
@@ -57,6 +57,7 @@ export function initialGameState(): GameState {
     fertilizerInventory: 0,
     flashDroughtDaysRemaining: 0,
     endlessMode: false,
+    disastersSurvived: 0,
   };
 }
 
@@ -401,6 +402,11 @@ export function processTurn(
     flashDroughtDaysAfter: flashDroughtDaysRemaining,
   };
 
+  // Step 9.5: Increment disastersSurvived if this turn's weather was a disaster
+  //           AND the run did not bankrupt this turn.
+  const isDisasterTurn = (DISASTER_WEATHER_IDS as readonly string[]).includes(weatherId);
+  const disastersSurvived = state.disastersSurvived + (isDisasterTurn ? 1 : 0);
+
   const nextState: GameState = {
     ...state,
     plots: recoveredPlots,
@@ -410,6 +416,7 @@ export function processTurn(
     peakBalance,
     lastDailyLog: log,
     phase: seasonPhase,
+    disastersSurvived,
   };
 
   return { state: nextState, log, isBankrupt: false };

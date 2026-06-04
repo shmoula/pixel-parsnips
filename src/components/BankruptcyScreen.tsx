@@ -1,9 +1,17 @@
 import { getSeasonForDay } from '../engine/seasons';
+import { MedalBadge } from './MedalBadge';
 import type { DailyLogEntry } from '../engine/types';
+import type { Medal } from '../engine/medals';
+import type { PersonalBests } from '../engine/records';
 
 interface BankruptcyScreenProps {
   daysPlayed: number;
   peakBalance: number;
+  disastersSurvived: number;
+  seasonReached: number;
+  medal: Medal;
+  records: PersonalBests;
+  newBests: Set<keyof PersonalBests>;
   lastDailyLog?: DailyLogEntry | null;
   onRestart: () => void;
 }
@@ -27,14 +35,49 @@ function deriveInsight(
   return 'Keep a reserve above your daily lease cost to survive bad-weather turns.';
 }
 
+function NewBestBadge() {
+  return (
+    <span
+      aria-label="new personal best"
+      className="ml-2 font-pixel text-[9px] text-farm-gold"
+    >
+      🏆 New Best!
+    </span>
+  );
+}
+
+interface StatRowProps {
+  label: string;
+  value: string;
+  isNewBest: boolean;
+}
+
+function StatRow({ label, value, isNewBest }: StatRowProps) {
+  return (
+    <div className="flex justify-between items-center px-4 py-2 bg-farm-ink rounded">
+      <span className="font-pixel text-xs text-farm-stone">
+        {label}
+        {isNewBest && <NewBestBadge />}
+      </span>
+      <span className="font-pixel text-sm text-farm-gold">{value}</span>
+    </div>
+  );
+}
+
 export function BankruptcyScreen({
   daysPlayed,
   peakBalance,
+  disastersSurvived,
+  seasonReached,
+  medal,
+  records,
+  newBests,
   lastDailyLog,
   onRestart,
 }: BankruptcyScreenProps) {
   const season = getSeasonForDay(daysPlayed);
   const insight = deriveInsight(lastDailyLog, daysPlayed, peakBalance);
+  const isFirstRun = records.totalRunsCompleted <= 1; // post-write: this run is run #1
 
   return (
     <div
@@ -52,24 +95,50 @@ export function BankruptcyScreen({
         Bankrupt!
       </h1>
 
-      <p className="text-farm-stone font-pixel text-xs text-center leading-relaxed">
-        You couldn&apos;t cover the land lease.
-      </p>
+      <MedalBadge medal={medal} />
 
       <div className="flex flex-col gap-3 w-full max-w-xs">
-        <div className="flex justify-between px-4 py-2 bg-farm-ink rounded">
-          <span className="font-pixel text-xs text-farm-stone">Days Survived</span>
-          <span className="font-pixel text-sm text-farm-gold">{daysPlayed}</span>
-        </div>
-        <div className="flex justify-between px-4 py-2 bg-farm-ink rounded">
-          <span className="font-pixel text-xs text-farm-stone">Season reached</span>
-          <span className="font-pixel text-sm text-farm-gold">{season.number} ({season.name})</span>
-        </div>
-        <div className="flex justify-between px-4 py-2 bg-farm-ink rounded">
-          <span className="font-pixel text-xs text-farm-stone">Peak Balance</span>
-          <span className="font-pixel text-sm text-farm-gold">{peakBalance}🪙</span>
-        </div>
+        <StatRow
+          label="Days Survived"
+          value={String(daysPlayed)}
+          isNewBest={newBests.has('bestDaysSurvived')}
+        />
+        <StatRow
+          label="Season reached"
+          value={`${seasonReached} (${season.name})`}
+          isNewBest={newBests.has('bestSeasonReached')}
+        />
+        <StatRow
+          label="Peak Balance"
+          value={`${peakBalance}🪙`}
+          isNewBest={newBests.has('bestPeakBalance')}
+        />
+        <StatRow
+          label="Disasters Survived"
+          value={String(disastersSurvived)}
+          isNewBest={newBests.has('mostDisastersSurvived')}
+        />
       </div>
+
+      <section
+        aria-label="Personal records across all runs"
+        className="flex flex-col gap-2 w-full max-w-xs px-4 py-3 bg-farm-ink rounded border border-farm-stone/30"
+      >
+        <span className="font-pixel text-[9px] text-farm-stone uppercase tracking-widest">
+          Personal Records
+        </span>
+        {isFirstRun ? (
+          <p className="font-pixel text-[10px] text-farm-parchment leading-relaxed">
+            This was your first run — your records start now.
+          </p>
+        ) : null}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-pixel text-[10px] text-farm-parchment">
+          <span>Best days:</span><span className="text-right">{records.bestDaysSurvived}</span>
+          <span>Best peak:</span><span className="text-right">{records.bestPeakBalance}🪙</span>
+          <span>Best season:</span><span className="text-right">{records.bestSeasonReached || '—'}</span>
+          <span>Most disasters:</span><span className="text-right">{records.mostDisastersSurvived}</span>
+        </div>
+      </section>
 
       <div className="flex flex-col gap-2 w-full max-w-xs px-4 py-3 bg-farm-ink rounded border border-farm-stone/30">
         <span className="font-pixel text-[9px] text-farm-stone uppercase tracking-widest">Insight</span>
