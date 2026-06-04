@@ -2,6 +2,7 @@ import { useGameEngine } from './engine/useGameEngine';
 import { GameBoard } from './components/GameBoard';
 import { BankruptcyScreen } from './components/BankruptcyScreen';
 import { SeasonTransitionModal } from './components/SeasonTransitionModal';
+import type { PersonalBests } from './engine/records';
 
 function GrainFilter() {
   return (
@@ -22,16 +23,32 @@ function GrainFilter() {
 
 function App() {
   const engine = useGameEngine();
-  const { state, restart, continueSeason, endRunVictory } = engine;
+  const { state, restart, continueSeason, endRunVictory, endOfRunRecap } = engine;
 
   // Bankruptcy — terminal run-end (existing behavior)
   if (state.phase === 'bankrupt') {
+    const seasonReached = endOfRunRecap ? endOfRunRecap.seasonReached : 1;
+    const medal = endOfRunRecap ? endOfRunRecap.medal : 'none';
+    const records: PersonalBests = endOfRunRecap ? endOfRunRecap.records : {
+      schemaVersion: 1,
+      bestDaysSurvived: 0,
+      bestPeakBalance: 0,
+      bestSeasonReached: 0,
+      mostDisastersSurvived: 0,
+      totalRunsCompleted: 0,
+    };
+    const newBests: Set<keyof PersonalBests> = endOfRunRecap ? endOfRunRecap.newBests : new Set();
     return (
       <>
         <GrainFilter />
         <BankruptcyScreen
           daysPlayed={state.currentDay}
           peakBalance={state.peakBalance}
+          disastersSurvived={state.disastersSurvived}
+          seasonReached={seasonReached}
+          medal={medal}
+          records={records}
+          newBests={newBests}
           lastDailyLog={state.lastDailyLog}
           onRestart={restart}
         />
