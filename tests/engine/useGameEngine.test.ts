@@ -274,6 +274,72 @@ describe('useGameEngine — branch coverage completions (T048)', () => {
   });
 });
 
+// Action callbacks must return true synchronously on success. Earlier versions
+// read `success` from inside a setState updater and returned it before the
+// updater ran, so success cases falsely reported false. This block locks the
+// fix in place.
+describe('useGameEngine — action callbacks return true on success', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('buySeed returns true when funds are sufficient', () => {
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.buySeed('radish', 1); });
+    expect(ok).toBe(true);
+  });
+
+  it('plantSeed returns true when seed is available', () => {
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.buySeed('radish', 1); });
+    let ok = false;
+    act(() => { ok = result.current.plantSeed(0, 'radish'); });
+    expect(ok).toBe(true);
+  });
+
+  it('buyUpgrade returns true when affordable', () => {
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.buyUpgrade(); });
+    expect(ok).toBe(true);
+  });
+
+  it('buyFertilizer returns true when affordable', () => {
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.buyFertilizer(1); });
+    expect(ok).toBe(true);
+  });
+
+  it('applyFertilizer returns true on an exhausted plot when inventory has stock', () => {
+    const exhausted: GameState = {
+      ...initialGameState(),
+      fertilizerInventory: 1,
+      plots: initialGameState().plots.map((p, i) =>
+        i === 0 ? { ...p, exhaustedSinceDay: 4, consecutiveHarvests: 0 } : p
+      ),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: exhausted }));
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.applyFertilizer(0); });
+    expect(ok).toBe(true);
+  });
+
+  it('clearPestDamage returns true on a pest-damaged plot', () => {
+    const damaged: GameState = {
+      ...initialGameState(),
+      plots: initialGameState().plots.map((p, i) =>
+        i === 0 ? { ...p, pestDamaged: true } : p
+      ),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: damaged }));
+    const { result } = renderHook(() => useGameEngine());
+    let ok = false;
+    act(() => { ok = result.current.clearPestDamage(0); });
+    expect(ok).toBe(true);
+  });
+});
+
 // ── T016: buyFertilizer + applyFertilizer hook integration ────────────────────
 
 describe('useGameEngine — fertilizer hook integration (T016, US2)', () => {

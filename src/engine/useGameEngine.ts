@@ -101,6 +101,13 @@ export function useGameEngine(): GameEngineHook {
   const [endOfRunRecap, setEndOfRunRecap] = useState<EndOfRunRecap | null>(null);
   const prevPhaseRef = useRef<GameState['phase']>(state.phase);
 
+  // Mirror state in a ref so action callbacks can read the latest value synchronously.
+  // setState's function updater runs lazily, so reading inside it can't drive a synchronous return.
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
+
   useEffect(() => {
     if (!hasHydratedRef.current) {
       hasHydratedRef.current = true;
@@ -144,63 +151,45 @@ export function useGameEngine(): GameEngineHook {
   }, []);
 
   const plant = useCallback((plotId: number, cropId: CropId): boolean => {
-    let success = false;
-    setState(prev => {
-      const result = plantSeed(prev, plotId, cropId);
-      if (result.ok) { success = true; return result.state; }
-      return prev;
-    });
-    return success;
+    const result = plantSeed(stateRef.current, plotId, cropId);
+    if (!result.ok) return false;
+    setState(result.state);
+    return true;
   }, []);
 
   const buySeed = useCallback((cropId: CropId, quantity: number): boolean => {
-    let success = false;
-    setState(prev => {
-      const result = engineBuySeed(prev, cropId, quantity);
-      if (result.ok) { success = true; return result.state; }
-      return prev;
-    });
-    return success;
+    const result = engineBuySeed(stateRef.current, cropId, quantity);
+    if (!result.ok) return false;
+    setState(result.state);
+    return true;
   }, []);
 
   const buyUpgrade = useCallback((): boolean => {
-    let success = false;
-    setState(prev => {
-      const result = engineBuyUpgrade(prev);
-      if (result.ok) { success = true; return result.state; }
-      return prev;
-    });
-    return success;
+    const result = engineBuyUpgrade(stateRef.current);
+    if (!result.ok) return false;
+    setState(result.state);
+    return true;
   }, []);
 
   const buyFertilizer = useCallback((quantity: number): boolean => {
-    let success = false;
-    setState(prev => {
-      const result = engineBuyFertilizer(prev, quantity);
-      if (result.ok) { success = true; return result.state; }
-      return prev;
-    });
-    return success;
+    const result = engineBuyFertilizer(stateRef.current, quantity);
+    if (!result.ok) return false;
+    setState(result.state);
+    return true;
   }, []);
 
   const applyFertilizer = useCallback((plotId: number): boolean => {
-    let success = false;
-    setState(prev => {
-      const result = engineApplyFertilizer(prev, plotId);
-      if (result.ok) { success = true; return result.state; }
-      return prev;
-    });
-    return success;
+    const result = engineApplyFertilizer(stateRef.current, plotId);
+    if (!result.ok) return false;
+    setState(result.state);
+    return true;
   }, []);
 
   const clearPestDamage = useCallback((plotId: number): boolean => {
-    let success = false;
-    setState(prev => {
-      const result = engineClearPestDamage(prev, plotId);
-      if (result.ok) { success = true; return result.state; }
-      return prev;
-    });
-    return success;
+    const result = engineClearPestDamage(stateRef.current, plotId);
+    if (!result.ok) return false;
+    setState(result.state);
+    return true;
   }, []);
 
   const restart = useCallback(() => {
