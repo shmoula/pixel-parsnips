@@ -34,12 +34,22 @@ describe('initialGameState — schema 5 fields', () => {
     expect(s.endlessMode).toBe(false);
   });
 
-  it('has schemaVersion 5', () => {
-    expect(initialGameState().schemaVersion).toBe(5);
+  it('has schemaVersion 6', () => {
+    expect(initialGameState().schemaVersion).toBe(6);
   });
 
   it('starts with disastersSurvived: 0', () => {
     expect(initialGameState().disastersSurvived).toBe(0);
+  });
+});
+
+// ── initialGameState — harvest streak ──────────────────────────────────────────
+
+describe('initialGameState — harvest streak', () => {
+  it('starts harvestStreak and peakHarvestStreak at 0', () => {
+    const s = initialGameState();
+    expect(s.harvestStreak).toBe(0);
+    expect(s.peakHarvestStreak).toBe(0);
   });
 });
 

@@ -58,6 +58,8 @@ export function initialGameState(): GameState {
     flashDroughtDaysRemaining: 0,
     endlessMode: false,
     disastersSurvived: 0,
+    harvestStreak: 0,
+    peakHarvestStreak: 0,
   };
 }
 

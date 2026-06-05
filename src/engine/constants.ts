@@ -7,7 +7,7 @@ import type {
 
 // ── Scalar constants ──────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 export const STARTING_BALANCE = 100;
 export const PLOT_COUNT = 12;
 export const TAX_RATE = 0.05;
@@ -15,6 +15,8 @@ export const MAX_UPGRADE_TIER = 3;
 export const EXHAUSTION_THRESHOLD = 3;
 export const EXHAUSTION_RECOVERY_DAYS = 3;
 export const FERTILIZER_COST = 30;
+export const STREAK_BONUS_PER_LEVEL = 5;
+export const STREAK_BONUS_CAP = 4;
 
 /** Integer rounding helper for all coin arithmetic. */
 export const coins = (n: number): number => Math.floor(n);
