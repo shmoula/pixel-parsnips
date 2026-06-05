@@ -84,6 +84,12 @@ export interface DailyLogEntry {
   pestDestroyedPlots: number[];
   /** Value of flashDroughtDaysRemaining at end of turn processing; 0 when inactive. */
   flashDroughtDaysAfter: number;
+  /** Value of harvestStreak at start of turn (before increment/reset). */
+  streakBefore: number;
+  /** Value of harvestStreak at end of turn (after increment/reset and any season-end reset). */
+  streakAfter: number;
+  /** Coins awarded this turn from streak bonus; 0 when no harvest occurred. */
+  streakBonus: number;
 }
 
 export interface GameState {
@@ -105,6 +111,10 @@ export interface GameState {
   endlessMode: boolean;
   /** Count of disaster days (blight, pest_infestation, flash_drought) the run survived without bankruptcy. */
   disastersSurvived: number;
+  /** Uncapped consecutive-harvest-day counter. Bonus is min(streak, 4) * 5. */
+  harvestStreak: number;
+  /** Highest harvestStreak value reached this run; used for the persistent-best record. */
+  peakHarvestStreak: number;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────
