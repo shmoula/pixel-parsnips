@@ -108,7 +108,8 @@ export function HUD({
         {harvestStreak > 0 && (
           <div
             aria-label={`Harvest streak: ${harvestStreak} days`}
-            className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
+            title={`Harvest streak: ${harvestStreak} day${harvestStreak === 1 ? '' : 's'} in a row. Next harvest earns +${Math.min(harvestStreak, 4) * 5}🪙 bonus (capped at +20).`}
+            className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
           >
             <span className="text-base leading-none" aria-hidden="true">🔥</span>
             <span className="font-pixel text-[10px] text-farm-gold">×{harvestStreak}</span>
