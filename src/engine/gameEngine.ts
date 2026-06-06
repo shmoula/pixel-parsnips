@@ -193,6 +193,30 @@ export function buyUpgrade(state: GameState): UpgradeResult {
 
 // ── T008/T009: processTurn (FR-002 full 10-step sequence + 3a/3b/8.5) ────────
 
+function applySeasonStreakReset(
+  streakAfter: number,
+  phase: GameState['phase']
+): number {
+  return phase === 'season_passed' || phase === 'season_4_won' ? 0 : streakAfter;
+}
+
+function computeStreakUpdate(
+  streakBefore: number,
+  peakBefore: number,
+  hadHarvest: boolean
+): { streakAfter: number; streakBonus: number; peakHarvestStreak: number } {
+  if (!hadHarvest) {
+    return { streakAfter: 0, streakBonus: 0, peakHarvestStreak: peakBefore };
+  }
+  const streakAfter = streakBefore + 1;
+  const streakBonus = Math.min(streakAfter, STREAK_BONUS_CAP) * STREAK_BONUS_PER_LEVEL;
+  return {
+    streakAfter,
+    streakBonus,
+    peakHarvestStreak: Math.max(peakBefore, streakAfter),
+  };
+}
+
 /**
  * Executes the full end-of-turn sequence (FR-002).
  * Pass `weatherRoll` in tests for deterministic weather; omit in production.
@@ -308,19 +332,12 @@ export function processTurn(
 
   // Step 4.5: Harvest streak update — bonus counts toward bankruptcy avoidance
   const streakBefore = state.harvestStreak;
-  let streakAfter: number;
-  let streakBonus: number;
-  let peakHarvestStreak: number;
-  if (harvests.length > 0) {
-    streakAfter = streakBefore + 1;
-    streakBonus = Math.min(streakAfter, STREAK_BONUS_CAP) * STREAK_BONUS_PER_LEVEL;
-    coinBalance += streakBonus;
-    peakHarvestStreak = Math.max(state.peakHarvestStreak, streakAfter);
-  } else {
-    streakAfter = 0;
-    streakBonus = 0;
-    peakHarvestStreak = state.peakHarvestStreak;
-  }
+  const { streakAfter, streakBonus, peakHarvestStreak } = computeStreakUpdate(
+    streakBefore,
+    state.peakHarvestStreak,
+    harvests.length > 0
+  );
+  coinBalance += streakBonus;
 
   // Step 5: Bankruptcy check — if balance < lease fee, game over
   const leaseForDay = season.leasePerDay;
@@ -393,10 +410,7 @@ export function processTurn(
 
   // Step 8.4b: Reset harvest streak when a season is cleared (not on season_failed,
   // since the run is ending and the final log should reflect the as-played streak).
-  const harvestStreakAfterSeason =
-    seasonPhase === 'season_passed' || seasonPhase === 'season_4_won'
-      ? 0
-      : streakAfter;
+  const harvestStreakAfterSeason = applySeasonStreakReset(streakAfter, seasonPhase);
 
   // Step 8.6: Decrement flash drought counter each calendar day EXCEPT the turn it fires
   // (skip on flash_drought turn so N+1 and N+2 planting days both receive the penalty)
