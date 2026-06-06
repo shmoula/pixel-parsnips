@@ -477,7 +477,7 @@ describe('schema 4 → 5 migration (007 — disastersSurvived)', () => {
   });
 
   it('migrates a v4 save by adding disastersSurvived: 0', () => {
-    const { disastersSurvived: _, ...v4State } = {
+    const { disastersSurvived: _, harvestStreak: __, peakHarvestStreak: ___, ...v4State } = {
       ...initialGameState(),
       schemaVersion: 4,
       currentDay: 25,
@@ -486,8 +486,10 @@ describe('schema 4 → 5 migration (007 — disastersSurvived)', () => {
 
     const { result } = renderHook(() => useGameEngine());
 
-    expect(result.current.state.schemaVersion).toBe(5);
+    expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
     expect(result.current.state.disastersSurvived).toBe(0);
+    expect(result.current.state.harvestStreak).toBe(0);
+    expect(result.current.state.peakHarvestStreak).toBe(0);
     expect(result.current.state.currentDay).toBe(25); // existing fields preserved
   });
 
@@ -495,6 +497,13 @@ describe('schema 4 → 5 migration (007 — disastersSurvived)', () => {
     localStorage.clear();
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.disastersSurvived).toBe(0);
+  });
+
+  it('initialGameState includes harvestStreak and peakHarvestStreak: 0', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.harvestStreak).toBe(0);
+    expect(result.current.state.peakHarvestStreak).toBe(0);
   });
 });
 
@@ -504,7 +513,7 @@ describe('useGameEngine — schema 3 → 5 migration (US7 chained via 007)', () 
     vi.restoreAllMocks();
   });
 
-  it('migrates a v3 mid-run save to v4 with endlessMode: false', () => {
+  it('migrates a v3 mid-run save to v6 with endlessMode: false', () => {
     const v3State = {
       schemaVersion: 3,
       currentDay: 15,
@@ -531,7 +540,10 @@ describe('useGameEngine — schema 3 → 5 migration (US7 chained via 007)', () 
     expect(result.current.state.currentDay).toBe(15);
     expect(result.current.state.coinBalance).toBe(180);
     expect(result.current.state.endlessMode).toBe(false);
-    expect(result.current.state.schemaVersion).toBe(5);
+    expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(result.current.state.disastersSurvived).toBe(0);
+    expect(result.current.state.harvestStreak).toBe(0);
+    expect(result.current.state.peakHarvestStreak).toBe(0);
   });
 
   it('preserves bankrupt phase through migration', () => {
@@ -542,8 +554,8 @@ describe('useGameEngine — schema 3 → 5 migration (US7 chained via 007)', () 
       coinBalance: 5,
       phase: 'bankrupt' as const,
     };
-    // strip endlessMode to simulate a true v3 save
-    const { endlessMode: _drop, ...v3Stripped } = v3State as typeof v3State & { endlessMode: boolean };
+    // strip endlessMode, harvestStreak, peakHarvestStreak to simulate a true v3 save
+    const { endlessMode: _drop, harvestStreak: _drop2, peakHarvestStreak: _drop3, ...v3Stripped } = v3State as typeof v3State & { endlessMode: boolean; harvestStreak: number; peakHarvestStreak: number };
     localStorage.setItem(
       'pixel-parsnips-state',
       JSON.stringify({ schemaVersion: 3, state: v3Stripped })
@@ -552,6 +564,8 @@ describe('useGameEngine — schema 3 → 5 migration (US7 chained via 007)', () 
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.phase).toBe('bankrupt');
     expect(result.current.state.endlessMode).toBe(false);
+    expect(result.current.state.harvestStreak).toBe(0);
+    expect(result.current.state.peakHarvestStreak).toBe(0);
   });
 
   it('discards schema 2 saves and starts fresh', () => {
@@ -561,7 +575,7 @@ describe('useGameEngine — schema 3 → 5 migration (US7 chained via 007)', () 
     );
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.currentDay).toBe(1);
-    expect(result.current.state.schemaVersion).toBe(5);
+    expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
   });
 });
 
@@ -582,7 +596,7 @@ describe('useGameEngine — endOfRunRecap (007)', () => {
       coinBalance: 0,
       currentDay: 5,
     };
-    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 5, state: nearBankrupt }));
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: nearBankrupt }));
 
     const { result } = renderHook(() => useGameEngine());
     act(() => result.current.nextDay());
@@ -595,7 +609,7 @@ describe('useGameEngine — endOfRunRecap (007)', () => {
 
   it('preserves records across restart', () => {
     const nearBankrupt = { ...initialGameState(), coinBalance: 0, currentDay: 5 };
-    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: 5, state: nearBankrupt }));
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: nearBankrupt }));
     const { result } = renderHook(() => useGameEngine());
     act(() => result.current.nextDay());
     expect(result.current.endOfRunRecap).not.toBeNull();
@@ -607,4 +621,38 @@ describe('useGameEngine — endOfRunRecap (007)', () => {
   });
 
   // TODO: assert recap does not fire on season_passed/season_failed
+});
+
+describe('useGameEngine — v5 → v6 migration (008 — Harvest Streak)', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('hydrates a v5 save with harvestStreak/peakHarvestStreak defaulted to 0', () => {
+    const v5State = {
+      schemaVersion: 5,
+      currentDay: 4,
+      coinBalance: 80,
+      plots: Array.from({ length: 12 }, (_, i) => ({
+        id: i, cropId: null, dayPlanted: null, daysRemaining: null,
+        consecutiveHarvests: 0, exhaustedSinceDay: null,
+        pestDamaged: false, droughtPenalised: false,
+      })),
+      seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+      upgradeTier: 0,
+      lastDailyLog: null,
+      phase: 'playing',
+      peakBalance: 100,
+      fertilizerInventory: 0,
+      flashDroughtDaysRemaining: 0,
+      endlessMode: false,
+      disastersSurvived: 0,
+    };
+    localStorage.setItem(
+      'pixel-parsnips-state',
+      JSON.stringify({ schemaVersion: 5, state: v5State }),
+    );
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(result.current.state.harvestStreak).toBe(0);
+    expect(result.current.state.peakHarvestStreak).toBe(0);
+  });
 });
