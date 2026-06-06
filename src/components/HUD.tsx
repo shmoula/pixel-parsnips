@@ -45,6 +45,8 @@ interface HUDProps {
   hasLastTurn: boolean;
   /** Used by T012 to decide whether Day 80 shows a lease preview. */
   endlessMode: boolean;
+  /** Current uncapped consecutive-harvest-day count; chip is hidden at 0. */
+  harvestStreak: number;
 }
 
 export function HUD({
@@ -56,6 +58,7 @@ export function HUD({
   isProcessing,
   hasLastTurn,
   endlessMode,
+  harvestStreak,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
   const dayIntoSeason = currentDay - season.startDay + 1;
@@ -102,6 +105,15 @@ export function HUD({
             )}
           </span>
         </div>
+        {harvestStreak > 0 && (
+          <div
+            aria-label={`Harvest streak: ${harvestStreak} days`}
+            className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
+          >
+            <span className="text-base leading-none" aria-hidden="true">🔥</span>
+            <span className="font-pixel text-[10px] text-farm-gold">×{harvestStreak}</span>
+          </div>
+        )}
       </div>
 
       {/* Centre-right: Lease + Tax — hidden on small screens */}

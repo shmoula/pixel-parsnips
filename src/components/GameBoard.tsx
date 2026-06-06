@@ -99,6 +99,7 @@ export function GameBoard({
         isProcessing={isProcessing}
         hasLastTurn={lastDailyLog !== null}
         endlessMode={state.endlessMode}
+        harvestStreak={state.harvestStreak}
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}

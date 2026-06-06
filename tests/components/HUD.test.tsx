@@ -61,3 +61,17 @@ describe('HUD — Day 18+ warning and Day 20 preview (US6)', () => {
     expect(screen.getByText(/rises to 34 next season/i)).toBeInTheDocument();
   });
 });
+
+describe('HUD — harvest streak chip', () => {
+  it('hides the streak chip when harvestStreak === 0', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={0} />);
+    expect(screen.queryByLabelText(/harvest streak/i)).toBeNull();
+  });
+
+  it('shows the streak chip with ×N when harvestStreak > 0', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={7} />);
+    const chip = screen.getByLabelText(/harvest streak/i);
+    expect(chip).toBeInTheDocument();
+    expect(chip).toHaveTextContent('×7');
+  });
+});
