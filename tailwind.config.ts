@@ -7,7 +7,7 @@ export default {
       colors: {
         farm: {
           soil:      '#4A2F1A',
-          grass:     '#3D7A2B',
+          grass:     '#357028',
           sky:       '#6BBFFF',
           gold:      '#F5C842',
           red:       '#C0392B',
