@@ -45,6 +45,7 @@ function App() {
         <BankruptcyScreen
           daysPlayed={state.currentDay}
           peakBalance={state.peakBalance}
+          peakHarvestStreak={state.peakHarvestStreak}
           disastersSurvived={state.disastersSurvived}
           seasonReached={seasonReached}
           medal={medal}

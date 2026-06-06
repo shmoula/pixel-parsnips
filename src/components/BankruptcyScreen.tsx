@@ -7,6 +7,7 @@ import type { PersonalBests } from '../engine/records';
 interface BankruptcyScreenProps {
   daysPlayed: number;
   peakBalance: number;
+  peakHarvestStreak: number;
   disastersSurvived: number;
   seasonReached: number;
   medal: Medal;
@@ -67,6 +68,7 @@ function StatRow({ label, value, isNewBest }: StatRowProps) {
 export function BankruptcyScreen({
   daysPlayed,
   peakBalance,
+  peakHarvestStreak,
   disastersSurvived,
   seasonReached,
   medal,
@@ -118,6 +120,11 @@ export function BankruptcyScreen({
           value={String(disastersSurvived)}
           isNewBest={newBests.has('mostDisastersSurvived')}
         />
+        <StatRow
+          label="Longest streak"
+          value={String(peakHarvestStreak)}
+          isNewBest={newBests.has('bestHarvestStreak')}
+        />
       </div>
 
       <section
@@ -137,6 +144,7 @@ export function BankruptcyScreen({
           <span>Best peak:</span><span className="text-right">{records.bestPeakBalance}🪙</span>
           <span>Best season:</span><span className="text-right">{records.bestSeasonReached || '—'}</span>
           <span>Most disasters:</span><span className="text-right">{records.mostDisastersSurvived}</span>
+          <span>Best streak:</span><span className="text-right">{records.bestHarvestStreak}</span>
         </div>
       </section>
 

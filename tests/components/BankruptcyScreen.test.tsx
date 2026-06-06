@@ -95,3 +95,15 @@ describe('BankruptcyScreen — enriched recap (007)', () => {
     }
   });
 });
+
+describe('BankruptcyScreen — harvest streak (008)', () => {
+  it('shows Longest streak stat row with peakHarvestStreak', () => {
+    renderScreen({
+      peakHarvestStreak: 6,
+      records: { ...emptyRecords, totalRunsCompleted: 2, bestHarvestStreak: 6 },
+      newBests: new Set(['bestHarvestStreak']),
+    });
+    expect(screen.getByText('Longest streak')).toBeInTheDocument();
+    expect(screen.getByText(/Best streak/i)).toBeInTheDocument();
+  });
+});
