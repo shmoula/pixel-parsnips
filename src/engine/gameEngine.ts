@@ -10,6 +10,8 @@ import {
   EXHAUSTION_THRESHOLD,
   EXHAUSTION_RECOVERY_DAYS,
   FERTILIZER_COST,
+  STREAK_BONUS_PER_LEVEL,
+  STREAK_BONUS_CAP,
   coins,
 } from './constants';
 import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
@@ -304,6 +306,22 @@ export function processTurn(
   const openingBalance = state.coinBalance;
   let coinBalance = openingBalance + totalHarvestIncome;
 
+  // Step 4.5: Harvest streak update — bonus counts toward bankruptcy avoidance
+  const streakBefore = state.harvestStreak;
+  let streakAfter: number;
+  let streakBonus: number;
+  let peakHarvestStreak: number;
+  if (harvests.length > 0) {
+    streakAfter = streakBefore + 1;
+    streakBonus = Math.min(streakAfter, STREAK_BONUS_CAP) * STREAK_BONUS_PER_LEVEL;
+    coinBalance += streakBonus;
+    peakHarvestStreak = Math.max(state.peakHarvestStreak, streakAfter);
+  } else {
+    streakAfter = 0;
+    streakBonus = 0;
+    peakHarvestStreak = state.peakHarvestStreak;
+  }
+
   // Step 5: Bankruptcy check — if balance < lease fee, game over
   const leaseForDay = season.leasePerDay;
   if (coinBalance < leaseForDay) {
@@ -322,6 +340,9 @@ export function processTurn(
       exhaustedPlots,
       pestDestroyedPlots,
       flashDroughtDaysAfter: flashDroughtDaysAfterEvent,
+      streakBefore,
+      streakAfter,
+      streakBonus,
     };
     const bankruptState: GameState = {
       ...state,
@@ -330,6 +351,8 @@ export function processTurn(
       phase: 'bankrupt',
       flashDroughtDaysRemaining: flashDroughtDaysAfterEvent,
       lastDailyLog: log,
+      harvestStreak: streakAfter,
+      peakHarvestStreak,
     };
     return { state: bankruptState, log, isBankrupt: true };
   }
@@ -402,6 +425,9 @@ export function processTurn(
     exhaustedPlots,
     pestDestroyedPlots,
     flashDroughtDaysAfter: flashDroughtDaysRemaining,
+    streakBefore,
+    streakAfter,
+    streakBonus,
   };
 
   // Step 9.5: Increment disastersSurvived if this turn's weather was a disaster
@@ -419,6 +445,8 @@ export function processTurn(
     lastDailyLog: log,
     phase: seasonPhase,
     disastersSurvived,
+    harvestStreak: streakAfter,
+    peakHarvestStreak,
   };
 
   return { state: nextState, log, isBankrupt: false };
