@@ -129,14 +129,19 @@ export function DailyLog({ log }: DailyLogProps) {
         </div>
       )}
 
-      {/* Streak reset note */}
+      {/* Streak reset note — distinguishes season-end reset (harvested but new season cleared the streak)
+          from miss-day reset (no harvest this turn). */}
       {log.streakBefore > 0 && log.streakAfter === 0 && (
         <div
           aria-label="Streak reset"
           className="flex items-center gap-1 text-farm-stone/70"
         >
           <span aria-hidden="true">🔥</span>
-          <span>Streak reset</span>
+          <span>
+            {log.harvests.length > 0
+              ? 'New season reset the streak'
+              : 'Streak reset'}
+          </span>
         </div>
       )}
 

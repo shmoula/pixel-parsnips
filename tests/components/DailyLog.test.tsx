@@ -35,9 +35,26 @@ describe('DailyLog — harvest streak rows', () => {
     expect(row).toHaveTextContent('+15');
   });
 
-  it('renders the streak reset note when streakBefore > 0 and streakAfter === 0', () => {
-    render(<DailyLog log={makeLog({ streakBefore: 4, streakAfter: 0, streakBonus: 0 })} />);
-    expect(screen.getByLabelText(/streak reset/i)).toBeInTheDocument();
+  it('renders the miss-day reset note when no harvest happened', () => {
+    render(<DailyLog log={makeLog({ streakBefore: 4, streakAfter: 0, streakBonus: 0, harvests: [] })} />);
+    const note = screen.getByLabelText(/streak reset/i);
+    expect(note).toHaveTextContent('Streak reset');
+    expect(note).not.toHaveTextContent(/new season/i);
+  });
+
+  it('renders the season-reset variant when harvest happened but streak still cleared', () => {
+    render(
+      <DailyLog
+        log={makeLog({
+          streakBefore: 4,
+          streakAfter: 0,
+          streakBonus: 20,
+          harvests: [{ plotId: 0, cropId: 'radish', baseYield: 12, weatherMultiplier: 1, adjustedYield: 12 }],
+          totalHarvestIncome: 12,
+        })}
+      />,
+    );
+    expect(screen.getByLabelText(/streak reset/i)).toHaveTextContent(/new season reset the streak/i);
   });
 
   it('renders neither row on a quiet pre-streak day', () => {
