@@ -45,6 +45,8 @@ interface HUDProps {
   hasLastTurn: boolean;
   /** Used by T012 to decide whether Day 80 shows a lease preview. */
   endlessMode: boolean;
+  /** Current uncapped consecutive-harvest-day count; chip is hidden at 0. */
+  harvestStreak: number;
 }
 
 export function HUD({
@@ -56,6 +58,7 @@ export function HUD({
   isProcessing,
   hasLastTurn,
   endlessMode,
+  harvestStreak,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
   const dayIntoSeason = currentDay - season.startDay + 1;
@@ -79,9 +82,9 @@ export function HUD({
       "
     >
       {/* Left: Season chip + Day chip + Balance/target chip */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-stretch gap-2">
         <div className="flex flex-col leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded">
-          <span className="font-pixel text-[8px] text-farm-stone/60 uppercase tracking-widest">
+          <span className="font-pixel text-[8px] text-farm-parchment/70 uppercase tracking-widest">
             Season {season.number} · {season.name}
           </span>
           <span className="font-pixel text-[10px] text-farm-gold">
@@ -102,6 +105,16 @@ export function HUD({
             )}
           </span>
         </div>
+        {harvestStreak > 0 && (
+          <div
+            aria-label={`Harvest streak: ${harvestStreak} days`}
+            title={`Harvest streak: ${harvestStreak} day${harvestStreak === 1 ? '' : 's'} in a row. Next harvest earns +${Math.min(harvestStreak, 4) * 5}🪙 bonus (capped at +20).`}
+            className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
+          >
+            <span className="text-base leading-none" aria-hidden="true">🔥</span>
+            <span className="font-pixel text-[10px] text-farm-gold">×{harvestStreak}</span>
+          </div>
+        )}
       </div>
 
       {/* Centre-right: Lease + Tax — hidden on small screens */}

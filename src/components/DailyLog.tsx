@@ -118,6 +118,33 @@ export function DailyLog({ log }: DailyLogProps) {
         </div>
       )}
 
+      {/* Harvest streak bonus */}
+      {log.streakBonus > 0 && (
+        <div
+          aria-label="Streak bonus"
+          className="flex justify-between text-farm-gold"
+        >
+          <span>🔥 Streak bonus ×{Math.min(log.streakBefore, 4)}</span>
+          <span className="text-farm-grass">+{log.streakBonus}🪙</span>
+        </div>
+      )}
+
+      {/* Streak reset note — distinguishes season-end reset (harvested but new season cleared the streak)
+          from miss-day reset (no harvest this turn). */}
+      {log.streakBefore > 0 && log.streakAfter === 0 && (
+        <div
+          aria-label="Streak reset"
+          className="flex items-center gap-1 text-farm-stone/70"
+        >
+          <span aria-hidden="true">🔥</span>
+          <span>
+            {log.harvests.length > 0
+              ? 'New season reset the streak'
+              : 'Streak reset'}
+          </span>
+        </div>
+      )}
+
       <hr className="border-farm-stone/30" />
 
       {/* Accounting rows */}

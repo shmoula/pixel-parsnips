@@ -1,15 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
 import type { PersonalBests } from '../../src/engine/records';
 
 const emptyRecords: PersonalBests = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   bestDaysSurvived: 0,
   bestPeakBalance: 0,
   bestSeasonReached: 0,
   mostDisastersSurvived: 0,
+  bestHarvestStreak: 0,
   totalRunsCompleted: 0,
 };
 
@@ -71,11 +72,12 @@ describe('BankruptcyScreen — enriched recap (007)', () => {
   it('renders Personal Records summary values', () => {
     renderScreen({
       records: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         bestDaysSurvived: 42,
         bestPeakBalance: 500,
         bestSeasonReached: 3,
         mostDisastersSurvived: 6,
+        bestHarvestStreak: 0,
         totalRunsCompleted: 3,
       },
     });
@@ -91,5 +93,19 @@ describe('BankruptcyScreen — enriched recap (007)', () => {
       expect(results).toHaveNoViolations();
       unmount();
     }
+  });
+});
+
+describe('BankruptcyScreen — harvest streak (008)', () => {
+  it('shows Longest streak stat row with peakHarvestStreak', () => {
+    renderScreen({
+      peakHarvestStreak: 6,
+      records: { ...emptyRecords, totalRunsCompleted: 2, bestHarvestStreak: 6 },
+      newBests: new Set(['bestHarvestStreak']),
+    });
+    const streakRow = screen.getByText('Longest streak').closest('div')!;
+    expect(streakRow).toHaveTextContent('6');
+    expect(within(streakRow).getByLabelText(/new personal best/i)).toBeInTheDocument();
+    expect(screen.getByText(/Best streak/i)).toBeInTheDocument();
   });
 });

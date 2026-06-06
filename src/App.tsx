@@ -30,11 +30,12 @@ function App() {
     const seasonReached = endOfRunRecap ? endOfRunRecap.seasonReached : 1;
     const medal = endOfRunRecap ? endOfRunRecap.medal : 'none';
     const records: PersonalBests = endOfRunRecap ? endOfRunRecap.records : {
-      schemaVersion: 1,
+      schemaVersion: 2,
       bestDaysSurvived: 0,
       bestPeakBalance: 0,
       bestSeasonReached: 0,
       mostDisastersSurvived: 0,
+      bestHarvestStreak: 0,
       totalRunsCompleted: 0,
     };
     const newBests: Set<keyof PersonalBests> = endOfRunRecap ? endOfRunRecap.newBests : new Set();
@@ -44,6 +45,7 @@ function App() {
         <BankruptcyScreen
           daysPlayed={state.currentDay}
           peakBalance={state.peakBalance}
+          peakHarvestStreak={state.peakHarvestStreak}
           disastersSurvived={state.disastersSurvived}
           seasonReached={seasonReached}
           medal={medal}

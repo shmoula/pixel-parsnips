@@ -10,6 +10,8 @@ import {
   EXHAUSTION_THRESHOLD,
   EXHAUSTION_RECOVERY_DAYS,
   FERTILIZER_COST,
+  STREAK_BONUS_PER_LEVEL,
+  STREAK_BONUS_CAP,
   coins,
 } from './constants';
 import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
@@ -58,6 +60,8 @@ export function initialGameState(): GameState {
     flashDroughtDaysRemaining: 0,
     endlessMode: false,
     disastersSurvived: 0,
+    harvestStreak: 0,
+    peakHarvestStreak: 0,
   };
 }
 
@@ -189,6 +193,33 @@ export function buyUpgrade(state: GameState): UpgradeResult {
 
 // ── T008/T009: processTurn (FR-002 full 10-step sequence + 3a/3b/8.5) ────────
 
+function applySeasonStreakReset(
+  streakAfter: number,
+  phase: GameState['phase']
+): number {
+  return phase === 'season_passed' || phase === 'season_4_won' ? 0 : streakAfter;
+}
+
+function computeStreakUpdate(
+  streakBefore: number,
+  peakBefore: number,
+  hadHarvest: boolean
+): { streakAfter: number; streakBonus: number; peakHarvestStreak: number } {
+  if (!hadHarvest) {
+    return { streakAfter: 0, streakBonus: 0, peakHarvestStreak: peakBefore };
+  }
+  const streakAfter = streakBefore + 1;
+  // Bonus is based on the prior streak count, so the first harvest in a streak
+  // earns nothing (streakBefore=0). Day 2 of a streak earns +5, day 3 +10, etc.,
+  // capped at +20 (STREAK_BONUS_CAP * STREAK_BONUS_PER_LEVEL).
+  const streakBonus = Math.min(streakBefore, STREAK_BONUS_CAP) * STREAK_BONUS_PER_LEVEL;
+  return {
+    streakAfter,
+    streakBonus,
+    peakHarvestStreak: Math.max(peakBefore, streakAfter),
+  };
+}
+
 /**
  * Executes the full end-of-turn sequence (FR-002).
  * Pass `weatherRoll` in tests for deterministic weather; omit in production.
@@ -302,6 +333,15 @@ export function processTurn(
   const openingBalance = state.coinBalance;
   let coinBalance = openingBalance + totalHarvestIncome;
 
+  // Step 4.5: Harvest streak update — bonus counts toward bankruptcy avoidance
+  const streakBefore = state.harvestStreak;
+  const { streakAfter, streakBonus, peakHarvestStreak } = computeStreakUpdate(
+    streakBefore,
+    state.peakHarvestStreak,
+    harvests.length > 0
+  );
+  coinBalance += streakBonus;
+
   // Step 5: Bankruptcy check — if balance < lease fee, game over
   const leaseForDay = season.leasePerDay;
   if (coinBalance < leaseForDay) {
@@ -315,11 +355,14 @@ export function processTurn(
       landLeaseDeducted: 0,
       taxRate: TAX_RATE,
       taxDeducted: 0,
-      netChange: totalHarvestIncome,
+      netChange: coinBalance - openingBalance,
       closingBalance: coinBalance,
       exhaustedPlots,
       pestDestroyedPlots,
       flashDroughtDaysAfter: flashDroughtDaysAfterEvent,
+      streakBefore,
+      streakAfter,
+      streakBonus,
     };
     const bankruptState: GameState = {
       ...state,
@@ -328,6 +371,8 @@ export function processTurn(
       phase: 'bankrupt',
       flashDroughtDaysRemaining: flashDroughtDaysAfterEvent,
       lastDailyLog: log,
+      harvestStreak: streakAfter,
+      peakHarvestStreak,
     };
     return { state: bankruptState, log, isBankrupt: true };
   }
@@ -366,6 +411,10 @@ export function processTurn(
     }
   }
 
+  // Step 8.4b: Reset harvest streak when a season is cleared (not on season_failed,
+  // since the run is ending and the final log should reflect the as-played streak).
+  const harvestStreakAfterSeason = applySeasonStreakReset(streakAfter, seasonPhase);
+
   // Step 8.6: Decrement flash drought counter each calendar day EXCEPT the turn it fires
   // (skip on flash_drought turn so N+1 and N+2 planting days both receive the penalty)
   const flashDroughtDaysRemaining = (weatherId !== 'flash_drought' && flashDroughtDaysAfterEvent > 0)
@@ -395,11 +444,14 @@ export function processTurn(
     landLeaseDeducted,
     taxRate: TAX_RATE,
     taxDeducted,
-    netChange: totalHarvestIncome - landLeaseDeducted - taxDeducted,
+    netChange: coinBalance - openingBalance,
     closingBalance: coinBalance,
     exhaustedPlots,
     pestDestroyedPlots,
     flashDroughtDaysAfter: flashDroughtDaysRemaining,
+    streakBefore,
+    streakAfter: harvestStreakAfterSeason,
+    streakBonus,
   };
 
   // Step 9.5: Increment disastersSurvived if this turn's weather was a disaster
@@ -417,6 +469,8 @@ export function processTurn(
     lastDailyLog: log,
     phase: seasonPhase,
     disastersSurvived,
+    harvestStreak: harvestStreakAfterSeason,
+    peakHarvestStreak,
   };
 
   return { state: nextState, log, isBankrupt: false };

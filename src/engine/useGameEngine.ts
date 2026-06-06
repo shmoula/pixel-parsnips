@@ -18,31 +18,51 @@ import { getSeasonForDay } from './seasons';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 
+/** Minimal structural check that `state` looks like a GameState payload. */
+function isGameStateShape(state: unknown): state is Record<string, unknown> {
+  return typeof state === 'object' && state !== null && 'phase' in state && 'plots' in state;
+}
+
 /** Migrates a parsed save envelope to the current schema, or returns null if unsupported. */
 function migrateState(parsed: { schemaVersion: number; state: unknown }): GameState | null {
-  // Schema 5 — current
-  if (parsed.schemaVersion === SCHEMA_VERSION && parsed.state) {
-    return parsed.state as GameState;
+  // Schema 6 — current
+  if (parsed.schemaVersion === SCHEMA_VERSION && isGameStateShape(parsed.state)) {
+    return parsed.state as unknown as GameState;
   }
 
-  // Schema 4 → 5 — add disastersSurvived: 0
-  if (parsed.schemaVersion === 4 && parsed.state) {
-    console.info('[PixelParsnips] Migrating save from v4 to v5 (Enriched Run Summary).');
+  // Schema 5 → 6 — add harvestStreak and peakHarvestStreak
+  if (parsed.schemaVersion === 5 && isGameStateShape(parsed.state)) {
+    console.info('[PixelParsnips] Migrating save from v5 to v6 (Harvest Streak).');
     return {
-      ...(parsed.state as Omit<GameState, 'disastersSurvived'>),
+      ...(parsed.state as unknown as Omit<GameState, 'harvestStreak' | 'peakHarvestStreak'>),
       schemaVersion: SCHEMA_VERSION,
-      disastersSurvived: 0,
+      harvestStreak: 0,
+      peakHarvestStreak: 0,
     };
   }
 
-  // Schema 3 → 5 — chained migration (add endlessMode and disastersSurvived)
-  if (parsed.schemaVersion === 3 && parsed.state) {
-    console.info('[PixelParsnips] Migrating save from v3 to v5 (Season System + Enriched Run Summary).');
+  // Schema 4 → 6 — chained: add disastersSurvived + streak fields
+  if (parsed.schemaVersion === 4 && isGameStateShape(parsed.state)) {
+    console.info('[PixelParsnips] Migrating save from v4 to v6.');
     return {
-      ...(parsed.state as Omit<GameState, 'endlessMode' | 'disastersSurvived'>),
+      ...(parsed.state as unknown as Omit<GameState, 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak'>),
+      schemaVersion: SCHEMA_VERSION,
+      disastersSurvived: 0,
+      harvestStreak: 0,
+      peakHarvestStreak: 0,
+    };
+  }
+
+  // Schema 3 → 6 — chained: add endlessMode + disastersSurvived + streak fields
+  if (parsed.schemaVersion === 3 && isGameStateShape(parsed.state)) {
+    console.info('[PixelParsnips] Migrating save from v3 to v6 (Season System + Enriched Run Summary + Harvest Streak).');
+    return {
+      ...(parsed.state as unknown as Omit<GameState, 'endlessMode' | 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak'>),
       schemaVersion: SCHEMA_VERSION,
       endlessMode: false,
       disastersSurvived: 0,
+      harvestStreak: 0,
+      peakHarvestStreak: 0,
     };
   }
 

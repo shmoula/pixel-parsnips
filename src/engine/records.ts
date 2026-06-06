@@ -4,20 +4,22 @@ import { getSeasonForDay } from './seasons';
 export const RECORDS_KEY = 'pixel-parsnips-records';
 
 export interface PersonalBests {
-  schemaVersion: 1;
+  schemaVersion: 2;
   bestDaysSurvived: number;
   bestPeakBalance: number;
   bestSeasonReached: number;
   mostDisastersSurvived: number;
+  bestHarvestStreak: number;
   totalRunsCompleted: number;
 }
 
 const ZERO_RECORDS: PersonalBests = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   bestDaysSurvived: 0,
   bestPeakBalance: 0,
   bestSeasonReached: 0,
   mostDisastersSurvived: 0,
+  bestHarvestStreak: 0,
   totalRunsCompleted: 0,
 };
 
@@ -28,12 +30,13 @@ export function loadRecords(): PersonalBests {
     if (!raw) return { ...ZERO_RECORDS };
     const parsed = JSON.parse(raw) as Partial<PersonalBests>;
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
       bestDaysSurvived: typeof parsed.bestDaysSurvived === 'number' ? parsed.bestDaysSurvived : 0,
       bestPeakBalance: typeof parsed.bestPeakBalance === 'number' ? parsed.bestPeakBalance : 0,
       bestSeasonReached: typeof parsed.bestSeasonReached === 'number' ? parsed.bestSeasonReached : 0,
       mostDisastersSurvived:
         typeof parsed.mostDisastersSurvived === 'number' ? parsed.mostDisastersSurvived : 0,
+      bestHarvestStreak: typeof parsed.bestHarvestStreak === 'number' ? parsed.bestHarvestStreak : 0,
       totalRunsCompleted: typeof parsed.totalRunsCompleted === 'number' ? parsed.totalRunsCompleted : 0,
     };
   } catch {
@@ -66,15 +69,17 @@ export function recordRunEnd(state: GameState): {
     bestPeakBalance: state.peakBalance,
     bestSeasonReached: seasonReached,
     mostDisastersSurvived: state.disastersSurvived,
+    bestHarvestStreak: state.peakHarvestStreak,
   } as const;
 
   const newBests = new Set<keyof PersonalBests>();
   const next: PersonalBests = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     bestDaysSurvived: Math.max(prior.bestDaysSurvived, candidates.bestDaysSurvived),
     bestPeakBalance: Math.max(prior.bestPeakBalance, candidates.bestPeakBalance),
     bestSeasonReached: Math.max(prior.bestSeasonReached, candidates.bestSeasonReached),
     mostDisastersSurvived: Math.max(prior.mostDisastersSurvived, candidates.mostDisastersSurvived),
+    bestHarvestStreak: Math.max(prior.bestHarvestStreak, candidates.bestHarvestStreak),
     totalRunsCompleted: prior.totalRunsCompleted + 1,
   };
 
@@ -83,6 +88,7 @@ export function recordRunEnd(state: GameState): {
     'bestPeakBalance',
     'bestSeasonReached',
     'mostDisastersSurvived',
+    'bestHarvestStreak',
   ] as const) {
     if (candidates[key] > prior[key]) newBests.add(key);
   }
