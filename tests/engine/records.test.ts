@@ -155,7 +155,7 @@ describe('records — bestHarvestStreak', () => {
 
   it('returns 0 for bestHarvestStreak on a legacy schemaVersion 1 record', () => {
     localStorage.setItem(
-      'pixel-parsnips-records',
+      RECORDS_KEY,
       JSON.stringify({
         schemaVersion: 1,
         bestDaysSurvived: 30,

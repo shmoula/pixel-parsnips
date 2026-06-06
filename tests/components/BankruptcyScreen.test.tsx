@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
 import type { PersonalBests } from '../../src/engine/records';
@@ -103,7 +103,9 @@ describe('BankruptcyScreen — harvest streak (008)', () => {
       records: { ...emptyRecords, totalRunsCompleted: 2, bestHarvestStreak: 6 },
       newBests: new Set(['bestHarvestStreak']),
     });
-    expect(screen.getByText('Longest streak')).toBeInTheDocument();
+    const streakRow = screen.getByText('Longest streak').closest('div')!;
+    expect(streakRow).toHaveTextContent('6');
+    expect(within(streakRow).getByLabelText(/new personal best/i)).toBeInTheDocument();
     expect(screen.getByText(/Best streak/i)).toBeInTheDocument();
   });
 });

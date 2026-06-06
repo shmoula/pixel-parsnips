@@ -73,5 +73,10 @@ describe('HUD — harvest streak chip', () => {
     const chip = screen.getByLabelText(/harvest streak/i);
     expect(chip).toBeInTheDocument();
     expect(chip).toHaveTextContent('×7');
+    // Tooltip reflects the capped next-bonus (streak 7 → bonus capped at +20).
+    expect(chip).toHaveAttribute(
+      'title',
+      'Harvest streak: 7 days in a row. Next harvest earns +20🪙 bonus (capped at +20).',
+    );
   });
 });
