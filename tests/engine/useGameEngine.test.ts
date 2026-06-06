@@ -161,10 +161,11 @@ describe('useGameEngine — full turn sequence integration (T046)', () => {
     const log = result.current.lastDailyLog;
     expect(log).not.toBeNull();
 
-    // Accounting identity: opening + harvest - lease - tax = closing
+    // Accounting identity: opening + harvest + streakBonus - lease - tax = closing
     const expectedClosing =
       openingBalance +
-      log!.totalHarvestIncome -
+      log!.totalHarvestIncome +
+      log!.streakBonus -
       log!.landLeaseDeducted -
       log!.taxDeducted;
     expect(log!.closingBalance).toBe(expectedClosing);
