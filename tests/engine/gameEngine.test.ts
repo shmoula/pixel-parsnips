@@ -1505,3 +1505,33 @@ describe('processTurn — harvest streak', () => {
     expect(log.streakAfter).toBe(1);
   });
 });
+
+describe('processTurn — harvest streak season reset', () => {
+  it('resets harvestStreak on season_passed turn but keeps peakHarvestStreak', () => {
+    const seeded = seedAndPlant({
+      ...initialGameState(),
+      currentDay: 20,
+      coinBalance: 500,
+      harvestStreak: 3,
+      peakHarvestStreak: 5,
+    });
+    const { state: after } = processTurn(seeded, 'sunny');
+    expect(after.phase).toBe('season_passed');
+    expect(after.harvestStreak).toBe(0);
+    expect(after.peakHarvestStreak).toBe(5);
+  });
+
+  it('does NOT reset streak on season_failed (run is ending)', () => {
+    const base = {
+      ...initialGameState(),
+      currentDay: 20,
+      coinBalance: 16,
+      harvestStreak: 2,
+      peakHarvestStreak: 2,
+    };
+    const { state: after, log } = processTurn(base, 'sunny');
+    expect(after.phase).toBe('season_failed');
+    expect(log.streakAfter).toBe(0); // no harvest → miss-day reset (independent rule)
+    expect(after.harvestStreak).toBe(0);
+  });
+});

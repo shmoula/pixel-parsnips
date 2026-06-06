@@ -391,6 +391,13 @@ export function processTurn(
     }
   }
 
+  // Step 8.4b: Reset harvest streak when a season is cleared (not on season_failed,
+  // since the run is ending and the final log should reflect the as-played streak).
+  const harvestStreakAfterSeason =
+    seasonPhase === 'season_passed' || seasonPhase === 'season_4_won'
+      ? 0
+      : streakAfter;
+
   // Step 8.6: Decrement flash drought counter each calendar day EXCEPT the turn it fires
   // (skip on flash_drought turn so N+1 and N+2 planting days both receive the penalty)
   const flashDroughtDaysRemaining = (weatherId !== 'flash_drought' && flashDroughtDaysAfterEvent > 0)
@@ -426,7 +433,7 @@ export function processTurn(
     pestDestroyedPlots,
     flashDroughtDaysAfter: flashDroughtDaysRemaining,
     streakBefore,
-    streakAfter,
+    streakAfter: harvestStreakAfterSeason,
     streakBonus,
   };
 
@@ -445,7 +452,7 @@ export function processTurn(
     lastDailyLog: log,
     phase: seasonPhase,
     disastersSurvived,
-    harvestStreak: streakAfter,
+    harvestStreak: harvestStreakAfterSeason,
     peakHarvestStreak,
   };
 
