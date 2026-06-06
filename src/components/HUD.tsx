@@ -82,7 +82,7 @@ export function HUD({
       "
     >
       {/* Left: Season chip + Day chip + Balance/target chip */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-stretch gap-2">
         <div className="flex flex-col leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded">
           <span className="font-pixel text-[8px] text-farm-stone/60 uppercase tracking-widest">
             Season {season.number} · {season.name}
