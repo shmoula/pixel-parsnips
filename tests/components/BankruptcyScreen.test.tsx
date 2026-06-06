@@ -5,11 +5,12 @@ import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
 import type { PersonalBests } from '../../src/engine/records';
 
 const emptyRecords: PersonalBests = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   bestDaysSurvived: 0,
   bestPeakBalance: 0,
   bestSeasonReached: 0,
   mostDisastersSurvived: 0,
+  bestHarvestStreak: 0,
   totalRunsCompleted: 0,
 };
 
@@ -71,11 +72,12 @@ describe('BankruptcyScreen — enriched recap (007)', () => {
   it('renders Personal Records summary values', () => {
     renderScreen({
       records: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         bestDaysSurvived: 42,
         bestPeakBalance: 500,
         bestSeasonReached: 3,
         mostDisastersSurvived: 6,
+        bestHarvestStreak: 0,
         totalRunsCompleted: 3,
       },
     });

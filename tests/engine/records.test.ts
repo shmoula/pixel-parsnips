@@ -12,11 +12,12 @@ describe('loadRecords', () => {
 
   it('returns zero defaults when no key exists', () => {
     const r = loadRecords();
-    expect(r.schemaVersion).toBe(1);
+    expect(r.schemaVersion).toBe(2);
     expect(r.bestDaysSurvived).toBe(0);
     expect(r.bestPeakBalance).toBe(0);
     expect(r.bestSeasonReached).toBe(0);
     expect(r.mostDisastersSurvived).toBe(0);
+    expect(r.bestHarvestStreak).toBe(0);
     expect(r.totalRunsCompleted).toBe(0);
   });
 
@@ -28,11 +29,12 @@ describe('loadRecords', () => {
 
   it('round-trips a valid record', () => {
     const written: PersonalBests = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       bestDaysSurvived: 32,
       bestPeakBalance: 410,
       bestSeasonReached: 3,
       mostDisastersSurvived: 5,
+      bestHarvestStreak: 0,
       totalRunsCompleted: 4,
     };
     localStorage.setItem(RECORDS_KEY, JSON.stringify(written));
@@ -70,11 +72,12 @@ describe('recordRunEnd', () => {
 
   it('keeps prior bests when the new run is worse on every dimension', () => {
     const prior: PersonalBests = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       bestDaysSurvived: 40,
       bestPeakBalance: 300,
       bestSeasonReached: 3,
       mostDisastersSurvived: 6,
+      bestHarvestStreak: 0,
       totalRunsCompleted: 2,
     };
     localStorage.setItem(RECORDS_KEY, JSON.stringify(prior));
@@ -92,11 +95,12 @@ describe('recordRunEnd', () => {
 
   it('flags exactly the stats the new run beat', () => {
     const prior: PersonalBests = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       bestDaysSurvived: 20,
       bestPeakBalance: 500,
       bestSeasonReached: 2,
       mostDisastersSurvived: 3,
+      bestHarvestStreak: 0,
       totalRunsCompleted: 1,
     };
     localStorage.setItem(RECORDS_KEY, JSON.stringify(prior));
@@ -127,5 +131,42 @@ describe('recordRunEnd', () => {
     });
     const { records } = recordRunEnd(state);
     expect(records.bestSeasonReached).toBe(5);
+  });
+});
+
+describe('records — bestHarvestStreak', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('stores peakHarvestStreak as bestHarvestStreak on first run', () => {
+    const state = { ...initialGameState(), currentDay: 12, peakHarvestStreak: 7 };
+    const { records, newBests } = recordRunEnd(state);
+    expect(records.bestHarvestStreak).toBe(7);
+    expect(newBests.has('bestHarvestStreak')).toBe(true);
+  });
+
+  it('does NOT add bestHarvestStreak to newBests when run does not beat prior', () => {
+    const prior = { ...initialGameState(), peakHarvestStreak: 10, currentDay: 2 };
+    recordRunEnd(prior);
+    const worse = { ...initialGameState(), peakHarvestStreak: 5, currentDay: 2 };
+    const { records, newBests } = recordRunEnd(worse);
+    expect(records.bestHarvestStreak).toBe(10);
+    expect(newBests.has('bestHarvestStreak')).toBe(false);
+  });
+
+  it('returns 0 for bestHarvestStreak on a legacy schemaVersion 1 record', () => {
+    localStorage.setItem(
+      'pixel-parsnips-records',
+      JSON.stringify({
+        schemaVersion: 1,
+        bestDaysSurvived: 30,
+        bestPeakBalance: 200,
+        bestSeasonReached: 2,
+        mostDisastersSurvived: 3,
+        totalRunsCompleted: 4,
+      }),
+    );
+    const r = loadRecords();
+    expect(r.bestHarvestStreak).toBe(0);
+    expect(r.schemaVersion).toBe(2);
   });
 });

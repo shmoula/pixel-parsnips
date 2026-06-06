@@ -9,11 +9,12 @@ import type { DailyLogEntry, PlotState } from '../../src/engine/types';
 import type { PersonalBests } from '../../src/engine/records';
 
 const emptyRecords: PersonalBests = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   bestDaysSurvived: 0,
   bestPeakBalance: 0,
   bestSeasonReached: 0,
   mostDisastersSurvived: 0,
+  bestHarvestStreak: 0,
   totalRunsCompleted: 0,
 };
 
