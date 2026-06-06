@@ -285,10 +285,10 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
 
     const { log } = processTurn(planted.state, 'sunny');
     expect(log.landLeaseDeducted).toBe(15);
-    // +5 harvest streak bonus on the harvest day
-    expect(log.taxDeducted).toBe(5); // floor((100+12+5-15) × 0.05) = floor(5.1) = 5
-    expect(log.netChange).toBe(12 - 15 - 5); // netChange = harvest − lease − tax (excludes streak bonus, see Task 8)
-    expect(log.closingBalance).toBe(100 + 12 + 5 - 15 - 5); // 97 (opening + harvest + streakBonus − lease − tax)
+    // First harvest day: no streak bonus (streakBefore=0).
+    expect(log.taxDeducted).toBe(4); // floor((100+12-15) × 0.05) = floor(4.85) = 4
+    expect(log.netChange).toBe(12 - 15 - 4);
+    expect(log.closingBalance).toBe(100 + 12 - 15 - 4); // 93
   });
 
   it('triggers bankruptcy when coinBalance < LAND_LEASE_FEE after harvest', () => {
@@ -341,10 +341,10 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
     s = processTurn(s, 'sunny').state;
     // Turn 2: no harvest → 81-15=66, tax=3 → 63
     s = processTurn(s, 'sunny').state;
-    // Turn 3: harvest 65 + streak bonus 5 → 63+70=133, -15=118, tax=floor(118×0.05)=5 → 113
+    // Turn 3: harvest 65 (no streak bonus — first harvest) → 63+65=128, -15=113, tax=floor(113×0.05)=5 → 108
     const { state: final } = processTurn(s, 'sunny');
 
-    expect(final.peakBalance).toBe(113); // 113 > 100 initial peak
+    expect(final.peakBalance).toBe(108); // 108 > 100 initial peak
   });
 });
 
@@ -413,9 +413,9 @@ describe('processTurn — DailyLogEntry accounting fields (US4)', () => {
   });
 
   it('drought harvest: correct totalHarvestIncome, taxDeducted, netChange, closingBalance', () => {
-    // drought radish: floor(12 × 0.5) = 6 coins, +5 streak bonus
-    // 100 + 6 + 5 = 111 → −15 lease = 96 → tax = floor(96 × 0.05) = 4
-    // net (engine) = 6 − 15 − 4 = −13, closing = 92
+    // drought radish: floor(12 × 0.5) = 6 coins, no streak bonus on first harvest
+    // 100 + 6 = 106 → −15 lease = 91 → tax = floor(91 × 0.05) = 4
+    // net = 6 − 15 − 4 = −13, closing = 87
     const state = withSeeds(initialGameState(), { radish: 1 });
     const planted = plantSeed(state, 0, 'radish');
     if (!planted.ok) throw new Error('plant failed');
@@ -423,13 +423,13 @@ describe('processTurn — DailyLogEntry accounting fields (US4)', () => {
     expect(log.totalHarvestIncome).toBe(6);
     expect(log.taxDeducted).toBe(4);
     expect(log.netChange).toBe(-13);
-    expect(log.closingBalance).toBe(92);
+    expect(log.closingBalance).toBe(87);
   });
 
   it('perfect_sun harvest: correct totalHarvestIncome, taxDeducted, netChange, closingBalance', () => {
-    // perfect_sun radish: floor(12 × 1.5) = 18 coins, +5 streak bonus
-    // 100 + 18 + 5 = 123 → −15 = 108 → tax = floor(108 × 0.05) = 5
-    // net (engine) = 18 − 15 − 5 = −2, closing = 103
+    // perfect_sun radish: floor(12 × 1.5) = 18 coins, no streak bonus on first harvest
+    // 100 + 18 = 118 → −15 = 103 → tax = floor(103 × 0.05) = 5
+    // net = 18 − 15 − 5 = −2, closing = 98
     const state = withSeeds(initialGameState(), { radish: 1 });
     const planted = plantSeed(state, 0, 'radish');
     if (!planted.ok) throw new Error('plant failed');
@@ -437,7 +437,7 @@ describe('processTurn — DailyLogEntry accounting fields (US4)', () => {
     expect(log.totalHarvestIncome).toBe(18);
     expect(log.taxDeducted).toBe(5);
     expect(log.netChange).toBe(-2);
-    expect(log.closingBalance).toBe(103);
+    expect(log.closingBalance).toBe(98);
   });
 });
 
@@ -1464,14 +1464,23 @@ function seedAndPlant(state: GameState): GameState {
 }
 
 describe('processTurn — harvest streak', () => {
-  it('awards +5 bonus on first harvest day and increments streak to 1', () => {
+  it('gives no bonus on the first harvest day but increments streak to 1', () => {
     const state = seedAndPlant(initialGameState());
     const { state: after, log } = processTurn(state, 'sunny');
     expect(log.streakBefore).toBe(0);
     expect(log.streakAfter).toBe(1);
-    expect(log.streakBonus).toBe(STREAK_BONUS_PER_LEVEL);
+    expect(log.streakBonus).toBe(0);
     expect(after.harvestStreak).toBe(1);
     expect(after.peakHarvestStreak).toBe(1);
+  });
+
+  it('awards +5 bonus on the second consecutive harvest day', () => {
+    const state = seedAndPlant({ ...initialGameState(), harvestStreak: 1, peakHarvestStreak: 1 });
+    const { state: after, log } = processTurn(state, 'sunny');
+    expect(log.streakBefore).toBe(1);
+    expect(log.streakAfter).toBe(2);
+    expect(log.streakBonus).toBe(STREAK_BONUS_PER_LEVEL);
+    expect(after.harvestStreak).toBe(2);
   });
 
   it('resets streak to 0 on a turn with no harvest', () => {
@@ -1497,12 +1506,13 @@ describe('processTurn — harvest streak', () => {
   });
 
   it('records streak bonus even on the bankrupting turn', () => {
-    const seeded = seedAndPlant({ ...initialGameState(), harvestStreak: 0 });
+    // Streak already at 1 going in, so this harvest earns +5 — still not enough to avoid bankruptcy.
+    const seeded = seedAndPlant({ ...initialGameState(), harvestStreak: 1, peakHarvestStreak: 1 });
     const lowBalance = { ...seeded, coinBalance: 1 };
     const { state: after, log } = processTurn(lowBalance, 'blight');
     expect(after.phase).toBe('bankrupt');
     expect(log.streakBonus).toBe(5);
-    expect(log.streakAfter).toBe(1);
+    expect(log.streakAfter).toBe(2);
   });
 });
 

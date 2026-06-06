@@ -29,7 +29,7 @@ function makeLog(over: Partial<DailyLogEntry> = {}): DailyLogEntry {
 
 describe('DailyLog — harvest streak rows', () => {
   it('renders the streak bonus line when streakBonus > 0', () => {
-    render(<DailyLog log={makeLog({ streakBefore: 0, streakAfter: 3, streakBonus: 15 })} />);
+    render(<DailyLog log={makeLog({ streakBefore: 3, streakAfter: 4, streakBonus: 15 })} />);
     const row = screen.getByLabelText(/streak bonus/i);
     expect(row).toHaveTextContent('×3');
     expect(row).toHaveTextContent('+15');

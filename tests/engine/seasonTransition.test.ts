@@ -139,6 +139,6 @@ describe('processTurn — 80-day deterministic run canary (regression)', () => {
     // Expected end state: season_4_won at Day 80 with balance >= Season 4 target
     expect(state.phase).toBe('season_4_won');
     expect(state.currentDay).toBe(80);
-    expect(state.coinBalance).toBeCloseTo(1290, -1);
+    expect(state.coinBalance).toBeCloseTo(1277, -1);
   });
 });

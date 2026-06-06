@@ -124,7 +124,7 @@ export function DailyLog({ log }: DailyLogProps) {
           aria-label="Streak bonus"
           className="flex justify-between text-farm-gold"
         >
-          <span>🔥 Streak bonus ×{Math.min(log.streakAfter, 4)}</span>
+          <span>🔥 Streak bonus ×{Math.min(log.streakBefore, 4)}</span>
           <span className="text-farm-grass">+{log.streakBonus}🪙</span>
         </div>
       )}

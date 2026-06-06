@@ -209,7 +209,10 @@ function computeStreakUpdate(
     return { streakAfter: 0, streakBonus: 0, peakHarvestStreak: peakBefore };
   }
   const streakAfter = streakBefore + 1;
-  const streakBonus = Math.min(streakAfter, STREAK_BONUS_CAP) * STREAK_BONUS_PER_LEVEL;
+  // Bonus is based on the prior streak count, so the first harvest in a streak
+  // earns nothing (streakBefore=0). Day 2 of a streak earns +5, day 3 +10, etc.,
+  // capped at +20 (STREAK_BONUS_CAP * STREAK_BONUS_PER_LEVEL).
+  const streakBonus = Math.min(streakBefore, STREAK_BONUS_CAP) * STREAK_BONUS_PER_LEVEL;
   return {
     streakAfter,
     streakBonus,
