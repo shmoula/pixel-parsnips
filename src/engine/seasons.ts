@@ -35,6 +35,10 @@ export { SEASON_TABLE } from './economy';
  *   - target          = targetBase + targetPerSeason * offset
  */
 export function getSeasonForDay(day: number, config: EconomyConfig = DEFAULT_ECONOMY): SeasonConfig {
+  if (config.seasons.length === 0) {
+    throw new Error('getSeasonForDay: config.seasons must not be empty');
+  }
+
   for (const s of config.seasons) {
     if (day >= s.startDay && day <= s.endDay) return s;
   }
@@ -42,7 +46,15 @@ export function getSeasonForDay(day: number, config: EconomyConfig = DEFAULT_ECO
   const e = config.endless;
   const finiteSeasonsCount = config.seasons.length;
   const lastFinite = config.seasons[finiteSeasonsCount - 1];
+
+  if (lastFinite.endDay < lastFinite.startDay) {
+    throw new Error(`getSeasonForDay: Season ${lastFinite.number} has invalid bounds (endDay ${lastFinite.endDay} < startDay ${lastFinite.startDay})`);
+  }
+
   const seasonLength = lastFinite.endDay - lastFinite.startDay + 1;
+  if (seasonLength <= 0) {
+    throw new Error(`getSeasonForDay: computed seasonLength must be > 0, got ${seasonLength}`);
+  }
   const endlessAnchorSeason = finiteSeasonsCount + 1;
   const baseStartDay = lastFinite.endDay + 1;
 
