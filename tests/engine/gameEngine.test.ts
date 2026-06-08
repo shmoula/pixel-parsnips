@@ -1619,6 +1619,13 @@ describe('config injection — fertilizer', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toBe('invalid_plot');
   });
+
+  it('clearPestDamage rejects an out-of-range plot using config.maxPlots', () => {
+    const custom = { ...DEFAULT_ECONOMY, maxPlots: 6 };
+    const r = clearPestDamage(initialGameState(), 8, custom);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('invalid_plot');
+  });
 });
 
 describe('config injection + rng — processTurn', () => {

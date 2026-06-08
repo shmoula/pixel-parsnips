@@ -1,6 +1,5 @@
 import {
   SCHEMA_VERSION,
-  PLOT_COUNT,
   WEATHER_DEFINITIONS,
   coins,
 } from './constants';
@@ -493,9 +492,10 @@ export function processTurn(
 /** Removes Pest Damage state from a plot, making it plantable again. Pure — no mutations. */
 export function clearPestDamage(
   state: GameState,
-  plotId: number
+  plotId: number,
+  config: EconomyConfig = DEFAULT_ECONOMY
 ): ClearPestDamageResult {
-  if (plotId < 0 || plotId >= PLOT_COUNT) {
+  if (plotId < 0 || plotId >= config.maxPlots) {
     return { ok: false, error: 'invalid_plot' };
   }
 
