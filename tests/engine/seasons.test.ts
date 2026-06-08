@@ -190,4 +190,22 @@ describe('getSeasonForDay with injected config', () => {
     // day 81 → season 5 → target 1000 + 500*(5-4) = 1500
     expect(getSeasonForDay(81, custom).target).toBe(1500);
   });
+
+  it('derives the endless anchor from overridden finite-season boundaries', () => {
+    // Shorten Winter Crunch so the finite arc ends on day 70 (length 10).
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      seasons: DEFAULT_ECONOMY.seasons.map(s =>
+        s.number === 4 ? { ...s, endDay: 70 } : s),
+    };
+    // Default: day 75 is finite Season 4 (target 600).
+    expect(getSeasonForDay(75).target).toBe(600);
+    // Custom: day 71+ is now Endless Season 5, anchored to the new boundary.
+    const endless = getSeasonForDay(75, custom);
+    expect(endless.number).toBe(5);
+    expect(endless.startDay).toBe(71);
+    expect(endless.endDay).toBe(80); // seasonLength derived as 10
+    expect(endless.target).toBe(800); // targetBase 600 + 200*(5-4)
+    expect(endless.leasePerDay).toBe(32); // leaseBase 30 + 2*(5-4)
+  });
 });

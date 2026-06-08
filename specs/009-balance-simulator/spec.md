@@ -103,7 +103,7 @@ a single master seed. The existing `weatherRoll` / `pestDestructionOverride` /
 
 CLI:
 
-```
+```bash
 npm run sim -- --configs baseline,proposed --strategies smartMixed,parsnipOnly --trials 2000 --seed 42
 ```
 

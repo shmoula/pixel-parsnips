@@ -1626,6 +1626,22 @@ describe('config injection — fertilizer', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toBe('invalid_plot');
   });
+
+  it('applyFertilizer rejects (not throws) when maxPlots exceeds state.plots.length', () => {
+    const state = initialGameState(); // DEFAULT_ECONOMY.maxPlots plots
+    const custom = { ...DEFAULT_ECONOMY, maxPlots: state.plots.length + 5 };
+    const r = applyFertilizer(state, state.plots.length + 2, custom);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('invalid_plot');
+  });
+
+  it('clearPestDamage rejects (not throws) when maxPlots exceeds state.plots.length', () => {
+    const state = initialGameState();
+    const custom = { ...DEFAULT_ECONOMY, maxPlots: state.plots.length + 5 };
+    const r = clearPestDamage(state, state.plots.length + 2, custom);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('invalid_plot');
+  });
 });
 
 describe('config injection + rng — processTurn', () => {

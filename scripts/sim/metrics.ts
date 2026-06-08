@@ -16,8 +16,12 @@ function pct(part: number, total: number): number { return total === 0 ? 0 : (10
 
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
-  const idx = Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length));
-  return sorted[idx];
+  // Linear interpolation between closest ranks (NIST/Excel "PERCENTILE.INC").
+  const pos = (p / 100) * (sorted.length - 1);
+  const lo = Math.max(0, Math.floor(pos));
+  const hi = Math.min(sorted.length - 1, Math.ceil(pos));
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
 }
 
 export function aggregate(outcomes: Outcome[], finalTarget: number): Metrics {

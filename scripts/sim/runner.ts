@@ -24,11 +24,14 @@ function isTerminal(phase: string, day: number): boolean {
   return TERMINAL_PHASES.has(phase) || day > MAX_DAYS;
 }
 
-function clearPests(state: ReturnType<typeof initialGameState>): ReturnType<typeof initialGameState> {
+function clearPests(
+  state: ReturnType<typeof initialGameState>,
+  config: EconomyConfig,
+): ReturnType<typeof initialGameState> {
   let s = state;
   for (const p of s.plots) {
     if (p.pestDamaged) {
-      const r = clearPestDamage(s, p.id);
+      const r = clearPestDamage(s, p.id, config);
       if (r.ok) s = r.state;
     }
   }
@@ -41,7 +44,7 @@ function tickDay(
   config: EconomyConfig,
   rng: Rng,
 ): ReturnType<typeof initialGameState> {
-  const cleared = clearPests(state);
+  const cleared = clearPests(state, config);
   const decided = strategy(cleared, config);
   return processTurn(decided, undefined, undefined, undefined, config, rng).state;
 }

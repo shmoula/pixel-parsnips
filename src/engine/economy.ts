@@ -1,4 +1,4 @@
-import type { CropDefinition, UpgradeTierDefinition } from './types';
+import type { CropDefinition, CropId, UpgradeTierDefinition } from './types';
 import {
   STARTING_BALANCE, PLOT_COUNT, TAX_RATE, FERTILIZER_COST,
   EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS,
@@ -27,7 +27,7 @@ export interface EconomyConfig {
   maxPlots: number;
   plotPrices: number[];  // unused in 009; 010 reads it
   taxRate: number;
-  crops: Record<string, CropDefinition>;
+  crops: Record<CropId, CropDefinition>;
   upgrades: UpgradeTierDefinition[];
   seasons: SeasonConfig[];
   endless: EndlessFormula;

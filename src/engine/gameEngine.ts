@@ -64,7 +64,7 @@ export function plantSeed(
   cropId: CropId,
   config: EconomyConfig = DEFAULT_ECONOMY,
 ): PlantResult {
-  if (plotId < 0 || plotId >= config.maxPlots) {
+  if (plotId < 0 || plotId >= config.maxPlots || plotId >= state.plots.length) {
     return { ok: false, error: 'invalid_plot' };
   }
 
@@ -495,7 +495,7 @@ export function clearPestDamage(
   plotId: number,
   config: EconomyConfig = DEFAULT_ECONOMY
 ): ClearPestDamageResult {
-  if (plotId < 0 || plotId >= config.maxPlots) {
+  if (plotId < 0 || plotId >= config.maxPlots || plotId >= state.plots.length) {
     return { ok: false, error: 'invalid_plot' };
   }
 
@@ -547,7 +547,7 @@ export function buyFertilizer(state: GameState, quantity: number, config: Econom
 
 /** Applies fertilizer to an exhausted plot, immediately restoring it. Pure — no mutations. */
 export function applyFertilizer(state: GameState, plotId: number, config: EconomyConfig = DEFAULT_ECONOMY): FertilizerResult {
-  if (plotId < 0 || plotId >= config.maxPlots) {
+  if (plotId < 0 || plotId >= config.maxPlots || plotId >= state.plots.length) {
     return { ok: false, error: 'invalid_plot' };
   }
 

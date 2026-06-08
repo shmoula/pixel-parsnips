@@ -9,10 +9,29 @@ function arg(flag: string, fallback: string): string {
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
 }
 
-const configNames = arg('--configs', Object.keys(PRESETS).join(',')).split(',');
-const stratNames = arg('--strategies', Object.keys(STRATEGIES).join(',')).split(',');
-const trials = parseInt(arg('--trials', '2000'), 10);
-const seed = parseInt(arg('--seed', '42'), 10);
+function csv(flag: string, fallback: string): string[] {
+  return arg(flag, fallback).split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function fail(msg: string): never {
+  console.error(msg);
+  process.exit(1);
+}
+
+function posInt(flag: string, fallback: string, min: number): number {
+  const raw = arg(flag, fallback);
+  const n = parseInt(raw, 10);
+  if (!Number.isInteger(n) || n < min) fail(`Invalid ${flag}: ${raw} (expected integer >= ${min})`);
+  return n;
+}
+
+const configNames = csv('--configs', Object.keys(PRESETS).join(','));
+const stratNames = csv('--strategies', Object.keys(STRATEGIES).join(','));
+const trials = posInt('--trials', '2000', 1);
+const seed = posInt('--seed', '42', 0);
+
+if (configNames.length === 0) fail('No configs specified');
+if (stratNames.length === 0) fail('No strategies specified');
 
 const rows: Row[] = [];
 for (const c of configNames) {

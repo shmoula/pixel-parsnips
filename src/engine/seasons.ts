@@ -22,29 +22,41 @@ export { SEASON_TABLE } from './economy';
  * @param config - Economy configuration; defaults to DEFAULT_ECONOMY.
  *
  * Days within a configured season's [startDay, endDay] use `config.seasons`.
- * Days beyond use the Endless formula with coefficients from `config.endless`
- * (where N = 5 + floor((day - 81) / 20)):
- *   - startDay         = 81 + 20 * (N - 5);  endDay = startDay + 19
- *   - leasePerDay      = leaseBase + leasePerSeason * (N - 4)
- *   - disasterTotalPct = min(disasterBase + disasterPerSeason * (N - 4), disasterCap)
- *   - target           = targetBase + targetPerSeason * (N - 4)
+ * Days beyond use the Endless formula with coefficients from `config.endless`.
+ * The endless anchor is derived from the finite arc rather than hard-coded, so
+ * changing `config.seasons` shifts the numbering/scaling consistently. With
+ * `F` finite seasons ending on `finiteEndDay` and finite season length `L`:
+ *   - anchor season = F + 1, starting on day `finiteEndDay + 1`
+ *   - N               = anchor + floor((day - baseStartDay) / L)
+ *   - startDay        = baseStartDay + L * (N - anchor); endDay = startDay + L - 1
+ *   - offset          = N - F
+ *   - leasePerDay     = leaseBase + leasePerSeason * offset
+ *   - disasterTotalPct= min(disasterBase + disasterPerSeason * offset, disasterCap)
+ *   - target          = targetBase + targetPerSeason * offset
  */
 export function getSeasonForDay(day: number, config: EconomyConfig = DEFAULT_ECONOMY): SeasonConfig {
   for (const s of config.seasons) {
     if (day >= s.startDay && day <= s.endDay) return s;
   }
-  // Endless Season N (N ≥ 5)
+  // Endless seasons: anchor derived from the finite arc in config.seasons.
   const e = config.endless;
-  const n = 5 + Math.floor((day - 81) / 20);
-  const startDay = 81 + 20 * (n - 5);
+  const finiteSeasonsCount = config.seasons.length;
+  const lastFinite = config.seasons[finiteSeasonsCount - 1];
+  const seasonLength = lastFinite.endDay - lastFinite.startDay + 1;
+  const endlessAnchorSeason = finiteSeasonsCount + 1;
+  const baseStartDay = lastFinite.endDay + 1;
+
+  const n = endlessAnchorSeason + Math.floor((day - baseStartDay) / seasonLength);
+  const startDay = baseStartDay + seasonLength * (n - endlessAnchorSeason);
+  const offset = n - finiteSeasonsCount;
   return {
     number: n,
     name: 'Deep Winter',
     startDay,
-    endDay: startDay + 19,
-    leasePerDay: e.leaseBase + e.leasePerSeason * (n - 4),
-    disasterTotalPct: Math.min(e.disasterBase + e.disasterPerSeason * (n - 4), e.disasterCap),
-    target: e.targetBase + e.targetPerSeason * (n - 4),
+    endDay: startDay + seasonLength - 1,
+    leasePerDay: e.leaseBase + e.leasePerSeason * offset,
+    disasterTotalPct: Math.min(e.disasterBase + e.disasterPerSeason * offset, e.disasterCap),
+    target: e.targetBase + e.targetPerSeason * offset,
   };
 }
 
