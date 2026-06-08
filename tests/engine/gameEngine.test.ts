@@ -11,6 +11,7 @@ import {
   clearPestDamage,
 } from '../../src/engine/gameEngine';
 import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST, STREAK_BONUS_PER_LEVEL } from '../../src/engine/constants';
+import { DEFAULT_ECONOMY } from '../../src/engine/economy';
 import type { GameState } from '../../src/engine/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1547,5 +1548,27 @@ describe('processTurn — harvest streak season reset', () => {
     // Harvest happened: streakBefore=2 → streakAfter=3, then season_failed does NOT reset it.
     expect(log.streakAfter).toBe(3);
     expect(after.harvestStreak).toBe(3);
+  });
+});
+
+describe('config injection — seeds', () => {
+  it('computeSeedCost uses crop cost from a custom config', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      crops: { ...DEFAULT_ECONOMY.crops, radish: { ...DEFAULT_ECONOMY.crops.radish, baseSeedCost: 99 } },
+    };
+    expect(computeSeedCost('radish', 0, custom)).toBe(99);
+    expect(computeSeedCost('radish', 0)).toBe(5); // default unchanged
+  });
+
+  it('buySeed deducts the custom seed cost', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      crops: { ...DEFAULT_ECONOMY.crops, radish: { ...DEFAULT_ECONOMY.crops.radish, baseSeedCost: 40 } },
+    };
+    const s = initialGameState();
+    const r = buySeed(s, 'radish', 2, custom);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.coinBalance).toBe(s.coinBalance - 80);
   });
 });

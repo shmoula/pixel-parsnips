@@ -14,6 +14,7 @@ import {
   STREAK_BONUS_CAP,
   coins,
 } from './constants';
+import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
 import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
 import type {
   GameState,
@@ -123,10 +124,12 @@ export function plantSeed(
 // ── T029: computeSeedCost ─────────────────────────────────────────────────────
 
 /** Returns the current purchase price for one seed, applying upgrade discount. */
-export function computeSeedCost(cropId: CropId, upgradeTier: UpgradeTier): number {
-  const crop = CROP_DEFINITIONS[cropId];
+export function computeSeedCost(
+  cropId: CropId, upgradeTier: UpgradeTier, config: EconomyConfig = DEFAULT_ECONOMY,
+): number {
+  const crop = config.crops[cropId];
   if (upgradeTier === 0) return crop.baseSeedCost;
-  const def = UPGRADE_TIER_DEFINITIONS[upgradeTier - 1];
+  const def = config.upgrades[upgradeTier - 1];
   return coins(crop.baseSeedCost * (1 - def.cumulativeDiscount));
 }
 
@@ -136,12 +139,13 @@ export function computeSeedCost(cropId: CropId, upgradeTier: UpgradeTier): numbe
 export function buySeed(
   state: GameState,
   cropId: CropId,
-  quantity: number
+  quantity: number,
+  config: EconomyConfig = DEFAULT_ECONOMY,
 ): BuyResult {
   if (!Number.isInteger(quantity) || quantity < 1) {
     return { ok: false, error: 'invalid_quantity' };
   }
-  const unitCost = computeSeedCost(cropId, state.upgradeTier);
+  const unitCost = computeSeedCost(cropId, state.upgradeTier, config);
   const totalCost = unitCost * quantity;
 
   if (state.coinBalance < totalCost) {
