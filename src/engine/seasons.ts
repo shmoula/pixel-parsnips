@@ -19,13 +19,15 @@ export { SEASON_TABLE } from './economy';
 
 /**
  * Returns the active SeasonConfig for any calendar day ≥ 1.
- * Days 1–80 use SEASON_TABLE; days ≥ 81 use the Endless formula:
- *   - Season N = 5 + floor((day - 81) / 20)
- *   - startDay = 81 + 20 * (N - 5)
- *   - endDay   = startDay + 19
- *   - leasePerDay      = 30 + 2 * (N - 4)
- *   - disasterTotalPct = min(0.35 + 0.02 * (N - 4), 0.50)
- *   - target           = 600 + 200 * (N - 4)
+ * @param config - Economy configuration; defaults to DEFAULT_ECONOMY.
+ *
+ * Days within a configured season's [startDay, endDay] use `config.seasons`.
+ * Days beyond use the Endless formula with coefficients from `config.endless`
+ * (where N = 5 + floor((day - 81) / 20)):
+ *   - startDay         = 81 + 20 * (N - 5);  endDay = startDay + 19
+ *   - leasePerDay      = leaseBase + leasePerSeason * (N - 4)
+ *   - disasterTotalPct = min(disasterBase + disasterPerSeason * (N - 4), disasterCap)
+ *   - target           = targetBase + targetPerSeason * (N - 4)
  */
 export function getSeasonForDay(day: number, config: EconomyConfig = DEFAULT_ECONOMY): SeasonConfig {
   for (const s of config.seasons) {
