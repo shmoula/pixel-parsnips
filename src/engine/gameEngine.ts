@@ -6,7 +6,6 @@ import {
   TAX_RATE,
   EXHAUSTION_THRESHOLD,
   EXHAUSTION_RECOVERY_DAYS,
-  FERTILIZER_COST,
   STREAK_BONUS_PER_LEVEL,
   STREAK_BONUS_CAP,
   coins,
@@ -509,11 +508,11 @@ export function clearPestDamage(
 // ── T014: buyFertilizer ───────────────────────────────────────────────────────
 
 /** Purchases fertilizer from the shop. Pure — no mutations. */
-export function buyFertilizer(state: GameState, quantity: number): BuyResult {
+export function buyFertilizer(state: GameState, quantity: number, config: EconomyConfig = DEFAULT_ECONOMY): BuyResult {
   if (!Number.isInteger(quantity) || quantity < 1) {
     return { ok: false, error: 'invalid_quantity' };
   }
-  const totalCost = FERTILIZER_COST * quantity;
+  const totalCost = config.fertilizerCost * quantity;
 
   if (state.coinBalance < totalCost) {
     return {
@@ -537,8 +536,8 @@ export function buyFertilizer(state: GameState, quantity: number): BuyResult {
 // ── T015: applyFertilizer ─────────────────────────────────────────────────────
 
 /** Applies fertilizer to an exhausted plot, immediately restoring it. Pure — no mutations. */
-export function applyFertilizer(state: GameState, plotId: number): FertilizerResult {
-  if (plotId < 0 || plotId >= PLOT_COUNT) {
+export function applyFertilizer(state: GameState, plotId: number, config: EconomyConfig = DEFAULT_ECONOMY): FertilizerResult {
+  if (plotId < 0 || plotId >= config.maxPlots) {
     return { ok: false, error: 'invalid_plot' };
   }
 

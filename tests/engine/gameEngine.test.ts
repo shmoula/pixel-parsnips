@@ -1603,3 +1603,20 @@ describe('config injection — seeds', () => {
     if (r.ok) expect(r.state.coinBalance).toBe(s.coinBalance - 80);
   });
 });
+
+describe('config injection — fertilizer', () => {
+  it('buyFertilizer uses fertilizerCost from config', () => {
+    const custom = { ...DEFAULT_ECONOMY, fertilizerCost: 12 };
+    const s = initialGameState();
+    const r = buyFertilizer(s, 2, custom);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.coinBalance).toBe(s.coinBalance - 24);
+  });
+
+  it('applyFertilizer rejects an out-of-range plot using config.maxPlots', () => {
+    const custom = { ...DEFAULT_ECONOMY, maxPlots: 12 };
+    const r = applyFertilizer(initialGameState(), 99, custom);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('invalid_plot');
+  });
+});
