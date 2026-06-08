@@ -1644,4 +1644,14 @@ describe('config injection + rng — processTurn', () => {
     const b = processTurn(s, undefined, undefined, undefined, DEFAULT_ECONOMY, rngB);
     expect(a.log.weatherId).toBe(b.log.weatherId);
   });
+
+  it('the injected rng drives weather band selection', () => {
+    const s = initialGameState();
+    // Low roll → first (disaster) band; high roll → last (perfect_sun) band.
+    const low = processTurn(s, undefined, undefined, undefined, DEFAULT_ECONOMY, () => 0.01);
+    const high = processTurn(s, undefined, undefined, undefined, DEFAULT_ECONOMY, () => 0.99);
+    expect(low.log.weatherId).not.toBe(high.log.weatherId);
+    expect(low.log.weatherId).toBe('blight');
+    expect(high.log.weatherId).toBe('perfect_sun');
+  });
 });
