@@ -1,11 +1,8 @@
 import {
   SCHEMA_VERSION,
-  STARTING_BALANCE,
   PLOT_COUNT,
-  MAX_UPGRADE_TIER,
   CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
-  UPGRADE_TIER_DEFINITIONS,
   TAX_RATE,
   EXHAUSTION_THRESHOLD,
   EXHAUSTION_RECOVERY_DAYS,
@@ -35,8 +32,8 @@ import type {
 // ── Factory ───────────────────────────────────────────────────────────────────
 
 /** Returns the canonical starting state for a new game run. */
-export function initialGameState(): GameState {
-  const plots: PlotState[] = Array.from({ length: PLOT_COUNT }, (_, i) => ({
+export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameState {
+  const plots: PlotState[] = Array.from({ length: config.maxPlots }, (_, i) => ({
     id: i,
     cropId: null,
     dayPlanted: null,
@@ -50,13 +47,13 @@ export function initialGameState(): GameState {
   return {
     schemaVersion: SCHEMA_VERSION,
     currentDay: 1,
-    coinBalance: STARTING_BALANCE,
+    coinBalance: config.startingBalance,
     plots,
     seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
     upgradeTier: 0,
     lastDailyLog: null,
     phase: 'playing',
-    peakBalance: STARTING_BALANCE,
+    peakBalance: config.startingBalance,
     fertilizerInventory: 0,
     flashDroughtDaysRemaining: 0,
     endlessMode: false,
@@ -72,9 +69,10 @@ export function initialGameState(): GameState {
 export function plantSeed(
   state: GameState,
   plotId: number,
-  cropId: CropId
+  cropId: CropId,
+  config: EconomyConfig = DEFAULT_ECONOMY,
 ): PlantResult {
-  if (plotId < 0 || plotId >= PLOT_COUNT) {
+  if (plotId < 0 || plotId >= config.maxPlots) {
     return { ok: false, error: 'invalid_plot' };
   }
 
@@ -96,7 +94,7 @@ export function plantSeed(
     return { ok: false, error: 'no_seed' };
   }
 
-  const crop = CROP_DEFINITIONS[cropId];
+  const crop = config.crops[cropId];
 
   // Apply Flash Drought growth penalty at planting time (FR-006)
   const isDroughtActive = state.flashDroughtDaysRemaining > 0;
@@ -173,13 +171,14 @@ export function buySeed(
 // ── T029: buyUpgrade ──────────────────────────────────────────────────────────
 
 /** Purchases the next tool upgrade tier. Pure — no mutations. */
-export function buyUpgrade(state: GameState): UpgradeResult {
-  if (state.upgradeTier >= MAX_UPGRADE_TIER) {
+export function buyUpgrade(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): UpgradeResult {
+  const maxTier = config.upgrades.length;
+  if (state.upgradeTier >= maxTier) {
     return { ok: false, error: 'max_tier_reached' };
   }
 
   const nextTier = (state.upgradeTier + 1) as UpgradeTier;
-  const def = UPGRADE_TIER_DEFINITIONS[nextTier - 1];
+  const def = config.upgrades[nextTier - 1];
 
   if (state.coinBalance < def.cost) {
     return { ok: false, error: 'insufficient_funds' };

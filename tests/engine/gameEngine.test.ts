@@ -1551,6 +1551,37 @@ describe('processTurn — harvest streak season reset', () => {
   });
 });
 
+describe('config injection — state/upgrade/plant', () => {
+  it('initialGameState uses startingBalance from config', () => {
+    const custom = { ...DEFAULT_ECONOMY, startingBalance: 500 };
+    expect(initialGameState(custom).coinBalance).toBe(500);
+    expect(initialGameState().coinBalance).toBe(100);
+  });
+
+  it('buyUpgrade uses the custom upgrade cost', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      upgrades: DEFAULT_ECONOMY.upgrades.map((u, i) => i === 0 ? { ...u, cost: 10 } : u),
+    };
+    const s = initialGameState();
+    const r = buyUpgrade(s, custom);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.coinBalance).toBe(s.coinBalance - 10);
+  });
+
+  it('plantSeed uses growthDays from config', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      crops: { ...DEFAULT_ECONOMY.crops, radish: { ...DEFAULT_ECONOMY.crops.radish, growthDays: 7 } },
+    };
+    let s = initialGameState();
+    s = (buySeed(s, 'radish', 1, custom) as { state: typeof s }).state;
+    const r = plantSeed(s, 0, 'radish', custom);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.plots[0].daysRemaining).toBe(7);
+  });
+});
+
 describe('config injection — seeds', () => {
   it('computeSeedCost uses crop cost from a custom config', () => {
     const custom = {
