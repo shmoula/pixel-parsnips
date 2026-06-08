@@ -1,5 +1,6 @@
 import type { WeatherId } from './types';
 import { WEATHER_PROBABILITY_BANDS } from './constants';
+import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
 
 export const SEASON_LENGTH = 20;
 
@@ -13,13 +14,8 @@ export interface SeasonConfig {
   target: number;
 }
 
-/** Hard-coded configs for Seasons 1–4 (the finite arc). */
-export const SEASON_TABLE: SeasonConfig[] = [
-  { number: 1, name: 'Spring Thaw',      startDay:  1, endDay: 20, leasePerDay: 15, disasterTotalPct: 0.15, target: 150 },
-  { number: 2, name: 'Summer Heat',      startDay: 21, endDay: 40, leasePerDay: 20, disasterTotalPct: 0.20, target: 250 },
-  { number: 3, name: 'Autumn Pressure',  startDay: 41, endDay: 60, leasePerDay: 25, disasterTotalPct: 0.28, target: 400 },
-  { number: 4, name: 'Winter Crunch',    startDay: 61, endDay: 80, leasePerDay: 30, disasterTotalPct: 0.35, target: 600 },
-];
+// Re-export so existing consumers of `seasons.ts` keep working
+export { SEASON_TABLE } from './economy';
 
 /**
  * Returns the active SeasonConfig for any calendar day ≥ 1.
@@ -31,11 +27,12 @@ export const SEASON_TABLE: SeasonConfig[] = [
  *   - disasterTotalPct = min(0.35 + 0.02 * (N - 4), 0.50)
  *   - target           = 600 + 200 * (N - 4)
  */
-export function getSeasonForDay(day: number): SeasonConfig {
-  for (const s of SEASON_TABLE) {
+export function getSeasonForDay(day: number, config: EconomyConfig = DEFAULT_ECONOMY): SeasonConfig {
+  for (const s of config.seasons) {
     if (day >= s.startDay && day <= s.endDay) return s;
   }
   // Endless Season N (N ≥ 5)
+  const e = config.endless;
   const n = 5 + Math.floor((day - 81) / 20);
   const startDay = 81 + 20 * (n - 5);
   return {
@@ -43,9 +40,9 @@ export function getSeasonForDay(day: number): SeasonConfig {
     name: 'Deep Winter',
     startDay,
     endDay: startDay + 19,
-    leasePerDay: 30 + 2 * (n - 4),
-    disasterTotalPct: Math.min(0.35 + 0.02 * (n - 4), 0.50),
-    target: 600 + 200 * (n - 4),
+    leasePerDay: e.leaseBase + e.leasePerSeason * (n - 4),
+    disasterTotalPct: Math.min(e.disasterBase + e.disasterPerSeason * (n - 4), e.disasterCap),
+    target: e.targetBase + e.targetPerSeason * (n - 4),
   };
 }
 
