@@ -1,13 +1,7 @@
 import {
   SCHEMA_VERSION,
   PLOT_COUNT,
-  CROP_DEFINITIONS,
   WEATHER_DEFINITIONS,
-  TAX_RATE,
-  EXHAUSTION_THRESHOLD,
-  EXHAUSTION_RECOVERY_DAYS,
-  STREAK_BONUS_PER_LEVEL,
-  STREAK_BONUS_CAP,
   coins,
 } from './constants';
 import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
@@ -202,10 +196,36 @@ function applySeasonStreakReset(
   return phase === 'season_passed' || phase === 'season_4_won' ? 0 : streakAfter;
 }
 
+type SeasonEndResult = { phase: GameState['phase']; nextDay: number };
+
+function resolveSeasonEnd(
+  currentDayBeforeIncrement: number,
+  incrementedDay: number,
+  season: ReturnType<typeof getSeasonForDay>,
+  coinBalance: number,
+  endlessMode: boolean,
+): SeasonEndResult {
+  if (currentDayBeforeIncrement !== season.endDay) {
+    return { phase: 'playing', nextDay: incrementedDay };
+  }
+  if (coinBalance < season.target) {
+    return { phase: 'season_failed', nextDay: currentDayBeforeIncrement };
+  }
+  if (endlessMode) {
+    return { phase: 'playing', nextDay: incrementedDay };
+  }
+  if (season.number === 4) {
+    return { phase: 'season_4_won', nextDay: currentDayBeforeIncrement };
+  }
+  return { phase: 'season_passed', nextDay: incrementedDay };
+}
+
 function computeStreakUpdate(
   streakBefore: number,
   peakBefore: number,
-  hadHarvest: boolean
+  hadHarvest: boolean,
+  bonusCap: number,
+  bonusPerLevel: number,
 ): { streakAfter: number; streakBonus: number; peakHarvestStreak: number } {
   if (!hadHarvest) {
     return { streakAfter: 0, streakBonus: 0, peakHarvestStreak: peakBefore };
@@ -213,8 +233,8 @@ function computeStreakUpdate(
   const streakAfter = streakBefore + 1;
   // Bonus is based on the prior streak count, so the first harvest in a streak
   // earns nothing (streakBefore=0). Day 2 of a streak earns +5, day 3 +10, etc.,
-  // capped at +20 (STREAK_BONUS_CAP * STREAK_BONUS_PER_LEVEL).
-  const streakBonus = Math.min(streakBefore, STREAK_BONUS_CAP) * STREAK_BONUS_PER_LEVEL;
+  // capped at bonusCap * bonusPerLevel.
+  const streakBonus = Math.min(streakBefore, bonusCap) * bonusPerLevel;
   return {
     streakAfter,
     streakBonus,
@@ -232,10 +252,12 @@ export function processTurn(
   state: GameState,
   weatherRoll?: WeatherId,
   pestDestructionOverride?: number[],
-  weatherRollOverride?: number
+  weatherRollOverride?: number,
+  config: EconomyConfig = DEFAULT_ECONOMY,
+  rng: () => number = Math.random,
 ): TurnResult {
   // Compute season once — reused for both lease and weather band selection
-  const season = getSeasonForDay(state.currentDay);
+  const season = getSeasonForDay(state.currentDay, config);
 
   // Step 1: Decrement daysRemaining on all occupied plots
   const plots = state.plots.map(plot => {
@@ -247,7 +269,7 @@ export function processTurn(
   const weatherId: WeatherId = (() => {
     if (weatherRoll) return weatherRoll;
     const bands = getDisasterBandsForSeason(season);
-    const roll = weatherRollOverride ?? Math.random();
+    const roll = weatherRollOverride ?? rng();
     for (const band of bands) {
       if (roll < band.threshold) return band.id;
     }
@@ -263,7 +285,7 @@ export function processTurn(
       if (plot.cropId === null) return plot; // empty/exhausted plots immune
       const isDestroyed = pestDestructionOverride !== undefined
         ? pestDestructionOverride.includes(plot.id)
-        : Math.random() < 0.5;
+        : rng() < 0.5;
       if (isDestroyed) {
         pestDestroyedPlots.push(plot.id);
         return {
@@ -293,7 +315,7 @@ export function processTurn(
   const exhaustedPlots: number[] = [];
   const harvestedPlots = plotsAfterPest.map(plot => {
     if (plot.cropId === null || plot.daysRemaining !== 0) return plot;
-    const crop = CROP_DEFINITIONS[plot.cropId];
+    const crop = config.crops[plot.cropId];
     const adjustedYield = coins(crop.baseYield * weather.multiplier);
     harvests.push({
       plotId: plot.id,
@@ -305,7 +327,7 @@ export function processTurn(
     // Sub-step 3a: increment counter
     const newConsecutiveHarvests = plot.consecutiveHarvests + 1;
     // Sub-step 3b: trigger exhaustion if threshold reached
-    if (newConsecutiveHarvests >= EXHAUSTION_THRESHOLD) {
+    if (newConsecutiveHarvests >= config.exhaustionThreshold) {
       exhaustedPlots.push(plot.id);
       return {
         ...plot,
@@ -340,7 +362,9 @@ export function processTurn(
   const { streakAfter, streakBonus, peakHarvestStreak } = computeStreakUpdate(
     streakBefore,
     state.peakHarvestStreak,
-    harvests.length > 0
+    harvests.length > 0,
+    config.streakBonusCap,
+    config.streakBonusPerLevel,
   );
   coinBalance += streakBonus;
 
@@ -355,7 +379,7 @@ export function processTurn(
       totalHarvestIncome,
       openingBalance,
       landLeaseDeducted: 0,
-      taxRate: TAX_RATE,
+      taxRate: config.taxRate,
       taxDeducted: 0,
       netChange: coinBalance - openingBalance,
       closingBalance: coinBalance,
@@ -384,34 +408,20 @@ export function processTurn(
   const landLeaseDeducted = leaseForDay;
 
   // Step 7: Compute and deduct tax (5% of post-lease balance, floor-rounded)
-  const taxDeducted = coins(coinBalance * TAX_RATE);
+  const taxDeducted = coins(coinBalance * config.taxRate);
   coinBalance -= taxDeducted;
 
   // Step 8: Increment currentDay
   const currentDay = state.currentDay + 1;
 
   // Step 8.4: Season-end check
-  let seasonPhase: GameState['phase'] = 'playing';
-  let nextDayAfterTransition = currentDay; // 'currentDay' here is the already-incremented value
-  if (state.currentDay === season.endDay) {
-    if (coinBalance >= season.target) {
-      // Target met
-      if (state.endlessMode) {
-        // Endless mode: silent advance, no transition modal
-        seasonPhase = 'playing';
-      } else if (season.number === 4) {
-        seasonPhase = 'season_4_won';
-        nextDayAfterTransition = state.currentDay; // wait for player choice
-      } else {
-        seasonPhase = 'season_passed';
-        // currentDay was already incremented in Step 8
-      }
-    } else {
-      // Target missed — applies regardless of endlessMode
-      seasonPhase = 'season_failed';
-      nextDayAfterTransition = state.currentDay;
-    }
-  }
+  const { phase: seasonPhase, nextDay: nextDayAfterTransition } = resolveSeasonEnd(
+    state.currentDay,
+    currentDay,
+    season,
+    coinBalance,
+    state.endlessMode,
+  );
 
   // Step 8.4b: Reset harvest streak when a season is cleared (not on season_failed,
   // since the run is ending and the final log should reflect the as-played streak).
@@ -426,7 +436,7 @@ export function processTurn(
   // Step 8.5: Natural recovery — clear exhaustion after EXHAUSTION_RECOVERY_DAYS turns
   const recoveredPlots = harvestedPlots.map(plot => {
     if (plot.exhaustedSinceDay === null) return plot;
-    if (currentDay - plot.exhaustedSinceDay >= EXHAUSTION_RECOVERY_DAYS) {
+    if (currentDay - plot.exhaustedSinceDay >= config.exhaustionRecoveryDays) {
       return { ...plot, exhaustedSinceDay: null, consecutiveHarvests: 0 };
     }
     return plot;
@@ -444,7 +454,7 @@ export function processTurn(
     totalHarvestIncome,
     openingBalance,
     landLeaseDeducted,
-    taxRate: TAX_RATE,
+    taxRate: config.taxRate,
     taxDeducted,
     netChange: coinBalance - openingBalance,
     closingBalance: coinBalance,

@@ -1620,3 +1620,28 @@ describe('config injection — fertilizer', () => {
     if (!r.ok) expect(r.error).toBe('invalid_plot');
   });
 });
+
+describe('config injection + rng — processTurn', () => {
+  it('uses tax rate from config', () => {
+    // 12 radishes ready to harvest at day 1 with weather sunny (x1.0)
+    // Use withSeeds so the opening balance stays at 100 (no coin deduction for seeds)
+    let s = withSeeds(initialGameState(), { radish: 12 });
+    for (let i = 0; i < 12; i++) {
+      s = (plantSeed(s, i, 'radish') as { state: typeof s }).state;
+    }
+    const custom = { ...DEFAULT_ECONOMY, taxRate: 0.50 };
+    const { state: after } = processTurn(s, 'sunny', undefined, undefined, custom);
+    // income 12*12=144 + opening 100; lease 15; tax 50% of (balance-lease)
+    const preTax = 100 + 144 - 15;
+    expect(after.coinBalance).toBe(preTax - Math.floor(preTax * 0.50));
+  });
+
+  it('is deterministic for a fixed rng seed (same weather sequence)', () => {
+    const rngA = () => 0.5; // constant roll → same weather band every call
+    const rngB = () => 0.5;
+    const s = initialGameState();
+    const a = processTurn(s, undefined, undefined, undefined, DEFAULT_ECONOMY, rngA);
+    const b = processTurn(s, undefined, undefined, undefined, DEFAULT_ECONOMY, rngB);
+    expect(a.log.weatherId).toBe(b.log.weatherId);
+  });
+});
