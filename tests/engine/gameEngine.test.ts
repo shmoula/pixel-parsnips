@@ -11,6 +11,7 @@ import {
   clearPestDamage,
 } from '../../src/engine/gameEngine';
 import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST, STREAK_BONUS_PER_LEVEL } from '../../src/engine/constants';
+import { DEFAULT_ECONOMY } from '../../src/engine/economy';
 import type { GameState } from '../../src/engine/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1547,5 +1548,133 @@ describe('processTurn — harvest streak season reset', () => {
     // Harvest happened: streakBefore=2 → streakAfter=3, then season_failed does NOT reset it.
     expect(log.streakAfter).toBe(3);
     expect(after.harvestStreak).toBe(3);
+  });
+});
+
+describe('config injection — state/upgrade/plant', () => {
+  it('initialGameState uses startingBalance from config', () => {
+    const custom = { ...DEFAULT_ECONOMY, startingBalance: 500 };
+    expect(initialGameState(custom).coinBalance).toBe(500);
+    expect(initialGameState().coinBalance).toBe(100);
+  });
+
+  it('buyUpgrade uses the custom upgrade cost', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      upgrades: DEFAULT_ECONOMY.upgrades.map((u, i) => i === 0 ? { ...u, cost: 10 } : u),
+    };
+    const s = initialGameState();
+    const r = buyUpgrade(s, custom);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.coinBalance).toBe(s.coinBalance - 10);
+  });
+
+  it('plantSeed uses growthDays from config', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      crops: { ...DEFAULT_ECONOMY.crops, radish: { ...DEFAULT_ECONOMY.crops.radish, growthDays: 7 } },
+    };
+    let s = initialGameState();
+    s = (buySeed(s, 'radish', 1, custom) as { state: typeof s }).state;
+    const r = plantSeed(s, 0, 'radish', custom);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.plots[0].daysRemaining).toBe(7);
+  });
+});
+
+describe('config injection — seeds', () => {
+  it('computeSeedCost uses crop cost from a custom config', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      crops: { ...DEFAULT_ECONOMY.crops, radish: { ...DEFAULT_ECONOMY.crops.radish, baseSeedCost: 99 } },
+    };
+    expect(computeSeedCost('radish', 0, custom)).toBe(99);
+    expect(computeSeedCost('radish', 0)).toBe(5); // default unchanged
+  });
+
+  it('buySeed deducts the custom seed cost', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      crops: { ...DEFAULT_ECONOMY.crops, radish: { ...DEFAULT_ECONOMY.crops.radish, baseSeedCost: 40 } },
+    };
+    const s = initialGameState();
+    const r = buySeed(s, 'radish', 2, custom);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.coinBalance).toBe(s.coinBalance - 80);
+  });
+});
+
+describe('config injection — fertilizer', () => {
+  it('buyFertilizer uses fertilizerCost from config', () => {
+    const custom = { ...DEFAULT_ECONOMY, fertilizerCost: 12 };
+    const s = initialGameState();
+    const r = buyFertilizer(s, 2, custom);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.coinBalance).toBe(s.coinBalance - 24);
+  });
+
+  it('applyFertilizer rejects an out-of-range plot using config.maxPlots', () => {
+    const custom = { ...DEFAULT_ECONOMY, maxPlots: 12 };
+    const r = applyFertilizer(initialGameState(), 99, custom);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('invalid_plot');
+  });
+
+  it('clearPestDamage rejects an out-of-range plot using config.maxPlots', () => {
+    const custom = { ...DEFAULT_ECONOMY, maxPlots: 6 };
+    const r = clearPestDamage(initialGameState(), 8, custom);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('invalid_plot');
+  });
+
+  it('applyFertilizer rejects (not throws) when maxPlots exceeds state.plots.length', () => {
+    const state = initialGameState(); // DEFAULT_ECONOMY.maxPlots plots
+    const custom = { ...DEFAULT_ECONOMY, maxPlots: state.plots.length + 5 };
+    const r = applyFertilizer(state, state.plots.length + 2, custom);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('invalid_plot');
+  });
+
+  it('clearPestDamage rejects (not throws) when maxPlots exceeds state.plots.length', () => {
+    const state = initialGameState();
+    const custom = { ...DEFAULT_ECONOMY, maxPlots: state.plots.length + 5 };
+    const r = clearPestDamage(state, state.plots.length + 2, custom);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('invalid_plot');
+  });
+});
+
+describe('config injection + rng — processTurn', () => {
+  it('uses tax rate from config', () => {
+    // 12 radishes ready to harvest at day 1 with weather sunny (x1.0)
+    // Use withSeeds so the opening balance stays at 100 (no coin deduction for seeds)
+    let s = withSeeds(initialGameState(), { radish: 12 });
+    for (let i = 0; i < 12; i++) {
+      s = (plantSeed(s, i, 'radish') as { state: typeof s }).state;
+    }
+    const custom = { ...DEFAULT_ECONOMY, taxRate: 0.50 };
+    const { state: after } = processTurn(s, 'sunny', undefined, undefined, custom);
+    // income 12*12=144 + opening 100; lease 15; tax 50% of (balance-lease)
+    const preTax = 100 + 144 - 15;
+    expect(after.coinBalance).toBe(preTax - Math.floor(preTax * 0.50));
+  });
+
+  it('is deterministic for a fixed rng seed (same weather sequence)', () => {
+    const rngA = () => 0.5; // constant roll → same weather band every call
+    const rngB = () => 0.5;
+    const s = initialGameState();
+    const a = processTurn(s, undefined, undefined, undefined, DEFAULT_ECONOMY, rngA);
+    const b = processTurn(s, undefined, undefined, undefined, DEFAULT_ECONOMY, rngB);
+    expect(a.log.weatherId).toBe(b.log.weatherId);
+  });
+
+  it('the injected rng drives weather band selection', () => {
+    const s = initialGameState();
+    // Low roll → first (disaster) band; high roll → last (perfect_sun) band.
+    const low = processTurn(s, undefined, undefined, undefined, DEFAULT_ECONOMY, () => 0.01);
+    const high = processTurn(s, undefined, undefined, undefined, DEFAULT_ECONOMY, () => 0.99);
+    expect(low.log.weatherId).not.toBe(high.log.weatherId);
+    expect(low.log.weatherId).toBe('blight');
+    expect(high.log.weatherId).toBe('perfect_sun');
   });
 });

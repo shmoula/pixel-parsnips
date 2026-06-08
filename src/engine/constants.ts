@@ -1,5 +1,6 @@
 import type {
   CropDefinition,
+  CropId,
   WeatherDefinition,
   WeatherId,
   UpgradeTierDefinition,
@@ -23,7 +24,7 @@ export const coins = (n: number): number => Math.floor(n);
 
 // ── Crop definitions ──────────────────────────────────────────────────────────
 
-export const CROP_DEFINITIONS: Record<string, CropDefinition> = {
+export const CROP_DEFINITIONS: Record<CropId, CropDefinition> = {
   radish: {
     id: 'radish',
     name: 'Radish',

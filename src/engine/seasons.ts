@@ -1,5 +1,6 @@
 import type { WeatherId } from './types';
 import { WEATHER_PROBABILITY_BANDS } from './constants';
+import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
 
 export const SEASON_LENGTH = 20;
 
@@ -13,39 +14,61 @@ export interface SeasonConfig {
   target: number;
 }
 
-/** Hard-coded configs for Seasons 1–4 (the finite arc). */
-export const SEASON_TABLE: SeasonConfig[] = [
-  { number: 1, name: 'Spring Thaw',      startDay:  1, endDay: 20, leasePerDay: 15, disasterTotalPct: 0.15, target: 150 },
-  { number: 2, name: 'Summer Heat',      startDay: 21, endDay: 40, leasePerDay: 20, disasterTotalPct: 0.20, target: 250 },
-  { number: 3, name: 'Autumn Pressure',  startDay: 41, endDay: 60, leasePerDay: 25, disasterTotalPct: 0.28, target: 400 },
-  { number: 4, name: 'Winter Crunch',    startDay: 61, endDay: 80, leasePerDay: 30, disasterTotalPct: 0.35, target: 600 },
-];
+// Re-export so existing consumers of `seasons.ts` keep working
+export { SEASON_TABLE } from './economy';
 
 /**
  * Returns the active SeasonConfig for any calendar day ≥ 1.
- * Days 1–80 use SEASON_TABLE; days ≥ 81 use the Endless formula:
- *   - Season N = 5 + floor((day - 81) / 20)
- *   - startDay = 81 + 20 * (N - 5)
- *   - endDay   = startDay + 19
- *   - leasePerDay      = 30 + 2 * (N - 4)
- *   - disasterTotalPct = min(0.35 + 0.02 * (N - 4), 0.50)
- *   - target           = 600 + 200 * (N - 4)
+ * @param config - Economy configuration; defaults to DEFAULT_ECONOMY.
+ *
+ * Days within a configured season's [startDay, endDay] use `config.seasons`.
+ * Days beyond use the Endless formula with coefficients from `config.endless`.
+ * The endless anchor is derived from the finite arc rather than hard-coded, so
+ * changing `config.seasons` shifts the numbering/scaling consistently. With
+ * `F` finite seasons ending on `finiteEndDay` and finite season length `L`:
+ *   - anchor season = F + 1, starting on day `finiteEndDay + 1`
+ *   - N               = anchor + floor((day - baseStartDay) / L)
+ *   - startDay        = baseStartDay + L * (N - anchor); endDay = startDay + L - 1
+ *   - offset          = N - F
+ *   - leasePerDay     = leaseBase + leasePerSeason * offset
+ *   - disasterTotalPct= min(disasterBase + disasterPerSeason * offset, disasterCap)
+ *   - target          = targetBase + targetPerSeason * offset
  */
-export function getSeasonForDay(day: number): SeasonConfig {
-  for (const s of SEASON_TABLE) {
+export function getSeasonForDay(day: number, config: EconomyConfig = DEFAULT_ECONOMY): SeasonConfig {
+  if (config.seasons.length === 0) {
+    throw new Error('getSeasonForDay: config.seasons must not be empty');
+  }
+
+  for (const s of config.seasons) {
     if (day >= s.startDay && day <= s.endDay) return s;
   }
-  // Endless Season N (N ≥ 5)
-  const n = 5 + Math.floor((day - 81) / 20);
-  const startDay = 81 + 20 * (n - 5);
+  // Endless seasons: anchor derived from the finite arc in config.seasons.
+  const e = config.endless;
+  const finiteSeasonsCount = config.seasons.length;
+  const lastFinite = config.seasons[finiteSeasonsCount - 1];
+
+  if (lastFinite.endDay < lastFinite.startDay) {
+    throw new Error(`getSeasonForDay: Season ${lastFinite.number} has invalid bounds (endDay ${lastFinite.endDay} < startDay ${lastFinite.startDay})`);
+  }
+
+  const seasonLength = lastFinite.endDay - lastFinite.startDay + 1;
+  if (seasonLength <= 0) {
+    throw new Error(`getSeasonForDay: computed seasonLength must be > 0, got ${seasonLength}`);
+  }
+  const endlessAnchorSeason = finiteSeasonsCount + 1;
+  const baseStartDay = lastFinite.endDay + 1;
+
+  const n = endlessAnchorSeason + Math.floor((day - baseStartDay) / seasonLength);
+  const startDay = baseStartDay + seasonLength * (n - endlessAnchorSeason);
+  const offset = n - finiteSeasonsCount;
   return {
     number: n,
     name: 'Deep Winter',
     startDay,
-    endDay: startDay + 19,
-    leasePerDay: 30 + 2 * (n - 4),
-    disasterTotalPct: Math.min(0.35 + 0.02 * (n - 4), 0.50),
-    target: 600 + 200 * (n - 4),
+    endDay: startDay + seasonLength - 1,
+    leasePerDay: e.leaseBase + e.leasePerSeason * offset,
+    disasterTotalPct: Math.min(e.disasterBase + e.disasterPerSeason * offset, e.disasterCap),
+    target: e.targetBase + e.targetPerSeason * offset,
   };
 }
 

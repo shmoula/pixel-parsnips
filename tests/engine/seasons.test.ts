@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getSeasonForDay, SEASON_LENGTH, getDisasterBandsForSeason } from '../../src/engine/seasons';
+import { DEFAULT_ECONOMY } from '../../src/engine/economy';
 
 describe('getSeasonForDay — Seasons 1–4 (table-based)', () => {
   it('returns Season 1 (Spring Thaw) for Day 1', () => {
@@ -163,5 +164,48 @@ describe('getDisasterBandsForSeason', () => {
     expect(pestWidth).toBeCloseTo(droughtWidth, 5);
     // Final band still lands at exactly 1.0
     expect(bands[bands.length - 1].threshold).toBeCloseTo(1.0, 5);
+  });
+});
+
+describe('getSeasonForDay with injected config', () => {
+  it('defaults to DEFAULT_ECONOMY and is unchanged', () => {
+    expect(getSeasonForDay(21).target).toBe(250);
+    expect(getSeasonForDay(81).leasePerDay).toBe(32); // endless season 5
+  });
+
+  it('reads finite-season values from a custom config', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      seasons: DEFAULT_ECONOMY.seasons.map(s =>
+        s.number === 2 ? { ...s, target: 999 } : s),
+    };
+    expect(getSeasonForDay(21, custom).target).toBe(999);
+  });
+
+  it('reads endless coefficients from a custom config', () => {
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      endless: { ...DEFAULT_ECONOMY.endless, targetBase: 1000, targetPerSeason: 500 },
+    };
+    // day 81 → season 5 → target 1000 + 500*(5-4) = 1500
+    expect(getSeasonForDay(81, custom).target).toBe(1500);
+  });
+
+  it('derives the endless anchor from overridden finite-season boundaries', () => {
+    // Shorten Winter Crunch so the finite arc ends on day 70 (length 10).
+    const custom = {
+      ...DEFAULT_ECONOMY,
+      seasons: DEFAULT_ECONOMY.seasons.map(s =>
+        s.number === 4 ? { ...s, endDay: 70 } : s),
+    };
+    // Default: day 75 is finite Season 4 (target 600).
+    expect(getSeasonForDay(75).target).toBe(600);
+    // Custom: day 71+ is now Endless Season 5, anchored to the new boundary.
+    const endless = getSeasonForDay(75, custom);
+    expect(endless.number).toBe(5);
+    expect(endless.startDay).toBe(71);
+    expect(endless.endDay).toBe(80); // seasonLength derived as 10
+    expect(endless.target).toBe(800); // targetBase 600 + 200*(5-4)
+    expect(endless.leasePerDay).toBe(32); // leaseBase 30 + 2*(5-4)
   });
 });
