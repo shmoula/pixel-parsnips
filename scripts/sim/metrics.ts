@@ -33,7 +33,7 @@ export function aggregate(outcomes: Outcome[], finalTarget: number): Metrics {
     : n % 2 ? peaks[(n - 1) / 2]
     : (peaks[n / 2 - 1] + peaks[n / 2]) / 2;
   const clearedSeasonPct = [1, 2, 3, 4].map(season =>
-    pct(outcomes.filter(o => o.result !== 'bankrupt' && (o.result === 'won' || o.seasonReached > season)).length, n),
+    pct(outcomes.filter(o => o.result === 'won' || o.seasonReached > season).length, n),
   );
   return {
     trials: n,
