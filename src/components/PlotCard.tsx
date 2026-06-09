@@ -48,9 +48,41 @@ interface PlotCardProps {
   plot: PlotState;
   currentDay?: number;
   fertilizerInventory?: number;
+  locked?: boolean;
+  isNextPurchasable?: boolean;
+  plotPrice?: number;
+  canAffordPlot?: boolean;
   onPlant?: (plotId: number) => void;
   onApplyFertilizer?: (plotId: number) => void;
   onClearPestDamage?: (plotId: number) => void;
+  onBuyPlot?: (plotId: number) => void;
+}
+
+function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPlot }: {
+  plot: PlotState; isNextPurchasable?: boolean; plotPrice?: number;
+  canAffordPlot?: boolean; onBuyPlot?: (plotId: number) => void;
+}) {
+  return (
+    <div
+      aria-label={`Locked plot ${plot.id + 1}`}
+      className="flex flex-col items-center justify-center w-full aspect-square rounded-lg border-2 border-[#3D2510]/80 bg-[#160F07] opacity-80 select-none p-1"
+    >
+      <span className="text-2xl opacity-60">🔒</span>
+      {isNextPurchasable && plotPrice !== undefined ? (
+        <button
+          type="button"
+          aria-label={`Buy plot ${plot.id + 1} for ${plotPrice} coins`}
+          disabled={!canAffordPlot}
+          onClick={() => onBuyPlot?.(plot.id)}
+          className="mt-1 font-pixel text-[10px] px-1.5 py-0.5 rounded bg-farm-gold text-farm-ink hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Buy plot · {plotPrice}🪙
+        </button>
+      ) : (
+        <span className="mt-1 font-pixel text-[9px] text-farm-stone/60">Locked</span>
+      )}
+    </div>
+  );
 }
 
 function PestDamagedPlot({ plot, onClearPestDamage }: {
@@ -190,7 +222,19 @@ function GrowingCropCard({ plot }: {
   );
 }
 
-export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer, onClearPestDamage }: PlotCardProps) {
+export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked, isNextPurchasable, plotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: PlotCardProps) {
+  if (locked) {
+    return (
+      <LockedPlot
+        plot={plot}
+        isNextPurchasable={isNextPurchasable}
+        plotPrice={plotPrice}
+        canAffordPlot={canAffordPlot}
+        onBuyPlot={onBuyPlot}
+      />
+    );
+  }
+
   // Highest priority: pest damage blocks everything until acknowledged
   if (plot.pestDamaged) {
     return <PestDamagedPlot plot={plot} onClearPestDamage={onClearPestDamage} />;
