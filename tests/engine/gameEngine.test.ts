@@ -1693,3 +1693,24 @@ describe('config injection + rng — processTurn', () => {
     expect(high.log.weatherId).toBe('perfect_sun');
   });
 });
+
+// ── plantSeed locked plots ─────────────────────────────────────────────────────
+
+describe('plantSeed locked plots', () => {
+  it('returns plot_locked for an index >= unlockedPlots', () => {
+    const custom = { ...DEFAULT_ECONOMY, startingPlots: 4, maxPlots: 12 };
+    let s = initialGameState(custom);
+    s = (buySeed(s, 'radish', 1, custom) as { state: typeof s }).state;
+    const r = plantSeed(s, 5, 'radish', custom); // plot 5 is locked (only 0..3 unlocked)
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('plot_locked');
+  });
+
+  it('allows planting on an unlocked plot', () => {
+    const custom = { ...DEFAULT_ECONOMY, startingPlots: 4, maxPlots: 12 };
+    let s = initialGameState(custom);
+    s = (buySeed(s, 'radish', 1, custom) as { state: typeof s }).state;
+    const r = plantSeed(s, 0, 'radish', custom);
+    expect(r.ok).toBe(true);
+  });
+});

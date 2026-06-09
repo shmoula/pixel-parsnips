@@ -69,6 +69,10 @@ export function plantSeed(
     return { ok: false, error: 'invalid_plot' };
   }
 
+  if (plotId >= state.unlockedPlots) {
+    return { ok: false, error: 'plot_locked' };
+  }
+
   const plot = state.plots[plotId];
   if (plot.cropId !== null) {
     return { ok: false, error: 'plot_occupied' };
