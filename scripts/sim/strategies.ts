@@ -1,5 +1,5 @@
 import {
-  buySeed, plantSeed, buyUpgrade, computeSeedCost,
+  buySeed, plantSeed, buyUpgrade, buyPlot, computeSeedCost,
 } from '../../src/engine/gameEngine';
 import { getSeasonForDay } from '../../src/engine/seasons';
 import type { EconomyConfig } from '../../src/engine/economy';
@@ -11,7 +11,7 @@ export type Strategy = (state: GameState, config: EconomyConfig) => GameState;
 function fillBoard(state: GameState, config: EconomyConfig, pick: (s: GameState) => CropId): GameState {
   let s = state;
   const lease = getSeasonForDay(s.currentDay, config).leasePerDay;
-  for (let i = 0; i < config.maxPlots; i++) {
+  for (let i = 0; i < s.unlockedPlots; i++) {
     const plot = s.plots[i];
     if (plot.cropId !== null || plot.exhaustedSinceDay !== null || plot.pestDamaged) continue;
     const crop = pick(s);
@@ -39,16 +39,40 @@ function maybeUpgrade(state: GameState, config: EconomyConfig): GameState {
   return s;
 }
 
+/** Buy plots while the board is fully utilized and we can afford the next plot
+ *  with a healthy buffer (don't spend the lease cushion on land). */
+function maybeBuyPlots(state: GameState, config: EconomyConfig): GameState {
+  let s = state;
+  const lease = getSeasonForDay(s.currentDay, config).leasePerDay;
+  while (s.unlockedPlots < config.maxPlots) {
+    const boardFull = s.plots
+      .slice(0, s.unlockedPlots)
+      .every(p => p.cropId !== null || p.exhaustedSinceDay !== null || p.pestDamaged);
+    if (!boardFull) break;
+    const price = config.plotPrices[s.unlockedPlots - config.startingPlots];
+    if (price === undefined || s.coinBalance - price < lease * 2) break;
+    const r = buyPlot(s, config);
+    if (!r.ok) break;
+    s = r.state;
+  }
+  return s;
+}
+
 const single = (crop: CropId): Strategy => (state, config) =>
   fillBoard(maybeUpgrade(state, config), config, () => crop);
 
 const smartMixed: Strategy = (state, config) => {
-  const s = maybeUpgrade(state, config);
-  return fillBoard(s, config, (cur) => {
-    if (cur.coinBalance > 250) return 'pumpkin';
-    if (cur.coinBalance > 60) return 'parsnip';
-    return 'radish';
-  });
+  let s = maybeUpgrade(state, config);
+  const pick = (cur: GameState): CropId =>
+    cur.coinBalance > 250 ? 'pumpkin' : cur.coinBalance > 60 ? 'parsnip' : 'radish';
+  // Fill, then expand, then fill the new plot(s); a couple of rounds converge.
+  for (let round = 0; round < 3; round++) {
+    s = fillBoard(s, config, pick);
+    const expanded = maybeBuyPlots(s, config);
+    if (expanded.unlockedPlots === s.unlockedPlots) { s = expanded; break; }
+    s = expanded;
+  }
+  return s;
 };
 
 export const STRATEGIES: Record<string, Strategy> = {
