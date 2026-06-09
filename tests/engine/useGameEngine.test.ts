@@ -5,6 +5,7 @@ import { SCHEMA_VERSION } from '../../src/engine/constants';
 import { initialGameState } from '../../src/engine/gameEngine';
 import type { GameState } from '../../src/engine/types';
 import { loadRecords } from '../../src/engine/records';
+import { DEFAULT_ECONOMY } from '../../src/engine/economy';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 
@@ -680,5 +681,49 @@ describe('useGameEngine — v5 → v6 migration (008 — Harvest Streak)', () =>
     expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
     expect(result.current.state.harvestStreak).toBe(0);
     expect(result.current.state.peakHarvestStreak).toBe(0);
+  });
+});
+
+// ── T12: buyPlot / getNextPlotPrice hook integration (010) ───────────────────
+
+describe('buyPlot / getNextPlotPrice', () => {
+  it('getNextPlotPrice returns the first plot price at a fresh start', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.restart(); });
+    expect(result.current.getNextPlotPrice()).toBe(DEFAULT_ECONOMY.plotPrices[0]); // 30
+  });
+
+  it('buyPlot unlocks the next plot, deducts coins, and advances the price', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.restart(); });
+    const before = result.current.state.unlockedPlots;      // 4
+    const startCoins = result.current.state.coinBalance;     // 130
+    const price = result.current.getNextPlotPrice()!;        // 30
+    let ok = false;
+    act(() => { ok = result.current.buyPlot(); });
+    expect(ok).toBe(true);
+    expect(result.current.state.unlockedPlots).toBe(before + 1);
+    expect(result.current.state.coinBalance).toBe(startCoins - price);
+    expect(result.current.getNextPlotPrice()).toBe(DEFAULT_ECONOMY.plotPrices[1]); // 55
+  });
+
+  it('getNextPlotPrice returns null when all plots are unlocked', () => {
+    // Inject a state with unlockedPlots === maxPlots via localStorage
+    const maxed = { ...initialGameState(), unlockedPlots: DEFAULT_ECONOMY.maxPlots };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: maxed }));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.getNextPlotPrice()).toBeNull();
+  });
+
+  it('buyPlot returns false when all plots are already unlocked', () => {
+    // Inject a state with all plots unlocked
+    const maxed = { ...initialGameState(), unlockedPlots: DEFAULT_ECONOMY.maxPlots };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: maxed }));
+    const { result } = renderHook(() => useGameEngine());
+    let ok = true;
+    act(() => { ok = result.current.buyPlot(); });
+    expect(ok).toBe(false);
   });
 });

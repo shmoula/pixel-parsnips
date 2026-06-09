@@ -8,6 +8,7 @@ import {
   buyFertilizer as engineBuyFertilizer,
   applyFertilizer as engineApplyFertilizer,
   clearPestDamage as engineClearPestDamage,
+  buyPlot as engineBuyPlot,
   computeSeedCost,
 } from './gameEngine';
 import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
@@ -131,12 +132,14 @@ export interface GameEngineHook {
   buyFertilizer: (quantity: number) => boolean;
   applyFertilizer: (plotId: number) => boolean;
   clearPestDamage: (plotId: number) => boolean;
+  buyPlot: () => boolean;
   getFertilizerCount: () => number;
   restart: () => void;
   continueSeason: () => void;
   endRunVictory: () => void;
   getSeedPrice: (cropId: CropId) => number;
   getNextUpgradeCost: () => number | null;
+  getNextPlotPrice: () => number | null;
   getOccupiedPlotCount: () => number;
 }
 
@@ -237,6 +240,18 @@ export function useGameEngine(): GameEngineHook {
     return true;
   }, []);
 
+  const buyPlot = useCallback((): boolean => {
+    const result = engineBuyPlot(stateRef.current);
+    if (!result.ok) return false;
+    setState(result.state);
+    return true;
+  }, []);
+
+  const getNextPlotPrice = useCallback((): number | null => {
+    if (state.unlockedPlots >= DEFAULT_ECONOMY.maxPlots) return null;
+    return DEFAULT_ECONOMY.plotPrices[state.unlockedPlots - DEFAULT_ECONOMY.startingPlots] ?? null;
+  }, [state.unlockedPlots]);
+
   const restart = useCallback(() => {
     const fresh = initialGameState();
     setEndOfRunRecap(null);
@@ -294,12 +309,14 @@ export function useGameEngine(): GameEngineHook {
     buyFertilizer,
     applyFertilizer,
     clearPestDamage,
+    buyPlot,
     getFertilizerCount,
     restart,
     continueSeason,
     endRunVictory,
     getSeedPrice,
     getNextUpgradeCost,
+    getNextPlotPrice,
     getOccupiedPlotCount,
   };
 }
