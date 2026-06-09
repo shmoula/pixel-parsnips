@@ -650,10 +650,10 @@ describe('v6 → v7 migration', () => {
   });
 });
 
-describe('useGameEngine — v5 → v6 migration (008 — Harvest Streak)', () => {
+describe('useGameEngine — v5 → v7 migration (chained: Harvest Streak + Plot Progression)', () => {
   beforeEach(() => localStorage.clear());
 
-  it('hydrates a v5 save with harvestStreak/peakHarvestStreak defaulted to 0', () => {
+  it('hydrates a v5 save with harvestStreak/peakHarvestStreak defaulted to 0 and all plots unlocked', () => {
     const v5State = {
       schemaVersion: 5,
       currentDay: 4,
@@ -681,6 +681,8 @@ describe('useGameEngine — v5 → v6 migration (008 — Harvest Streak)', () =>
     expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
     expect(result.current.state.harvestStreak).toBe(0);
     expect(result.current.state.peakHarvestStreak).toBe(0);
+    // v5→v7 chained migration unlocks all plots for the existing run.
+    expect(result.current.state.unlockedPlots).toBe(DEFAULT_ECONOMY.maxPlots);
   });
 });
 
