@@ -12,6 +12,7 @@ import type {
   WeatherId,
   UpgradeTier,
   PlantResult,
+  BuyPlotResult,
   BuyResult,
   UpgradeResult,
   FertilizerResult,
@@ -544,6 +545,27 @@ export function buyFertilizer(state: GameState, quantity: number, config: Econom
       ...state,
       coinBalance: state.coinBalance - totalCost,
       fertilizerInventory: state.fertilizerInventory + quantity,
+    },
+  };
+}
+
+// ── buyPlot ───────────────────────────────────────────────────────────────────
+
+/** Unlocks the next farm plot at its escalating price. Pure — no mutations. */
+export function buyPlot(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): BuyPlotResult {
+  if (state.unlockedPlots >= config.maxPlots) {
+    return { ok: false, error: 'max_plots_reached' };
+  }
+  const price = config.plotPrices[state.unlockedPlots - config.startingPlots];
+  if (price === undefined || state.coinBalance < price) {
+    return { ok: false, error: 'insufficient_funds' };
+  }
+  return {
+    ok: true,
+    state: {
+      ...state,
+      coinBalance: state.coinBalance - price,
+      unlockedPlots: state.unlockedPlots + 1,
     },
   };
 }

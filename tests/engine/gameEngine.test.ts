@@ -9,6 +9,7 @@ import {
   buyFertilizer,
   applyFertilizer,
   clearPestDamage,
+  buyPlot,
 } from '../../src/engine/gameEngine';
 import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST, STREAK_BONUS_PER_LEVEL } from '../../src/engine/constants';
 import { DEFAULT_ECONOMY } from '../../src/engine/economy';
@@ -1712,5 +1713,42 @@ describe('plantSeed locked plots', () => {
     s = (buySeed(s, 'radish', 1, custom) as { state: typeof s }).state;
     const r = plantSeed(s, 0, 'radish', custom);
     expect(r.ok).toBe(true);
+  });
+});
+
+// ── buyPlot (010) ─────────────────────────────────────────────────────────────
+
+describe('buyPlot', () => {
+  const cfg = { ...DEFAULT_ECONOMY, startingPlots: 4, maxPlots: 12, plotPrices: [40, 70, 110, 160, 220, 300, 400, 520] };
+
+  it('unlocks the next plot at the configured price', () => {
+    const s = { ...initialGameState(cfg), coinBalance: 1000 };
+    const r = buyPlot(s, cfg);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.state.unlockedPlots).toBe(5);
+      expect(r.state.coinBalance).toBe(960); // 1000 - 40 (first price)
+    }
+  });
+
+  it('uses the next price in the escalating list', () => {
+    const s = { ...initialGameState(cfg), coinBalance: 1000, unlockedPlots: 6 };
+    const r = buyPlot(s, cfg);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.coinBalance).toBe(1000 - 110); // index 6-4 = 2 → 110
+  });
+
+  it('rejects when funds are insufficient', () => {
+    const s = { ...initialGameState(cfg), coinBalance: 10 };
+    const r = buyPlot(s, cfg);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('insufficient_funds');
+  });
+
+  it('rejects when already at maxPlots', () => {
+    const s = { ...initialGameState(cfg), coinBalance: 9999, unlockedPlots: 12 };
+    const r = buyPlot(s, cfg);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('max_plots_reached');
   });
 });
