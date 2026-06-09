@@ -26,13 +26,23 @@ function isGameStateShape(state: unknown): state is Record<string, unknown> {
 
 /** Migrates a parsed save envelope to the current schema, or returns null if unsupported. */
 function migrateState(parsed: { schemaVersion: number; state: unknown }): GameState | null {
+  // A non-shape state is unmigratable and falls through to "discard" (null) in
+  // every branch anyway, so reject it up front. This removes one condition from
+  // each version branch below without changing behavior.
+  if (!isGameStateShape(parsed.state)) {
+    console.info(
+      `[PixelParsnips] Discarding malformed or unsupported save (v${parsed.schemaVersion}) — starting a new game.`
+    );
+    return null;
+  }
+
   // Schema 7 — current
-  if (parsed.schemaVersion === SCHEMA_VERSION && isGameStateShape(parsed.state)) {
+  if (parsed.schemaVersion === SCHEMA_VERSION) {
     return parsed.state as unknown as GameState;
   }
 
   // Schema 6 → 7 — add unlockedPlots (existing runs keep all plots unlocked)
-  if (parsed.schemaVersion === 6 && isGameStateShape(parsed.state)) {
+  if (parsed.schemaVersion === 6) {
     console.info('[PixelParsnips] Migrating save from v6 to v7 (Plot Progression).');
     const st = parsed.state as Record<string, unknown>;
     return {
@@ -43,7 +53,7 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
   }
 
   // Schema 5 → 7 — add harvestStreak, peakHarvestStreak, and unlockedPlots
-  if (parsed.schemaVersion === 5 && isGameStateShape(parsed.state)) {
+  if (parsed.schemaVersion === 5) {
     console.info('[PixelParsnips] Migrating save from v5 to v7 (Harvest Streak + Plot Progression).');
     return {
       ...(parsed.state as unknown as Omit<GameState, 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots'>),
@@ -55,7 +65,7 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
   }
 
   // Schema 4 → 7 — chained: add disastersSurvived + streak fields + unlockedPlots
-  if (parsed.schemaVersion === 4 && isGameStateShape(parsed.state)) {
+  if (parsed.schemaVersion === 4) {
     console.info('[PixelParsnips] Migrating save from v4 to v7.');
     return {
       ...(parsed.state as unknown as Omit<GameState, 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots'>),
@@ -68,7 +78,7 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
   }
 
   // Schema 3 → 7 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots
-  if (parsed.schemaVersion === 3 && isGameStateShape(parsed.state)) {
+  if (parsed.schemaVersion === 3) {
     console.info('[PixelParsnips] Migrating save from v3 to v7 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression).');
     return {
       ...(parsed.state as unknown as Omit<GameState, 'endlessMode' | 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots'>),
