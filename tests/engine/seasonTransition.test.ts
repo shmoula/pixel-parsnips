@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initialGameState, processTurn, plantSeed } from '../../src/engine/gameEngine';
 import type { GameState } from '../../src/engine/types';
+import { baseline } from '../../scripts/sim/economyPresets';
 
 /** Construct a state landing on the season-end day with a given balance.
  *  Note: processTurn deducts lease + tax from balance THEN increments day. So to test
@@ -13,7 +14,7 @@ function stateAt(day: number, balance: number): GameState {
 
 describe('processTurn — Season 1 end-of-day-20 transition', () => {
   it('sets phase to season_passed when target met', () => {
-    // For target 150: opening must satisfy (b - 15) * 0.95 >= 150 → b >= 173.95 → 174
+    // For target 105: opening must satisfy (b - 15) * 0.94 >= 105 → b >= 126.70 → 127
     const state = stateAt(20, 175);
     const result = processTurn(state, 'sunny');
     expect(result.state.phase).toBe('season_passed');
@@ -21,7 +22,8 @@ describe('processTurn — Season 1 end-of-day-20 transition', () => {
   });
 
   it('sets phase to season_failed when target missed', () => {
-    const state = stateAt(20, 170);
+    // S1 target 105. 115 - 15 lease = 100 → tax floor(100×0.06)=6 → closing 94 < 105 → failed
+    const state = stateAt(20, 115);
     const result = processTurn(state, 'sunny');
     expect(result.state.phase).toBe('season_failed');
     expect(result.state.currentDay).toBe(20); // does not advance
@@ -40,7 +42,7 @@ function stateAtDay80(balance: number): GameState {
 
 describe('processTurn — Season 4 endgame (US5)', () => {
   it('sets phase to season_4_won when Day 80 target met and endlessMode is false', () => {
-    // Day 80 lease = 30, tax 5% — opening must satisfy (b - 30) * 0.95 >= 600 → b >= 661.58 → 662
+    // Day 80 lease = 40, tax 6% — opening must satisfy (b - 40) * 0.94 >= 480 → b >= 550.64 → 551
     const state = stateAtDay80(700);
     const result = processTurn(state, 'sunny');
     expect(result.state.phase).toBe('season_4_won');
@@ -89,21 +91,21 @@ describe('processTurn — bankruptcy dominates season_failed', () => {
   });
 
   it('Day 20 marginal pass (balance just barely below target) sets season_failed', () => {
-    const state: GameState = { ...initialGameState(), currentDay: 20, coinBalance: 165 };
+    const state: GameState = { ...initialGameState(), currentDay: 20, coinBalance: 125 };
     const result = processTurn(state, 'sunny');
-    // 165 - 15 lease = 150 → tax 7 (floor) → closing 143 < 150 → season_failed
+    // S1 target 105. 125 - 15 lease = 110 → tax floor(110×0.06)=6 → closing 104 < 105 → season_failed
     expect(result.state.phase).toBe('season_failed');
   });
 });
 
 describe('processTurn — 80-day deterministic run canary (regression)', () => {
   it('a player who plants Pumpkins every turn at Tier 3 reaches season_4_won by Day 80', () => {
-    // Set up a player who has skipped to a strong economic position:
-    // - Tier 3 tools (60% seed discount)
-    // - Plenty of pumpkin seeds
-    // - Sunny weather every day for deterministic balance projection
+    // This canary characterizes the ORIGINAL (pre-010) economy: 12 starting plots,
+    // 5% tax, and the old lease/target table. The expected closing balance (1277) is
+    // tied to those numbers, so we drive every engine call with the frozen `baseline`
+    // preset rather than the (now rebalanced) DEFAULT_ECONOMY.
     let state: GameState = {
-      ...initialGameState(),
+      ...initialGameState(baseline),
       upgradeTier: 3,
       coinBalance: 500,
       seedInventory: { radish: 0, parsnip: 0, pumpkin: 200 },
@@ -115,7 +117,7 @@ describe('processTurn — 80-day deterministic run canary (regression)', () => {
       for (let plotId = 0; plotId < 12; plotId++) {
         const p = next.plots[plotId];
         if (p.cropId === null && p.exhaustedSinceDay === null && !p.pestDamaged) {
-          const r = plantSeed(next, plotId, 'pumpkin');
+          const r = plantSeed(next, plotId, 'pumpkin', baseline);
           if (r.ok) next = r.state;
         }
       }
@@ -126,7 +128,7 @@ describe('processTurn — 80-day deterministic run canary (regression)', () => {
 
     // Advance 80 days with sunny weather, replanting after each turn
     for (let d = 0; d < 80; d++) {
-      const result = processTurn(state, 'sunny');
+      const result = processTurn(state, 'sunny', undefined, undefined, baseline);
       state = result.state;
       if (state.phase === 'bankrupt' || state.phase === 'season_failed' || state.phase === 'season_4_won') break;
       // Auto-acknowledge season transitions like a player tapping "Begin Season N+1"

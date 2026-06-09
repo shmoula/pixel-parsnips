@@ -1,17 +1,20 @@
-import type { PlotState, CropId } from '../engine/types';
+import type { PlotState } from '../engine/types';
 import { PlotCard } from './PlotCard';
 
 interface FarmGridProps {
   plots: PlotState[];
   currentDay?: number;
   fertilizerInventory?: number;
+  unlockedPlots?: number;
+  nextPlotPrice?: number | null;
+  canAffordPlot?: boolean;
   onPlant?: (plotId: number) => void;
   onApplyFertilizer?: (plotId: number) => void;
   onClearPestDamage?: (plotId: number) => void;
-  selectedCrop?: CropId | null;
+  onBuyPlot?: (plotId: number) => void;
 }
 
-export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, onPlant, onApplyFertilizer, onClearPestDamage }: FarmGridProps) {
+export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, unlockedPlots, nextPlotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: FarmGridProps) {
   return (
     // T017 — textured farm canvas: dark tilled soil + grain filter + fence border + decor
     <div className="relative rounded-xl overflow-hidden p-3 bg-[#2A1A0E] [filter:url(#pp-grain)] shadow-inner">
@@ -77,17 +80,26 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, onPla
       {/* Farm plots grid */}
       <section aria-label="Farm plots">
         <div className="grid grid-cols-4 gap-2 md:grid-cols-6">
-          {plots.map(plot => (
-            <PlotCard
-              key={plot.id}
-              plot={plot}
-              currentDay={currentDay}
-              fertilizerInventory={fertilizerInventory}
-              onPlant={onPlant}
-              onApplyFertilizer={onApplyFertilizer}
-              onClearPestDamage={onClearPestDamage}
-            />
-          ))}
+          {plots.map(plot => {
+            const locked = plot.id >= (unlockedPlots ?? plots.length);
+            const isNextPurchasable = plot.id === (unlockedPlots ?? plots.length);
+            return (
+              <PlotCard
+                key={plot.id}
+                plot={plot}
+                currentDay={currentDay}
+                fertilizerInventory={fertilizerInventory}
+                locked={locked}
+                isNextPurchasable={locked && isNextPurchasable}
+                plotPrice={nextPlotPrice ?? undefined}
+                canAffordPlot={canAffordPlot}
+                onPlant={onPlant}
+                onApplyFertilizer={onApplyFertilizer}
+                onClearPestDamage={onClearPestDamage}
+                onBuyPlot={onBuyPlot}
+              />
+            );
+          })}
         </div>
       </section>
     </div>

@@ -78,6 +78,8 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null } =
     getFertilizerCount: () => 0,
     getSeedPrice: () => 5,
     getNextUpgradeCost: () => 50 as number | null,
+    onBuyPlot: vi.fn().mockReturnValue(false),
+    getNextPlotPrice: () => null as number | null,
   };
 }
 
@@ -108,10 +110,10 @@ describe('GameBoard — smoke tests (T047)', () => {
     expect(screen.getByRole('banner', { name: /game status/i })).toBeInTheDocument();
   });
 
-  it('renders the FarmGrid with 12 empty plot buttons', () => {
+  it('renders the FarmGrid with 4 empty plot buttons (STARTING_PLOTS=4)', () => {
     render(<GameBoard {...makeGameBoardProps()} />);
     const plots = screen.getAllByRole('button', { name: /empty plot/i });
-    expect(plots).toHaveLength(12);
+    expect(plots).toHaveLength(4);
   });
 
   it('renders the Shop panel', () => {

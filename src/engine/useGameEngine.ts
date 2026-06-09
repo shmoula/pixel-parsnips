@@ -8,9 +8,12 @@ import {
   buyFertilizer as engineBuyFertilizer,
   applyFertilizer as engineApplyFertilizer,
   clearPestDamage as engineClearPestDamage,
+  buyPlot as engineBuyPlot,
+  getNextPlotPrice as engineGetNextPlotPrice,
   computeSeedCost,
 } from './gameEngine';
 import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
+import { DEFAULT_ECONOMY } from './economy';
 import type { GameState, CropId, DailyLogEntry } from './types';
 import { recordRunEnd, type PersonalBests } from './records';
 import { deriveMedal, type Medal } from './medals';
@@ -25,44 +28,87 @@ function isGameStateShape(state: unknown): state is Record<string, unknown> {
 
 /** Migrates a parsed save envelope to the current schema, or returns null if unsupported. */
 function migrateState(parsed: { schemaVersion: number; state: unknown }): GameState | null {
-  // Schema 6 — current
-  if (parsed.schemaVersion === SCHEMA_VERSION && isGameStateShape(parsed.state)) {
-    return parsed.state as unknown as GameState;
+  // A non-shape state is unmigratable and falls through to "discard" (null) in
+  // every branch anyway, so reject it up front. This removes one condition from
+  // each version branch below without changing behavior.
+  if (!isGameStateShape(parsed.state)) {
+    console.info(
+      `[PixelParsnips] Discarding malformed or unsupported save (v${parsed.schemaVersion}) — starting a new game.`
+    );
+    return null;
   }
 
-  // Schema 5 → 6 — add harvestStreak and peakHarvestStreak
-  if (parsed.schemaVersion === 5 && isGameStateShape(parsed.state)) {
-    console.info('[PixelParsnips] Migrating save from v5 to v6 (Harvest Streak).');
+  // Schema 7 — current. Hydrate unlockedPlots if a tampered/corrupt save is
+  // missing it (the field is required downstream by getNextPlotPrice/FarmGrid);
+  // default to the number of visible plots so the run stays playable.
+  if (parsed.schemaVersion === SCHEMA_VERSION) {
+    const st = parsed.state as Record<string, unknown>;
+    // Harden against tampered/corrupt saves before casting: downstream code
+    // (state.plots.every, plots.map, getNextPlotPrice) assumes plots is an
+    // array and unlockedPlots is a number within [0, plots.length].
+    const plots = Array.isArray(st.plots) ? st.plots : [];
+    const rawUnlocked = Number(st.unlockedPlots);
+    // A missing/non-numeric unlockedPlots defaults to "all visible plots
+    // unlocked" so the run stays playable; any value is then clamped in range.
+    const unlockedPlots = Math.max(
+      0,
+      Math.min(Number.isNaN(rawUnlocked) ? plots.length : rawUnlocked, plots.length),
+    );
     return {
-      ...(parsed.state as unknown as Omit<GameState, 'harvestStreak' | 'peakHarvestStreak'>),
+      ...(st as unknown as GameState),
+      plots,
+      unlockedPlots,
       schemaVersion: SCHEMA_VERSION,
-      harvestStreak: 0,
-      peakHarvestStreak: 0,
+    } as GameState;
+  }
+
+  // Schema 6 → 7 — add unlockedPlots (existing runs keep all plots unlocked)
+  if (parsed.schemaVersion === 6) {
+    console.info('[PixelParsnips] Migrating save from v6 to v7 (Plot Progression).');
+    const st = parsed.state as Record<string, unknown>;
+    return {
+      ...(st as unknown as Omit<GameState, 'unlockedPlots'>),
+      schemaVersion: SCHEMA_VERSION,
+      unlockedPlots: Array.isArray(st.plots) ? st.plots.length : DEFAULT_ECONOMY.maxPlots,
     };
   }
 
-  // Schema 4 → 6 — chained: add disastersSurvived + streak fields
-  if (parsed.schemaVersion === 4 && isGameStateShape(parsed.state)) {
-    console.info('[PixelParsnips] Migrating save from v4 to v6.');
+  // Schema 5 → 7 — add harvestStreak, peakHarvestStreak, and unlockedPlots
+  if (parsed.schemaVersion === 5) {
+    console.info('[PixelParsnips] Migrating save from v5 to v7 (Harvest Streak + Plot Progression).');
     return {
-      ...(parsed.state as unknown as Omit<GameState, 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak'>),
+      ...(parsed.state as unknown as Omit<GameState, 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots'>),
+      schemaVersion: SCHEMA_VERSION,
+      harvestStreak: 0,
+      peakHarvestStreak: 0,
+      unlockedPlots: DEFAULT_ECONOMY.maxPlots,
+    };
+  }
+
+  // Schema 4 → 7 — chained: add disastersSurvived + streak fields + unlockedPlots
+  if (parsed.schemaVersion === 4) {
+    console.info('[PixelParsnips] Migrating save from v4 to v7.');
+    return {
+      ...(parsed.state as unknown as Omit<GameState, 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots'>),
       schemaVersion: SCHEMA_VERSION,
       disastersSurvived: 0,
       harvestStreak: 0,
       peakHarvestStreak: 0,
+      unlockedPlots: DEFAULT_ECONOMY.maxPlots,
     };
   }
 
-  // Schema 3 → 6 — chained: add endlessMode + disastersSurvived + streak fields
-  if (parsed.schemaVersion === 3 && isGameStateShape(parsed.state)) {
-    console.info('[PixelParsnips] Migrating save from v3 to v6 (Season System + Enriched Run Summary + Harvest Streak).');
+  // Schema 3 → 7 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots
+  if (parsed.schemaVersion === 3) {
+    console.info('[PixelParsnips] Migrating save from v3 to v7 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression).');
     return {
-      ...(parsed.state as unknown as Omit<GameState, 'endlessMode' | 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak'>),
+      ...(parsed.state as unknown as Omit<GameState, 'endlessMode' | 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots'>),
       schemaVersion: SCHEMA_VERSION,
       endlessMode: false,
       disastersSurvived: 0,
       harvestStreak: 0,
       peakHarvestStreak: 0,
+      unlockedPlots: DEFAULT_ECONOMY.maxPlots,
     };
   }
 
@@ -106,12 +152,14 @@ export interface GameEngineHook {
   buyFertilizer: (quantity: number) => boolean;
   applyFertilizer: (plotId: number) => boolean;
   clearPestDamage: (plotId: number) => boolean;
+  buyPlot: () => boolean;
   getFertilizerCount: () => number;
   restart: () => void;
   continueSeason: () => void;
   endRunVictory: () => void;
   getSeedPrice: (cropId: CropId) => number;
   getNextUpgradeCost: () => number | null;
+  getNextPlotPrice: () => number | null;
   getOccupiedPlotCount: () => number;
 }
 
@@ -212,6 +260,17 @@ export function useGameEngine(): GameEngineHook {
     return true;
   }, []);
 
+  const buyPlot = useCallback((): boolean => {
+    const result = engineBuyPlot(stateRef.current);
+    if (!result.ok) return false;
+    setState(result.state);
+    return true;
+  }, []);
+
+  const getNextPlotPrice = useCallback((): number | null => {
+    return engineGetNextPlotPrice(state);
+  }, [state]);
+
   const restart = useCallback(() => {
     const fresh = initialGameState();
     setEndOfRunRecap(null);
@@ -269,12 +328,14 @@ export function useGameEngine(): GameEngineHook {
     buyFertilizer,
     applyFertilizer,
     clearPestDamage,
+    buyPlot,
     getFertilizerCount,
     restart,
     continueSeason,
     endRunVictory,
     getSeedPrice,
     getNextUpgradeCost,
+    getNextPlotPrice,
     getOccupiedPlotCount,
   };
 }

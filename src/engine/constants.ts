@@ -8,10 +8,12 @@ import type {
 
 // ── Scalar constants ──────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 6;
-export const STARTING_BALANCE = 100;
+export const SCHEMA_VERSION = 7;
+export const STARTING_BALANCE = 130;
 export const PLOT_COUNT = 12;
-export const TAX_RATE = 0.05;
+export const STARTING_PLOTS = 4;
+export const PLOT_PRICES = [30, 55, 85, 120, 160, 210, 280, 360];
+export const TAX_RATE = 0.06;
 export const MAX_UPGRADE_TIER = 3;
 export const EXHAUSTION_THRESHOLD = 3;
 export const EXHAUSTION_RECOVERY_DAYS = 3;

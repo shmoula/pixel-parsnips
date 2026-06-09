@@ -12,6 +12,7 @@ import type {
   WeatherId,
   UpgradeTier,
   PlantResult,
+  BuyPlotResult,
   BuyResult,
   UpgradeResult,
   FertilizerResult,
@@ -52,10 +53,49 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     disastersSurvived: 0,
     harvestStreak: 0,
     peakHarvestStreak: 0,
+    unlockedPlots: config.startingPlots,
   };
 }
 
 // ── T010: plantSeed ───────────────────────────────────────────────────────────
+
+type PlantBlockReason = Extract<PlantResult, { ok: false }>['error'];
+
+/**
+ * Returns the reason `plotId` can't be planted, or null if it can.
+ * Guard order (precedence) is load-bearing — reviewers and tests depend on it:
+ * invalid_plot → plot_locked → plot_occupied → plot_exhausted →
+ * plot_pest_damaged → no_seed.
+ */
+function plantBlockReason(
+  state: GameState,
+  plotId: number,
+  cropId: CropId,
+  config: EconomyConfig,
+): PlantBlockReason | null {
+  if (plotId < 0 || plotId >= config.maxPlots || plotId >= state.plots.length) {
+    return 'invalid_plot';
+  }
+  if (plotId >= state.unlockedPlots) {
+    return 'plot_locked';
+  }
+
+  const plot = state.plots[plotId];
+  if (plot.cropId !== null) {
+    return 'plot_occupied';
+  }
+  // T010: guard after plot_occupied, before no_seed
+  if (plot.exhaustedSinceDay !== null) {
+    return 'plot_exhausted';
+  }
+  if (plot.pestDamaged) {
+    return 'plot_pest_damaged';
+  }
+  if (state.seedInventory[cropId] === 0) {
+    return 'no_seed';
+  }
+  return null;
+}
 
 /** Plants one seed from inventory into an empty plot. Pure — no mutations. */
 export function plantSeed(
@@ -64,28 +104,12 @@ export function plantSeed(
   cropId: CropId,
   config: EconomyConfig = DEFAULT_ECONOMY,
 ): PlantResult {
-  if (plotId < 0 || plotId >= config.maxPlots || plotId >= state.plots.length) {
-    return { ok: false, error: 'invalid_plot' };
+  const reason = plantBlockReason(state, plotId, cropId, config);
+  if (reason) {
+    return { ok: false, error: reason };
   }
 
   const plot = state.plots[plotId];
-  if (plot.cropId !== null) {
-    return { ok: false, error: 'plot_occupied' };
-  }
-
-  // T010: guard after plot_occupied, before no_seed
-  if (plot.exhaustedSinceDay !== null) {
-    return { ok: false, error: 'plot_exhausted' };
-  }
-
-  if (plot.pestDamaged) {
-    return { ok: false, error: 'plot_pest_damaged' };
-  }
-
-  if (state.seedInventory[cropId] === 0) {
-    return { ok: false, error: 'no_seed' };
-  }
-
   const crop = config.crops[cropId];
 
   // Apply Flash Drought growth penalty at planting time (FR-006)
@@ -539,6 +563,33 @@ export function buyFertilizer(state: GameState, quantity: number, config: Econom
       ...state,
       coinBalance: state.coinBalance - totalCost,
       fertilizerInventory: state.fertilizerInventory + quantity,
+    },
+  };
+}
+
+// ── buyPlot ───────────────────────────────────────────────────────────────────
+
+/** Canonical price of the next purchasable plot, or null when all plots are unlocked. */
+export function getNextPlotPrice(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): number | null {
+  if (state.unlockedPlots >= config.maxPlots) return null;
+  return config.plotPrices[state.unlockedPlots - config.startingPlots] ?? null;
+}
+
+/** Unlocks the next farm plot at its escalating price. Pure — no mutations. */
+export function buyPlot(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): BuyPlotResult {
+  if (state.unlockedPlots >= config.maxPlots) {
+    return { ok: false, error: 'max_plots_reached' };
+  }
+  const price = getNextPlotPrice(state, config);
+  if (price === null || state.coinBalance < price) {
+    return { ok: false, error: 'insufficient_funds' };
+  }
+  return {
+    ok: true,
+    state: {
+      ...state,
+      coinBalance: state.coinBalance - price,
+      unlockedPlots: state.unlockedPlots + 1,
     },
   };
 }

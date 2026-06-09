@@ -5,6 +5,7 @@ import { SCHEMA_VERSION } from '../../src/engine/constants';
 import { initialGameState } from '../../src/engine/gameEngine';
 import type { GameState } from '../../src/engine/types';
 import { loadRecords } from '../../src/engine/records';
+import { DEFAULT_ECONOMY } from '../../src/engine/economy';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 
@@ -21,7 +22,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
   it('starts with initialGameState when no saved state exists', () => {
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.currentDay).toBe(1);
-    expect(result.current.state.coinBalance).toBe(100);
+    expect(result.current.state.coinBalance).toBe(130);
   });
 
   it('restores a valid saved state on mount', () => {
@@ -44,7 +45,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
 
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.currentDay).toBe(1); // fresh start
-    expect(result.current.state.coinBalance).toBe(100);
+    expect(result.current.state.coinBalance).toBe(130);
   });
 
   it('logs a console notice when schema version mismatches', () => {
@@ -85,7 +86,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(saved.state.seedInventory.radish).toBe(1);
-    expect(saved.state.coinBalance).toBe(95); // 100 - 5
+    expect(saved.state.coinBalance).toBe(125); // 130 - 5
   });
 
   it('saves state to localStorage after buyUpgrade', () => {
@@ -95,7 +96,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(saved.state.upgradeTier).toBe(1);
-    expect(saved.state.coinBalance).toBe(50); // 100 - 50
+    expect(saved.state.coinBalance).toBe(80); // 130 - 50
   });
 
   it('saves state to localStorage after plantSeed', () => {
@@ -116,7 +117,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(saved.state.currentDay).toBe(1); // reset to day 1
-    expect(saved.state.coinBalance).toBe(100);
+    expect(saved.state.coinBalance).toBe(130);
   });
 
   // ── State is persisted across hook remount ────────────────────────────────────
@@ -148,7 +149,7 @@ describe('useGameEngine — full turn sequence integration (T046)', () => {
     act(() => { result.current.buySeed('radish', 1); });
     act(() => { result.current.plantSeed(0, 'radish'); });
 
-    expect(result.current.state.coinBalance).toBe(95); // 100 - 5
+    expect(result.current.state.coinBalance).toBe(125); // 130 - 5
 
     // Radish grows in 1 day, so one nextDay() should harvest it
     // Use sunny weather (×1.0) → yield = 12
@@ -214,7 +215,7 @@ describe('useGameEngine — full turn sequence integration (T046)', () => {
 
     act(() => { result.current.restart(); });
     expect(result.current.state.currentDay).toBe(1);
-    expect(result.current.state.coinBalance).toBe(100);
+    expect(result.current.state.coinBalance).toBe(130);
     expect(result.current.lastDailyLog).toBeNull();
   });
 });
@@ -350,7 +351,7 @@ describe('useGameEngine — fertilizer hook integration (T016, US2)', () => {
     const { result } = renderHook(() => useGameEngine());
     act(() => { result.current.buyFertilizer(1); });
     expect(result.current.getFertilizerCount()).toBe(1);
-    expect(result.current.state.coinBalance).toBe(70); // 100 - 30
+    expect(result.current.state.coinBalance).toBe(100); // 130 - 30
   });
 
   it('buyFertilizer persists fertilizerInventory to localStorage', () => {
@@ -467,7 +468,7 @@ describe('useGameEngine — continueSeason and endRun (US2, US5)', () => {
     const { result } = renderHook(() => useGameEngine());
     act(() => { result.current.endRunVictory(); });
     expect(result.current.state.currentDay).toBe(1);
-    expect(result.current.state.coinBalance).toBe(100);
+    expect(result.current.state.coinBalance).toBe(130);
   });
 });
 
@@ -624,10 +625,81 @@ describe('useGameEngine — endOfRunRecap (007)', () => {
   // TODO: assert recap does not fire on season_passed/season_failed
 });
 
-describe('useGameEngine — v5 → v6 migration (008 — Harvest Streak)', () => {
+describe('v6 → v7 migration', () => {
   beforeEach(() => localStorage.clear());
 
-  it('hydrates a v5 save with harvestStreak/peakHarvestStreak defaulted to 0', () => {
+  it('adds unlockedPlots = plots.length to a v6 save (existing runs keep all plots)', () => {
+    const v6Save = {
+      schemaVersion: 6,
+      state: {
+        phase: 'playing',
+        plots: new Array(12).fill(null).map((_, i) => ({
+          id: i, cropId: null, dayPlanted: null, daysRemaining: null,
+          consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
+        })),
+        currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
+        harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: 6,
+      },
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v6Save));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.unlockedPlots).toBe(12);
+    expect(result.current.state.schemaVersion).toBe(7);
+  });
+});
+
+describe('v7 load — corrupt/missing unlockedPlots', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('hydrates unlockedPlots = plots.length for a v7 save missing the field', () => {
+    const v7Save = {
+      schemaVersion: 7,
+      state: {
+        phase: 'playing',
+        plots: new Array(6).fill(null).map((_, i) => ({
+          id: i, cropId: null, dayPlanted: null, daysRemaining: null,
+          consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
+        })),
+        currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
+        harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: 7,
+        // unlockedPlots intentionally absent (tampered/corrupt save)
+      },
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v7Save));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.unlockedPlots).toBe(6);
+    expect(result.current.state.schemaVersion).toBe(7);
+  });
+
+  it('recovers plots to an array and clamps unlockedPlots for a tampered v7 save', () => {
+    const v7Save = {
+      schemaVersion: 7,
+      state: {
+        phase: 'playing',
+        plots: 'not-an-array', // tampered
+        unlockedPlots: 999, // out of range
+        currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
+        harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: 7,
+      },
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v7Save));
+    const { result } = renderHook(() => useGameEngine());
+    expect(Array.isArray(result.current.state.plots)).toBe(true);
+    expect(result.current.state.plots).toHaveLength(0);
+    expect(result.current.state.unlockedPlots).toBe(0); // clamped to [0, plots.length]
+  });
+});
+
+describe('useGameEngine — v5 → v7 migration (chained: Harvest Streak + Plot Progression)', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('hydrates a v5 save with harvestStreak/peakHarvestStreak defaulted to 0 and all plots unlocked', () => {
     const v5State = {
       schemaVersion: 5,
       currentDay: 4,
@@ -655,5 +727,51 @@ describe('useGameEngine — v5 → v6 migration (008 — Harvest Streak)', () =>
     expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
     expect(result.current.state.harvestStreak).toBe(0);
     expect(result.current.state.peakHarvestStreak).toBe(0);
+    // v5→v7 chained migration unlocks all plots for the existing run.
+    expect(result.current.state.unlockedPlots).toBe(DEFAULT_ECONOMY.maxPlots);
+  });
+});
+
+// ── T12: buyPlot / getNextPlotPrice hook integration (010) ───────────────────
+
+describe('buyPlot / getNextPlotPrice', () => {
+  it('getNextPlotPrice returns the first plot price at a fresh start', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.restart(); });
+    expect(result.current.getNextPlotPrice()).toBe(DEFAULT_ECONOMY.plotPrices[0]); // 30
+  });
+
+  it('buyPlot unlocks the next plot, deducts coins, and advances the price', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useGameEngine());
+    act(() => { result.current.restart(); });
+    const before = result.current.state.unlockedPlots;      // 4
+    const startCoins = result.current.state.coinBalance;     // 130
+    const price = result.current.getNextPlotPrice()!;        // 30
+    let ok = false;
+    act(() => { ok = result.current.buyPlot(); });
+    expect(ok).toBe(true);
+    expect(result.current.state.unlockedPlots).toBe(before + 1);
+    expect(result.current.state.coinBalance).toBe(startCoins - price);
+    expect(result.current.getNextPlotPrice()).toBe(DEFAULT_ECONOMY.plotPrices[1]); // 55
+  });
+
+  it('getNextPlotPrice returns null when all plots are unlocked', () => {
+    // Inject a state with unlockedPlots === maxPlots via localStorage
+    const maxed = { ...initialGameState(), unlockedPlots: DEFAULT_ECONOMY.maxPlots };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: maxed }));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.getNextPlotPrice()).toBeNull();
+  });
+
+  it('buyPlot returns false when all plots are already unlocked', () => {
+    // Inject a state with all plots unlocked
+    const maxed = { ...initialGameState(), unlockedPlots: DEFAULT_ECONOMY.maxPlots };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: maxed }));
+    const { result } = renderHook(() => useGameEngine());
+    let ok = true;
+    act(() => { ok = result.current.buyPlot(); });
+    expect(ok).toBe(false);
   });
 });

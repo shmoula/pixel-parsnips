@@ -24,9 +24,13 @@ function getBalanceBorderClass(danger: DangerLevel): string {
 }
 
 function getBalanceTextClass(danger: DangerLevel, targetMet: boolean): string {
-  if (danger === 'critical') return 'text-farm-red';
+  // Lighter than farm-red so the "critical" balance keeps a ≥4.5:1 contrast
+  // ratio against the dark #261808 chip (WCAG AA / Lighthouse a11y).
+  if (danger === 'critical') return 'text-[#EB6A5C]';
   if (danger === 'low') return 'text-yellow-300';
-  if (targetMet) return 'text-farm-grass';
+  // Lighter than farm-grass so the "target met" balance keeps a ≥4.5:1
+  // contrast ratio against the dark #261808 chip (WCAG AA / Lighthouse a11y).
+  if (targetMet) return 'text-[#5FB54A]';
   return 'text-farm-gold';
 }
 
