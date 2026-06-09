@@ -5,6 +5,11 @@ import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
 import { DaySummaryModal } from './DaySummaryModal';
 
+function canAfford(balance: number, price: number | null): boolean {
+  if (price === null) return false;
+  return balance >= price;
+}
+
 interface GameBoardProps {
   state: GameState;
   lastDailyLog: DailyLogEntry | null;
@@ -18,6 +23,8 @@ interface GameBoardProps {
   getFertilizerCount: () => number;
   getSeedPrice: (cropId: CropId) => number;
   getNextUpgradeCost: () => number | null;
+  onBuyPlot: () => boolean;
+  getNextPlotPrice: () => number | null;
 }
 
 export function GameBoard({
@@ -33,6 +40,8 @@ export function GameBoard({
   getFertilizerCount,
   getSeedPrice,
   getNextUpgradeCost,
+  onBuyPlot,
+  getNextPlotPrice,
 }: GameBoardProps) {
   const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
 
@@ -87,6 +96,9 @@ export function GameBoard({
     setSelectedCrop(cropId);
   }
 
+  const nextPlotPrice = getNextPlotPrice();
+  const canAffordPlot = canAfford(state.coinBalance, nextPlotPrice);
+
   return (
     // T006 — relative container needed for fixed backdrop to scope correctly
     <div className="flex flex-col min-h-screen bg-[#140E06]">
@@ -134,6 +146,10 @@ export function GameBoard({
             onApplyFertilizer={onApplyFertilizer}
             onClearPestDamage={onClearPestDamage}
             selectedCrop={selectedCrop}
+            unlockedPlots={state.unlockedPlots}
+            nextPlotPrice={nextPlotPrice}
+            canAffordPlot={canAffordPlot}
+            onBuyPlot={() => { onBuyPlot(); }}
           />
         </main>
 

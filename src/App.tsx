@@ -81,6 +81,8 @@ function App() {
         getFertilizerCount={engine.getFertilizerCount}
         getSeedPrice={engine.getSeedPrice}
         getNextUpgradeCost={engine.getNextUpgradeCost}
+        onBuyPlot={engine.buyPlot}
+        getNextPlotPrice={engine.getNextPlotPrice}
       />
       {transitionVariant && (
         <SeasonTransitionModal
