@@ -21,7 +21,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
   it('starts with initialGameState when no saved state exists', () => {
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.currentDay).toBe(1);
-    expect(result.current.state.coinBalance).toBe(100);
+    expect(result.current.state.coinBalance).toBe(130);
   });
 
   it('restores a valid saved state on mount', () => {
@@ -44,7 +44,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
 
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.currentDay).toBe(1); // fresh start
-    expect(result.current.state.coinBalance).toBe(100);
+    expect(result.current.state.coinBalance).toBe(130);
   });
 
   it('logs a console notice when schema version mismatches', () => {
@@ -85,7 +85,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(saved.state.seedInventory.radish).toBe(1);
-    expect(saved.state.coinBalance).toBe(95); // 100 - 5
+    expect(saved.state.coinBalance).toBe(125); // 130 - 5
   });
 
   it('saves state to localStorage after buyUpgrade', () => {
@@ -95,7 +95,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(saved.state.upgradeTier).toBe(1);
-    expect(saved.state.coinBalance).toBe(50); // 100 - 50
+    expect(saved.state.coinBalance).toBe(80); // 130 - 50
   });
 
   it('saves state to localStorage after plantSeed', () => {
@@ -116,7 +116,7 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(saved.state.currentDay).toBe(1); // reset to day 1
-    expect(saved.state.coinBalance).toBe(100);
+    expect(saved.state.coinBalance).toBe(130);
   });
 
   // ── State is persisted across hook remount ────────────────────────────────────
@@ -148,7 +148,7 @@ describe('useGameEngine — full turn sequence integration (T046)', () => {
     act(() => { result.current.buySeed('radish', 1); });
     act(() => { result.current.plantSeed(0, 'radish'); });
 
-    expect(result.current.state.coinBalance).toBe(95); // 100 - 5
+    expect(result.current.state.coinBalance).toBe(125); // 130 - 5
 
     // Radish grows in 1 day, so one nextDay() should harvest it
     // Use sunny weather (×1.0) → yield = 12
@@ -214,7 +214,7 @@ describe('useGameEngine — full turn sequence integration (T046)', () => {
 
     act(() => { result.current.restart(); });
     expect(result.current.state.currentDay).toBe(1);
-    expect(result.current.state.coinBalance).toBe(100);
+    expect(result.current.state.coinBalance).toBe(130);
     expect(result.current.lastDailyLog).toBeNull();
   });
 });
@@ -350,7 +350,7 @@ describe('useGameEngine — fertilizer hook integration (T016, US2)', () => {
     const { result } = renderHook(() => useGameEngine());
     act(() => { result.current.buyFertilizer(1); });
     expect(result.current.getFertilizerCount()).toBe(1);
-    expect(result.current.state.coinBalance).toBe(70); // 100 - 30
+    expect(result.current.state.coinBalance).toBe(100); // 130 - 30
   });
 
   it('buyFertilizer persists fertilizerInventory to localStorage', () => {
@@ -467,7 +467,7 @@ describe('useGameEngine — continueSeason and endRun (US2, US5)', () => {
     const { result } = renderHook(() => useGameEngine());
     act(() => { result.current.endRunVictory(); });
     expect(result.current.state.currentDay).toBe(1);
-    expect(result.current.state.coinBalance).toBe(100);
+    expect(result.current.state.coinBalance).toBe(130);
   });
 });
 

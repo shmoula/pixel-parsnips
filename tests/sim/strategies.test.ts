@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { initialGameState } from '../../src/engine/gameEngine';
 import { DEFAULT_ECONOMY } from '../../src/engine/economy';
 import { STRATEGIES } from '../../scripts/sim/strategies';
-import { proposed } from '../../scripts/sim/economyPresets';
+import { baseline, proposed } from '../../scripts/sim/economyPresets';
 
 describe('strategies', () => {
   it('exposes the four named bots', () => {
@@ -32,8 +32,8 @@ describe('smartMixed plot buying', () => {
   });
 
   it('does not buy plots in the baseline (no plots to buy)', () => {
-    const s = STRATEGIES.smartMixed(initialGameState(), DEFAULT_ECONOMY);
-    expect(s.unlockedPlots).toBe(DEFAULT_ECONOMY.maxPlots);
+    const s = STRATEGIES.smartMixed(initialGameState(baseline), baseline);
+    expect(s.unlockedPlots).toBe(baseline.maxPlots);
   });
 
   it('does not waste seeds buying for locked plots', () => {

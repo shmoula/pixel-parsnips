@@ -65,8 +65,8 @@ describe('unlockedPlots', () => {
     expect(s.plots).toHaveLength(12); // array is full size; some locked
   });
 
-  it('defaults to all plots unlocked under DEFAULT_ECONOMY', () => {
-    expect(initialGameState().unlockedPlots).toBe(DEFAULT_ECONOMY.maxPlots);
+  it('defaults to config.startingPlots unlocked under DEFAULT_ECONOMY', () => {
+    expect(initialGameState().unlockedPlots).toBe(DEFAULT_ECONOMY.startingPlots);
   });
 });
 
@@ -87,12 +87,12 @@ describe('plantSeed', () => {
 
   it('plants a Parsnip (growthDays=2) correctly', () => {
     const state = withSeeds(initialGameState(), { parsnip: 1 });
-    const result = plantSeed(state, 5, 'parsnip');
+    const result = plantSeed(state, 1, 'parsnip');
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.state.plots[5].cropId).toBe('parsnip');
-    expect(result.state.plots[5].daysRemaining).toBe(2);
+    expect(result.state.plots[1].cropId).toBe('parsnip');
+    expect(result.state.plots[1].daysRemaining).toBe(2);
   });
 
   it('does not mutate other plots', () => {
@@ -242,9 +242,9 @@ describe('processTurn — crop growth and harvest (US1, sunny)', () => {
   });
 
   it('sets log.openingBalance to the balance before the turn', () => {
-    const state = initialGameState(); // 100 coins
+    const state = initialGameState(); // 130 coins
     const { log } = processTurn(state, 'sunny');
-    expect(log.openingBalance).toBe(100);
+    expect(log.openingBalance).toBe(130);
   });
 
   it('sets log.weatherId to the injected weatherRoll', () => {
@@ -278,23 +278,23 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
     expect(log.landLeaseDeducted).toBe(15);
   });
 
-  it('deducts 5% tax on post-lease balance using Math.floor', () => {
-    // 100 → no harvest → 100 - 15 = 85 → tax = floor(85 × 0.05) = floor(4.25) = 4
+  it('deducts 6% tax on post-lease balance using Math.floor', () => {
+    // 130 → no harvest → 130 - 15 = 115 → tax = floor(115 × 0.06) = floor(6.9) = 6
     const state = initialGameState();
     const { log } = processTurn(state, 'sunny');
-    expect(log.taxDeducted).toBe(4);
+    expect(log.taxDeducted).toBe(6);
   });
 
   it('records correct closingBalance (openingBalance + harvest - lease - tax)', () => {
-    // 100 + 0 - 15 - 4 = 81
+    // 130 + 0 - 15 - 6 = 109
     const state = initialGameState();
     const { state: after, log } = processTurn(state, 'sunny');
-    expect(log.closingBalance).toBe(81);
-    expect(after.coinBalance).toBe(81);
+    expect(log.closingBalance).toBe(109);
+    expect(after.coinBalance).toBe(109);
   });
 
   it('computes tax on balance AFTER lease deduction (not before)', () => {
-    // With radish harvest: 100 + 12 = 112 → lease → 97 → tax = floor(97 × 0.05) = floor(4.85) = 4
+    // With radish harvest: 130 + 12 = 142 → lease → 127 → tax = floor(127 × 0.06) = floor(7.62) = 7
     const state = withSeeds(initialGameState(), { radish: 1 });
     const planted = plantSeed(state, 0, 'radish');
     expect(planted.ok).toBe(true);
@@ -303,9 +303,9 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
     const { log } = processTurn(planted.state, 'sunny');
     expect(log.landLeaseDeducted).toBe(15);
     // First harvest day: no streak bonus (streakBefore=0).
-    expect(log.taxDeducted).toBe(4); // floor((100+12-15) × 0.05) = floor(4.85) = 4
-    expect(log.netChange).toBe(12 - 15 - 4);
-    expect(log.closingBalance).toBe(100 + 12 - 15 - 4); // 93
+    expect(log.taxDeducted).toBe(7); // floor((130+12-15) × 0.06) = floor(7.62) = 7
+    expect(log.netChange).toBe(12 - 15 - 7);
+    expect(log.closingBalance).toBe(130 + 12 - 15 - 7); // 120
   });
 
   it('triggers bankruptcy when coinBalance < LAND_LEASE_FEE after harvest', () => {
@@ -353,15 +353,15 @@ describe('processTurn — economic drains & bankruptcy (US2)', () => {
     expect(planted.ok).toBe(true);
     if (!planted.ok) return;
 
-    let s = planted.state; // 100 coins
-    // Turn 1: no harvest → 100-15=85, tax=4 → 81
+    let s = planted.state; // 130 coins
+    // Turn 1: no harvest → 130-15=115, tax=floor(115×0.06)=6 → 109
     s = processTurn(s, 'sunny').state;
-    // Turn 2: no harvest → 81-15=66, tax=3 → 63
+    // Turn 2: no harvest → 109-15=94, tax=floor(94×0.06)=5 → 89
     s = processTurn(s, 'sunny').state;
-    // Turn 3: harvest 65 (no streak bonus — first harvest) → 63+65=128, -15=113, tax=floor(113×0.05)=5 → 108
+    // Turn 3: harvest 65 (no streak bonus — first harvest) → 89+65=154, -15=139, tax=floor(139×0.06)=8 → 131
     const { state: final } = processTurn(s, 'sunny');
 
-    expect(final.peakBalance).toBe(108); // 108 > 100 initial peak
+    expect(final.peakBalance).toBe(131); // 131 > 130 initial peak
   });
 });
 
@@ -431,30 +431,30 @@ describe('processTurn — DailyLogEntry accounting fields (US4)', () => {
 
   it('drought harvest: correct totalHarvestIncome, taxDeducted, netChange, closingBalance', () => {
     // drought radish: floor(12 × 0.5) = 6 coins, no streak bonus on first harvest
-    // 100 + 6 = 106 → −15 lease = 91 → tax = floor(91 × 0.05) = 4
-    // net = 6 − 15 − 4 = −13, closing = 87
+    // 130 + 6 = 136 → −15 lease = 121 → tax = floor(121 × 0.06) = floor(7.26) = 7
+    // net = 6 − 15 − 7 = −16, closing = 114
     const state = withSeeds(initialGameState(), { radish: 1 });
     const planted = plantSeed(state, 0, 'radish');
     if (!planted.ok) throw new Error('plant failed');
     const { log } = processTurn(planted.state, 'drought');
     expect(log.totalHarvestIncome).toBe(6);
-    expect(log.taxDeducted).toBe(4);
-    expect(log.netChange).toBe(-13);
-    expect(log.closingBalance).toBe(87);
+    expect(log.taxDeducted).toBe(7);
+    expect(log.netChange).toBe(-16);
+    expect(log.closingBalance).toBe(114);
   });
 
   it('perfect_sun harvest: correct totalHarvestIncome, taxDeducted, netChange, closingBalance', () => {
     // perfect_sun radish: floor(12 × 1.5) = 18 coins, no streak bonus on first harvest
-    // 100 + 18 = 118 → −15 = 103 → tax = floor(103 × 0.05) = 5
-    // net = 18 − 15 − 5 = −2, closing = 98
+    // 130 + 18 = 148 → −15 = 133 → tax = floor(133 × 0.06) = floor(7.98) = 7
+    // net = 18 − 15 − 7 = −4, closing = 126
     const state = withSeeds(initialGameState(), { radish: 1 });
     const planted = plantSeed(state, 0, 'radish');
     if (!planted.ok) throw new Error('plant failed');
     const { log } = processTurn(planted.state, 'perfect_sun');
     expect(log.totalHarvestIncome).toBe(18);
-    expect(log.taxDeducted).toBe(5);
-    expect(log.netChange).toBe(-2);
-    expect(log.closingBalance).toBe(98);
+    expect(log.taxDeducted).toBe(7);
+    expect(log.netChange).toBe(-4);
+    expect(log.closingBalance).toBe(126);
   });
 });
 
@@ -811,20 +811,20 @@ describe('computeSeedCost', () => {
 
 describe('buySeed', () => {
   it('deducts correct cost from balance and adds seeds to inventory', () => {
-    const state = initialGameState(); // 100 coins, tier 0
+    const state = initialGameState(); // 130 coins, tier 0
     const result = buySeed(state, 'radish', 1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.state.coinBalance).toBe(95);        // 100 - 5
+    expect(result.state.coinBalance).toBe(125);        // 130 - 5
     expect(result.state.seedInventory.radish).toBe(1);
   });
 
   it('can buy multiple seeds at once', () => {
-    const state = initialGameState(); // 100 coins
+    const state = initialGameState(); // 130 coins
     const result = buySeed(state, 'parsnip', 3);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.state.coinBalance).toBe(70);        // 100 - 3*10
+    expect(result.state.coinBalance).toBe(100);        // 130 - 3*10
     expect(result.state.seedInventory.parsnip).toBe(3);
   });
 
@@ -833,7 +833,7 @@ describe('buySeed', () => {
     const result = buySeed(state, 'radish', 1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.state.coinBalance).toBe(96); // 100 - 4 (radish at tier 1)
+    expect(result.state.coinBalance).toBe(126); // 130 - 4 (radish at tier 1)
   });
 
   it('returns insufficient_funds when balance is too low', () => {
@@ -873,12 +873,12 @@ describe('buySeed', () => {
 
 describe('buyUpgrade', () => {
   it('increments upgradeTier and deducts cost for tier 0 → 1 (costs 50)', () => {
-    const state = initialGameState(); // 100 coins, tier 0
+    const state = initialGameState(); // 130 coins, tier 0
     const result = buyUpgrade(state);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.state.upgradeTier).toBe(1);
-    expect(result.state.coinBalance).toBe(50); // 100 - 50
+    expect(result.state.coinBalance).toBe(80); // 130 - 50
   });
 
   it('increments upgradeTier and deducts cost for tier 1 → 2 (costs 120)', () => {
@@ -1360,22 +1360,22 @@ describe('processTurn — seasonal lease (US4)', () => {
     expect(result.log.landLeaseDeducted).toBe(15);
   });
 
-  it('deducts 20 coins lease on Day 25 (Season 2)', () => {
+  it('deducts 22 coins lease on Day 25 (Season 2)', () => {
     const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 25 };
     const result = processTurn(state, 'sunny');
-    expect(result.log.landLeaseDeducted).toBe(20);
+    expect(result.log.landLeaseDeducted).toBe(22);
   });
 
-  it('deducts 25 coins lease on Day 45 (Season 3)', () => {
+  it('deducts 30 coins lease on Day 45 (Season 3)', () => {
     const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 45 };
     const result = processTurn(state, 'sunny');
-    expect(result.log.landLeaseDeducted).toBe(25);
+    expect(result.log.landLeaseDeducted).toBe(30);
   });
 
-  it('deducts 30 coins lease on Day 65 (Season 4)', () => {
+  it('deducts 40 coins lease on Day 65 (Season 4)', () => {
     const state: GameState = { ...initialGameState(), coinBalance: 100, currentDay: 65 };
     const result = processTurn(state, 'sunny');
-    expect(result.log.landLeaseDeducted).toBe(30);
+    expect(result.log.landLeaseDeducted).toBe(40);
   });
 });
 
@@ -1571,7 +1571,7 @@ describe('config injection — state/upgrade/plant', () => {
   it('initialGameState uses startingBalance from config', () => {
     const custom = { ...DEFAULT_ECONOMY, startingBalance: 500 };
     expect(initialGameState(custom).coinBalance).toBe(500);
-    expect(initialGameState().coinBalance).toBe(100);
+    expect(initialGameState().coinBalance).toBe(130);
   });
 
   it('buyUpgrade uses the custom upgrade cost', () => {
@@ -1662,16 +1662,17 @@ describe('config injection — fertilizer', () => {
 
 describe('config injection + rng — processTurn', () => {
   it('uses tax rate from config', () => {
-    // 12 radishes ready to harvest at day 1 with weather sunny (x1.0)
-    // Use withSeeds so the opening balance stays at 100 (no coin deduction for seeds)
-    let s = withSeeds(initialGameState(), { radish: 12 });
+    // 12 radishes ready to harvest at day 1 with weather sunny (x1.0).
+    // Unlock all 12 plots (startingPlots) so every plant succeeds; withSeeds keeps
+    // the opening balance at the config's startingBalance (no coin deduction for seeds).
+    const custom = { ...DEFAULT_ECONOMY, taxRate: 0.50, startingPlots: 12 };
+    let s = withSeeds(initialGameState(custom), { radish: 12 });
     for (let i = 0; i < 12; i++) {
-      s = (plantSeed(s, i, 'radish') as { state: typeof s }).state;
+      s = (plantSeed(s, i, 'radish', custom) as { state: typeof s }).state;
     }
-    const custom = { ...DEFAULT_ECONOMY, taxRate: 0.50 };
     const { state: after } = processTurn(s, 'sunny', undefined, undefined, custom);
-    // income 12*12=144 + opening 100; lease 15; tax 50% of (balance-lease)
-    const preTax = 100 + 144 - 15;
+    // income 12*12=144 + opening 130 (startingBalance); lease 15; tax 50% of (balance-lease)
+    const preTax = 130 + 144 - 15;
     expect(after.coinBalance).toBe(preTax - Math.floor(preTax * 0.50));
   });
 

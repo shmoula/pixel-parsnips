@@ -20,7 +20,7 @@ describe('SeasonTransitionModal — passed variant', () => {
     );
     expect(screen.getByText(/Season 1 — Complete/i)).toBeInTheDocument();
     expect(screen.getByText(/Summer Heat/i)).toBeInTheDocument();
-    expect(screen.getByText(/rises to 20\/day/i)).toBeInTheDocument();
+    expect(screen.getByText(/rises to 22\/day/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Begin Season 2/i })).toBeInTheDocument();
   });
 
@@ -61,13 +61,13 @@ describe('SeasonTransitionModal — passed variant', () => {
 
 describe('SeasonTransitionModal — failed variant', () => {
   it('shows "X coins short" when gap is between 1% and 50%', () => {
-    // Target 150, balance 138 → 12 coins short, gap 8% < 50%
+    // S1 target 105, balance 93 → 12 coins short, gap ~11% < 50%
     render(
       <SeasonTransitionModal
         variant="failed"
         currentDay={20}
-        coinBalance={138}
-        peakBalance={150}
+        coinBalance={93}
+        peakBalance={105}
         onContinue={vi.fn()}
         onEndRun={vi.fn()}
         onRestart={vi.fn()}

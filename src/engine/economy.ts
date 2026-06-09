@@ -1,6 +1,6 @@
 import type { CropDefinition, CropId, UpgradeTierDefinition } from './types';
 import {
-  STARTING_BALANCE, PLOT_COUNT, TAX_RATE, FERTILIZER_COST,
+  STARTING_BALANCE, PLOT_COUNT, STARTING_PLOTS, PLOT_PRICES, TAX_RATE, FERTILIZER_COST,
   EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS,
   STREAK_BONUS_PER_LEVEL, STREAK_BONUS_CAP,
   CROP_DEFINITIONS, UPGRADE_TIER_DEFINITIONS,
@@ -9,10 +9,10 @@ import type { SeasonConfig } from './seasons';
 
 /** Hard-coded configs for Seasons 1–4 (the finite arc). Defined here to avoid circular imports. */
 export const SEASON_TABLE: SeasonConfig[] = [
-  { number: 1, name: 'Spring Thaw',      startDay:  1, endDay: 20, leasePerDay: 15, disasterTotalPct: 0.15, target: 150 },
-  { number: 2, name: 'Summer Heat',      startDay: 21, endDay: 40, leasePerDay: 20, disasterTotalPct: 0.20, target: 250 },
-  { number: 3, name: 'Autumn Pressure',  startDay: 41, endDay: 60, leasePerDay: 25, disasterTotalPct: 0.28, target: 400 },
-  { number: 4, name: 'Winter Crunch',    startDay: 61, endDay: 80, leasePerDay: 30, disasterTotalPct: 0.35, target: 600 },
+  { number: 1, name: 'Spring Thaw',      startDay:  1, endDay: 20, leasePerDay: 15, disasterTotalPct: 0.15, target: 105 },
+  { number: 2, name: 'Summer Heat',      startDay: 21, endDay: 40, leasePerDay: 22, disasterTotalPct: 0.20, target: 230 },
+  { number: 3, name: 'Autumn Pressure',  startDay: 41, endDay: 60, leasePerDay: 30, disasterTotalPct: 0.28, target: 390 },
+  { number: 4, name: 'Winter Crunch',    startDay: 61, endDay: 80, leasePerDay: 40, disasterTotalPct: 0.35, target: 480 },
 ];
 
 export interface EndlessFormula {
@@ -40,9 +40,9 @@ export interface EconomyConfig {
 
 export const DEFAULT_ECONOMY: EconomyConfig = {
   startingBalance: STARTING_BALANCE,
-  startingPlots: PLOT_COUNT,
+  startingPlots: STARTING_PLOTS,
   maxPlots: PLOT_COUNT,
-  plotPrices: [],
+  plotPrices: PLOT_PRICES,
   taxRate: TAX_RATE,
   crops: CROP_DEFINITIONS,
   upgrades: UPGRADE_TIER_DEFINITIONS,

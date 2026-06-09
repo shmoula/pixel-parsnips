@@ -26,7 +26,7 @@ describe('HUD — Season indicator (US1)', () => {
 
   it('renders the season target alongside the coin balance', () => {
     render(<HUD {...baseProps} currentDay={1} coinBalance={87} />);
-    expect(screen.getByText(/87 \/ 150 target/i)).toBeInTheDocument();
+    expect(screen.getByText(/87 \/ 105 target/i)).toBeInTheDocument();
   });
 });
 
@@ -43,7 +43,7 @@ describe('HUD — Day 18+ warning and Day 20 preview (US6)', () => {
 
   it('shows lease preview on Day 20 of Season 1', () => {
     render(<HUD {...baseProps} currentDay={20} coinBalance={150} />);
-    expect(screen.getByText(/rises to 20 next season/i)).toBeInTheDocument();
+    expect(screen.getByText(/rises to 22 next season/i)).toBeInTheDocument();
   });
 
   it('does NOT show lease preview on Day 80 (Season 4) when endlessMode is false', () => {
