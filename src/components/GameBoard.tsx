@@ -145,11 +145,10 @@ export function GameBoard({
             onPlant={handlePlot}
             onApplyFertilizer={onApplyFertilizer}
             onClearPestDamage={onClearPestDamage}
-            selectedCrop={selectedCrop}
             unlockedPlots={state.unlockedPlots}
             nextPlotPrice={nextPlotPrice}
             canAffordPlot={canAffordPlot}
-            onBuyPlot={() => { onBuyPlot(); }}
+            onBuyPlot={onBuyPlot}
           />
         </main>
 

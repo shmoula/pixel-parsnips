@@ -569,13 +569,19 @@ export function buyFertilizer(state: GameState, quantity: number, config: Econom
 
 // ── buyPlot ───────────────────────────────────────────────────────────────────
 
+/** Canonical price of the next purchasable plot, or null when all plots are unlocked. */
+export function getNextPlotPrice(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): number | null {
+  if (state.unlockedPlots >= config.maxPlots) return null;
+  return config.plotPrices[state.unlockedPlots - config.startingPlots] ?? null;
+}
+
 /** Unlocks the next farm plot at its escalating price. Pure — no mutations. */
 export function buyPlot(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): BuyPlotResult {
   if (state.unlockedPlots >= config.maxPlots) {
     return { ok: false, error: 'max_plots_reached' };
   }
-  const price = config.plotPrices[state.unlockedPlots - config.startingPlots];
-  if (price === undefined || state.coinBalance < price) {
+  const price = getNextPlotPrice(state, config);
+  if (price === null || state.coinBalance < price) {
     return { ok: false, error: 'insufficient_funds' };
   }
   return {

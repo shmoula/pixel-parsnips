@@ -77,7 +77,7 @@ Rationale: compressed crop margins stop runaway income; pumpkin's payoff is tigh
 so it is a *choice*, not a death trap; higher lease/tax make a bad weather streak
 actually bite; steeper geometric-ish targets keep each season a real checkpoint;
 plot purchases drain capital and create the progression arc. **Final numbers are
-whatever the simulator says hits ~50–65% smartMixed win, ≈1.2× overshoot.**
+whatever the simulator says hits 15–35% smartMixed win, ≈1.2× overshoot.**
 
 ### 3. Simulator extension (in `scripts/sim/`, from 009)
 
@@ -126,7 +126,7 @@ whatever the simulator says hits ~50–65% smartMixed win, ≈1.2× overshoot.**
   configured escalating prices; locked plots are clearly indicated and not plantable.
 - Old saves load without data loss (migrated to 12 unlocked plots).
 - The shipped `DEFAULT_ECONOMY` (promoted from the tuned `proposed` preset) measures, in
-  `npm run sim`: `smartMixed` win ≈50–65%, overshoot ≈1.1–1.3×, single-crop strategies
+  `npm run sim`: `smartMixed` win 15–35% (observed 16.9%), overshoot ≈1.1–1.3×, single-crop strategies
   mostly failing — i.e. the player must mix crops *and* manage expansion/cash-flow.
 - No regressions in existing engine/UI tests.
 

@@ -650,6 +650,32 @@ describe('v6 → v7 migration', () => {
   });
 });
 
+describe('v7 load — corrupt/missing unlockedPlots', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('hydrates unlockedPlots = plots.length for a v7 save missing the field', () => {
+    const v7Save = {
+      schemaVersion: 7,
+      state: {
+        phase: 'playing',
+        plots: new Array(6).fill(null).map((_, i) => ({
+          id: i, cropId: null, dayPlanted: null, daysRemaining: null,
+          consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
+        })),
+        currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
+        harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: 7,
+        // unlockedPlots intentionally absent (tampered/corrupt save)
+      },
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v7Save));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.unlockedPlots).toBe(6);
+    expect(result.current.state.schemaVersion).toBe(7);
+  });
+});
+
 describe('useGameEngine — v5 → v7 migration (chained: Harvest Streak + Plot Progression)', () => {
   beforeEach(() => localStorage.clear());
 

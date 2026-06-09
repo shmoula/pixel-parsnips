@@ -1,4 +1,4 @@
-import type { PlotState, CropId } from '../engine/types';
+import type { PlotState } from '../engine/types';
 import { PlotCard } from './PlotCard';
 
 interface FarmGridProps {
@@ -12,7 +12,6 @@ interface FarmGridProps {
   onApplyFertilizer?: (plotId: number) => void;
   onClearPestDamage?: (plotId: number) => void;
   onBuyPlot?: (plotId: number) => void;
-  selectedCrop?: CropId | null;
 }
 
 export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, unlockedPlots, nextPlotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: FarmGridProps) {

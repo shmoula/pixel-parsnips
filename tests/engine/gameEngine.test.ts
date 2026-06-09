@@ -10,6 +10,7 @@ import {
   applyFertilizer,
   clearPestDamage,
   buyPlot,
+  getNextPlotPrice,
 } from '../../src/engine/gameEngine';
 import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST, STREAK_BONUS_PER_LEVEL } from '../../src/engine/constants';
 import { DEFAULT_ECONOMY } from '../../src/engine/economy';
@@ -1751,5 +1752,21 @@ describe('buyPlot', () => {
     const r = buyPlot(s, cfg);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toBe('max_plots_reached');
+  });
+});
+
+describe('getNextPlotPrice', () => {
+  const cfg = { ...DEFAULT_ECONOMY, startingPlots: 4, maxPlots: 12, plotPrices: [40, 70, 110, 160, 220, 300, 400, 520] };
+
+  it('returns the next escalating price and matches what buyPlot charges', () => {
+    const s = { ...initialGameState(cfg), coinBalance: 1000, unlockedPlots: 6 };
+    expect(getNextPlotPrice(s, cfg)).toBe(110); // index 6-4 = 2
+    const r = buyPlot(s, cfg);
+    if (r.ok) expect(s.coinBalance - r.state.coinBalance).toBe(getNextPlotPrice(s, cfg));
+  });
+
+  it('returns null when all plots are unlocked', () => {
+    const s = { ...initialGameState(cfg), unlockedPlots: 12 };
+    expect(getNextPlotPrice(s, cfg)).toBeNull();
   });
 });

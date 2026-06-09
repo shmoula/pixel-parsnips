@@ -9,6 +9,7 @@ import {
   applyFertilizer as engineApplyFertilizer,
   clearPestDamage as engineClearPestDamage,
   buyPlot as engineBuyPlot,
+  getNextPlotPrice as engineGetNextPlotPrice,
   computeSeedCost,
 } from './gameEngine';
 import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
@@ -37,9 +38,19 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     return null;
   }
 
-  // Schema 7 — current
+  // Schema 7 — current. Hydrate unlockedPlots if a tampered/corrupt save is
+  // missing it (the field is required downstream by getNextPlotPrice/FarmGrid);
+  // default to the number of visible plots so the run stays playable.
   if (parsed.schemaVersion === SCHEMA_VERSION) {
-    return parsed.state as unknown as GameState;
+    const st = parsed.state as Record<string, unknown>;
+    if (typeof st.unlockedPlots !== 'number') {
+      return {
+        ...(st as unknown as Omit<GameState, 'unlockedPlots'>),
+        schemaVersion: SCHEMA_VERSION,
+        unlockedPlots: Array.isArray(st.plots) ? st.plots.length : DEFAULT_ECONOMY.maxPlots,
+      };
+    }
+    return st as unknown as GameState;
   }
 
   // Schema 6 → 7 — add unlockedPlots (existing runs keep all plots unlocked)
@@ -248,9 +259,8 @@ export function useGameEngine(): GameEngineHook {
   }, []);
 
   const getNextPlotPrice = useCallback((): number | null => {
-    if (state.unlockedPlots >= DEFAULT_ECONOMY.maxPlots) return null;
-    return DEFAULT_ECONOMY.plotPrices[state.unlockedPlots - DEFAULT_ECONOMY.startingPlots] ?? null;
-  }, [state.unlockedPlots]);
+    return engineGetNextPlotPrice(state);
+  }, [state]);
 
   const restart = useCallback(() => {
     const fresh = initialGameState();
