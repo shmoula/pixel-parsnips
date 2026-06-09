@@ -10,6 +10,7 @@ export interface Metrics {
   p10Peak: number;
   p90Peak: number;
   overshoot: number; // avgPeak / finalTarget
+  clearedSeasonPct: number[]; // index 0..3 = seasons 1..4
 }
 
 function pct(part: number, total: number): number { return total === 0 ? 0 : (100 * part) / total; }
@@ -31,6 +32,9 @@ export function aggregate(outcomes: Outcome[], finalTarget: number): Metrics {
   const median = n === 0 ? 0
     : n % 2 ? peaks[(n - 1) / 2]
     : (peaks[n / 2 - 1] + peaks[n / 2]) / 2;
+  const clearedSeasonPct = [1, 2, 3, 4].map(season =>
+    pct(outcomes.filter(o => o.result !== 'bankrupt' && (o.result === 'won' || o.seasonReached > season)).length, n),
+  );
   return {
     trials: n,
     winPct: pct(outcomes.filter(o => o.result === 'won').length, n),
@@ -41,5 +45,6 @@ export function aggregate(outcomes: Outcome[], finalTarget: number): Metrics {
     p10Peak: percentile(peaks, 10),
     p90Peak: percentile(peaks, 90),
     overshoot: finalTarget === 0 ? 0 : avgPeak / finalTarget,
+    clearedSeasonPct,
   };
 }

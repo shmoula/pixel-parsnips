@@ -3,7 +3,7 @@ import type { Metrics } from './metrics';
 export interface Row { config: string; strategy: string; metrics: Metrics; }
 
 export function formatTable(rows: Row[]): string {
-  const header = ['config', 'strategy', 'win%', 'bankrupt%', 'miss%', 'avgPeak', 'medPeak', 'overshoot'];
+  const header = ['config', 'strategy', 'win%', 'bankrupt%', 'miss%', 'avgPeak', 'medPeak', 'overshoot', 'cleared%'];
   const lines = rows.map(r => [
     r.config, r.strategy,
     r.metrics.winPct.toFixed(1),
@@ -12,6 +12,7 @@ export function formatTable(rows: Row[]): string {
     String(r.metrics.avgPeak),
     String(r.metrics.medianPeak),
     r.metrics.overshoot.toFixed(2) + 'x',
+    r.metrics.clearedSeasonPct.map(p => p.toFixed(0)).join('/'),
   ]);
   const widths = header.map((h, i) =>
     Math.max(h.length, ...lines.map(l => l[i].length)));
