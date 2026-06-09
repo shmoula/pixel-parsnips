@@ -115,13 +115,19 @@ export interface GameState {
   harvestStreak: number;
   /** Highest harvestStreak value reached this run; used for the persistent-best record. */
   peakHarvestStreak: number;
+  /** Number of plots currently usable (indices 0..unlockedPlots-1). Plots beyond are locked. */
+  unlockedPlots: number;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────
 
 export type PlantResult =
   | { ok: true; state: GameState }
-  | { ok: false; error: 'no_seed' | 'plot_occupied' | 'plot_exhausted' | 'plot_pest_damaged' | 'invalid_plot' };
+  | { ok: false; error: 'no_seed' | 'plot_occupied' | 'plot_exhausted' | 'plot_pest_damaged' | 'plot_locked' | 'invalid_plot' };
+
+export type BuyPlotResult =
+  | { ok: true; state: GameState }
+  | { ok: false; error: 'max_plots_reached' | 'insufficient_funds' };
 
 export type FertilizerResult =
   | { ok: true; state: GameState }

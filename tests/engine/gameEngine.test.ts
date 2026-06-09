@@ -54,6 +54,21 @@ describe('initialGameState — harvest streak', () => {
   });
 });
 
+// ── unlockedPlots (010) ────────────────────────────────────────────────────────
+
+describe('unlockedPlots', () => {
+  it('initialGameState starts at config.startingPlots', () => {
+    const custom = { ...DEFAULT_ECONOMY, startingPlots: 4, maxPlots: 12 };
+    const s = initialGameState(custom);
+    expect(s.unlockedPlots).toBe(4);
+    expect(s.plots).toHaveLength(12); // array is full size; some locked
+  });
+
+  it('defaults to all plots unlocked under DEFAULT_ECONOMY', () => {
+    expect(initialGameState().unlockedPlots).toBe(DEFAULT_ECONOMY.maxPlots);
+  });
+});
+
 // ── plantSeed ─────────────────────────────────────────────────────────────────
 
 describe('plantSeed', () => {

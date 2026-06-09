@@ -52,6 +52,7 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     disastersSurvived: 0,
     harvestStreak: 0,
     peakHarvestStreak: 0,
+    unlockedPlots: config.startingPlots,
   };
 }
 
