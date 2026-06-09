@@ -11,6 +11,7 @@ import {
   computeSeedCost,
 } from './gameEngine';
 import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
+import { DEFAULT_ECONOMY } from './economy';
 import type { GameState, CropId, DailyLogEntry } from './types';
 import { recordRunEnd, type PersonalBests } from './records';
 import { deriveMedal, type Medal } from './medals';
@@ -25,44 +26,58 @@ function isGameStateShape(state: unknown): state is Record<string, unknown> {
 
 /** Migrates a parsed save envelope to the current schema, or returns null if unsupported. */
 function migrateState(parsed: { schemaVersion: number; state: unknown }): GameState | null {
-  // Schema 6 — current
+  // Schema 7 — current
   if (parsed.schemaVersion === SCHEMA_VERSION && isGameStateShape(parsed.state)) {
     return parsed.state as unknown as GameState;
   }
 
-  // Schema 5 → 6 — add harvestStreak and peakHarvestStreak
-  if (parsed.schemaVersion === 5 && isGameStateShape(parsed.state)) {
-    console.info('[PixelParsnips] Migrating save from v5 to v6 (Harvest Streak).');
+  // Schema 6 → 7 — add unlockedPlots (existing runs keep all plots unlocked)
+  if (parsed.schemaVersion === 6 && isGameStateShape(parsed.state)) {
+    console.info('[PixelParsnips] Migrating save from v6 to v7 (Plot Progression).');
+    const st = parsed.state as Record<string, unknown>;
     return {
-      ...(parsed.state as unknown as Omit<GameState, 'harvestStreak' | 'peakHarvestStreak'>),
+      ...(st as unknown as Omit<GameState, 'unlockedPlots'>),
       schemaVersion: SCHEMA_VERSION,
-      harvestStreak: 0,
-      peakHarvestStreak: 0,
+      unlockedPlots: Array.isArray(st.plots) ? st.plots.length : DEFAULT_ECONOMY.maxPlots,
     };
   }
 
-  // Schema 4 → 6 — chained: add disastersSurvived + streak fields
-  if (parsed.schemaVersion === 4 && isGameStateShape(parsed.state)) {
-    console.info('[PixelParsnips] Migrating save from v4 to v6.');
+  // Schema 5 → 7 — add harvestStreak, peakHarvestStreak, and unlockedPlots
+  if (parsed.schemaVersion === 5 && isGameStateShape(parsed.state)) {
+    console.info('[PixelParsnips] Migrating save from v5 to v7 (Harvest Streak + Plot Progression).');
     return {
-      ...(parsed.state as unknown as Omit<GameState, 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak'>),
+      ...(parsed.state as unknown as Omit<GameState, 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots'>),
+      schemaVersion: SCHEMA_VERSION,
+      harvestStreak: 0,
+      peakHarvestStreak: 0,
+      unlockedPlots: DEFAULT_ECONOMY.maxPlots,
+    };
+  }
+
+  // Schema 4 → 7 — chained: add disastersSurvived + streak fields + unlockedPlots
+  if (parsed.schemaVersion === 4 && isGameStateShape(parsed.state)) {
+    console.info('[PixelParsnips] Migrating save from v4 to v7.');
+    return {
+      ...(parsed.state as unknown as Omit<GameState, 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots'>),
       schemaVersion: SCHEMA_VERSION,
       disastersSurvived: 0,
       harvestStreak: 0,
       peakHarvestStreak: 0,
+      unlockedPlots: DEFAULT_ECONOMY.maxPlots,
     };
   }
 
-  // Schema 3 → 6 — chained: add endlessMode + disastersSurvived + streak fields
+  // Schema 3 → 7 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots
   if (parsed.schemaVersion === 3 && isGameStateShape(parsed.state)) {
-    console.info('[PixelParsnips] Migrating save from v3 to v6 (Season System + Enriched Run Summary + Harvest Streak).');
+    console.info('[PixelParsnips] Migrating save from v3 to v7 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression).');
     return {
-      ...(parsed.state as unknown as Omit<GameState, 'endlessMode' | 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak'>),
+      ...(parsed.state as unknown as Omit<GameState, 'endlessMode' | 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots'>),
       schemaVersion: SCHEMA_VERSION,
       endlessMode: false,
       disastersSurvived: 0,
       harvestStreak: 0,
       peakHarvestStreak: 0,
+      unlockedPlots: DEFAULT_ECONOMY.maxPlots,
     };
   }
 

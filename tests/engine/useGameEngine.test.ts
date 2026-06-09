@@ -624,6 +624,31 @@ describe('useGameEngine — endOfRunRecap (007)', () => {
   // TODO: assert recap does not fire on season_passed/season_failed
 });
 
+describe('v6 → v7 migration', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('adds unlockedPlots = plots.length to a v6 save (existing runs keep all plots)', () => {
+    const v6Save = {
+      schemaVersion: 6,
+      state: {
+        phase: 'playing',
+        plots: new Array(12).fill(null).map((_, i) => ({
+          id: i, cropId: null, dayPlanted: null, daysRemaining: null,
+          consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
+        })),
+        currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
+        harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: 6,
+      },
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v6Save));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.unlockedPlots).toBe(12);
+    expect(result.current.state.schemaVersion).toBe(7);
+  });
+});
+
 describe('useGameEngine — v5 → v6 migration (008 — Harvest Streak)', () => {
   beforeEach(() => localStorage.clear());
 
