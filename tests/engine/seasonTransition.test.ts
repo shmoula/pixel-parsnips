@@ -14,7 +14,7 @@ function stateAt(day: number, balance: number): GameState {
 
 describe('processTurn — Season 1 end-of-day-20 transition', () => {
   it('sets phase to season_passed when target met', () => {
-    // For target 150: opening must satisfy (b - 15) * 0.95 >= 150 → b >= 173.95 → 174
+    // For target 105: opening must satisfy (b - 15) * 0.94 >= 105 → b >= 126.70 → 127
     const state = stateAt(20, 175);
     const result = processTurn(state, 'sunny');
     expect(result.state.phase).toBe('season_passed');
@@ -42,7 +42,7 @@ function stateAtDay80(balance: number): GameState {
 
 describe('processTurn — Season 4 endgame (US5)', () => {
   it('sets phase to season_4_won when Day 80 target met and endlessMode is false', () => {
-    // Day 80 lease = 30, tax 5% — opening must satisfy (b - 30) * 0.95 >= 600 → b >= 661.58 → 662
+    // Day 80 lease = 40, tax 6% — opening must satisfy (b - 40) * 0.94 >= 480 → b >= 550.64 → 551
     const state = stateAtDay80(700);
     const result = processTurn(state, 'sunny');
     expect(result.state.phase).toBe('season_4_won');

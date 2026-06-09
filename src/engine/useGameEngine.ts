@@ -43,14 +43,23 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
   // default to the number of visible plots so the run stays playable.
   if (parsed.schemaVersion === SCHEMA_VERSION) {
     const st = parsed.state as Record<string, unknown>;
-    if (typeof st.unlockedPlots !== 'number') {
-      return {
-        ...(st as unknown as Omit<GameState, 'unlockedPlots'>),
-        schemaVersion: SCHEMA_VERSION,
-        unlockedPlots: Array.isArray(st.plots) ? st.plots.length : DEFAULT_ECONOMY.maxPlots,
-      };
-    }
-    return st as unknown as GameState;
+    // Harden against tampered/corrupt saves before casting: downstream code
+    // (state.plots.every, plots.map, getNextPlotPrice) assumes plots is an
+    // array and unlockedPlots is a number within [0, plots.length].
+    const plots = Array.isArray(st.plots) ? st.plots : [];
+    const rawUnlocked = Number(st.unlockedPlots);
+    // A missing/non-numeric unlockedPlots defaults to "all visible plots
+    // unlocked" so the run stays playable; any value is then clamped in range.
+    const unlockedPlots = Math.max(
+      0,
+      Math.min(Number.isNaN(rawUnlocked) ? plots.length : rawUnlocked, plots.length),
+    );
+    return {
+      ...(st as unknown as GameState),
+      plots,
+      unlockedPlots,
+      schemaVersion: SCHEMA_VERSION,
+    } as GameState;
   }
 
   // Schema 6 → 7 — add unlockedPlots (existing runs keep all plots unlocked)
