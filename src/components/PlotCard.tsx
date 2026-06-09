@@ -71,7 +71,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
       {isNextPurchasable && plotPrice !== undefined ? (
         <button
           type="button"
-          aria-label={`Buy plot ${plot.id + 1} for ${plotPrice} coins`}
+          aria-label={`Buy plot · ${plotPrice}🪙, plot ${plot.id + 1}`}
           disabled={!canAffordPlot}
           onClick={() => onBuyPlot?.(plot.id)}
           className="mt-1 font-pixel text-[10px] px-1.5 py-0.5 rounded bg-farm-gold text-farm-ink hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
@@ -79,7 +79,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
           Buy plot · {plotPrice}🪙
         </button>
       ) : (
-        <span className="mt-1 font-pixel text-[9px] text-farm-stone/60">Locked</span>
+        <span className="mt-1 font-pixel text-[9px] text-farm-stone">Locked</span>
       )}
     </div>
   );
