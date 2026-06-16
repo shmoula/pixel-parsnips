@@ -1,4 +1,5 @@
 import { TAX_RATE } from '../engine/constants';
+import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, type SeasonConfig } from '../engine/seasons';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
@@ -65,6 +66,7 @@ export function HUD({
   harvestStreak,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
+  const reputation = getReputationTier(currentDay);
   const dayIntoSeason = currentDay - season.startDay + 1;
   const targetMet = coinBalance >= season.target;
   const daysRemainingInSeason = season.endDay - currentDay + 1;
@@ -119,6 +121,16 @@ export function HUD({
             <span className="font-pixel text-[10px] text-farm-gold">×{harvestStreak}</span>
           </div>
         )}
+        <div
+          aria-label={`Reputation: ${reputation.title}`}
+          title={`Reputation: ${reputation.title}. Your standing grows as you survive more days this run.`}
+          className="flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
+        >
+          <span className="text-base leading-none" aria-hidden="true">🎖️</span>
+          <span className="font-pixel text-[10px] text-farm-parchment/90 whitespace-nowrap">
+            {reputation.title}
+          </span>
+        </div>
       </div>
 
       {/* Centre-right: Lease + Tax — hidden on small screens */}
