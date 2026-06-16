@@ -123,7 +123,8 @@ export function HUD({
         )}
         <div
           aria-label={`Reputation: ${reputation.title}`}
-          className="flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
+          title={`Reputation: ${reputation.title}. Your standing grows as you survive more days this run.`}
+          className="flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
         >
           <span className="text-base leading-none" aria-hidden="true">🎖️</span>
           <span className="font-pixel text-[10px] text-farm-parchment/90 whitespace-nowrap">
