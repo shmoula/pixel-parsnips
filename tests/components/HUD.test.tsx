@@ -80,3 +80,17 @@ describe('HUD — harvest streak chip', () => {
     );
   });
 });
+
+describe('HUD — reputation chip', () => {
+  it('shows "Struggling Smallholder" on Day 1', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
+    const chip = screen.getByLabelText(/reputation/i);
+    expect(chip).toBeInTheDocument();
+    expect(chip).toHaveTextContent(/Struggling Smallholder/i);
+  });
+
+  it('shows "Seasoned Grower" on Day 14', () => {
+    render(<HUD {...baseProps} currentDay={14} coinBalance={100} harvestStreak={0} />);
+    expect(screen.getByLabelText(/reputation/i)).toHaveTextContent(/Seasoned Grower/i);
+  });
+});
