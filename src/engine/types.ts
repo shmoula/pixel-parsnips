@@ -14,6 +14,27 @@ export type WeatherId =
 
 export type UpgradeTier = 0 | 1 | 2 | 3;
 
+export type MarketEventKind = 'shortage' | 'glut';
+
+/** A scheduled or active market event affecting one crop's yield. */
+export interface MarketEvent {
+  cropId: CropId;
+  kind: MarketEventKind;
+  /** Resolved yield multiplier captured at schedule time (>1 shortage, <1 glut). */
+  multiplier: number;
+}
+
+/** A market event currently affecting harvests, with its remaining lifetime. */
+export interface ActiveMarketEvent extends MarketEvent {
+  daysRemaining: number;
+}
+
+/** The run's market: at most one of active/pending is set (one-at-a-time invariant). */
+export interface MarketState {
+  active: ActiveMarketEvent | null;
+  pending: MarketEvent | null;
+}
+
 // ── Definition records (constants — never mutated) ────────────────────────────
 
 export interface CropDefinition {
@@ -117,6 +138,8 @@ export interface GameState {
   peakHarvestStreak: number;
   /** Number of plots currently usable (indices 0..unlockedPlots-1). Plots beyond are locked. */
   unlockedPlots: number;
+  /** Dynamic crop-pricing state (G7). At most one of active/pending is set. */
+  market: MarketState;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────

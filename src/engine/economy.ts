@@ -3,6 +3,9 @@ import {
   STARTING_BALANCE, PLOT_COUNT, STARTING_PLOTS, PLOT_PRICES, TAX_RATE, FERTILIZER_COST,
   EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS,
   STREAK_BONUS_PER_LEVEL, STREAK_BONUS_CAP,
+  MARKET_CADENCE_DAYS, MARKET_FIRE_CHANCE,
+  MARKET_SHORTAGE_MULTIPLIER, MARKET_GLUT_MULTIPLIER,
+  MARKET_DURATION_DAYS, MARKET_ANNOUNCE_LEAD_DAYS,
   CROP_DEFINITIONS, UPGRADE_TIER_DEFINITIONS,
 } from './constants';
 import type { SeasonConfig } from './seasons';
@@ -21,6 +24,21 @@ export interface EndlessFormula {
   targetBase: number; targetPerSeason: number;
 }
 
+export interface MarketConfig {
+  /** Cycle length in days; scheduling rolls when currentDay % cadenceDays === 0. */
+  cadenceDays: number;
+  /** Probability (0..1) of scheduling an event at a cycle boundary. */
+  fireChance: number;
+  /** Yield multiplier for a Shortage (>1). */
+  shortageMultiplier: number;
+  /** Yield multiplier for a Glut (<1). */
+  glutMultiplier: number;
+  /** Active lifetime in days once an event activates. */
+  durationDays: number;
+  /** Days between announcement and activation; fixed 1 for this ship. */
+  announceLeadDays: number;
+}
+
 export interface EconomyConfig {
   startingBalance: number;
   startingPlots: number; // 010 activates plot gating; in 009 == maxPlots
@@ -36,6 +54,7 @@ export interface EconomyConfig {
   fertilizerCost: number;
   streakBonusPerLevel: number;
   streakBonusCap: number;
+  market: MarketConfig;
 }
 
 export const DEFAULT_ECONOMY: EconomyConfig = {
@@ -57,4 +76,12 @@ export const DEFAULT_ECONOMY: EconomyConfig = {
   fertilizerCost: FERTILIZER_COST,
   streakBonusPerLevel: STREAK_BONUS_PER_LEVEL,
   streakBonusCap: STREAK_BONUS_CAP,
+  market: {
+    cadenceDays: MARKET_CADENCE_DAYS,
+    fireChance: MARKET_FIRE_CHANCE,
+    shortageMultiplier: MARKET_SHORTAGE_MULTIPLIER,
+    glutMultiplier: MARKET_GLUT_MULTIPLIER,
+    durationDays: MARKET_DURATION_DAYS,
+    announceLeadDays: MARKET_ANNOUNCE_LEAD_DAYS,
+  },
 };

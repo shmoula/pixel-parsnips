@@ -54,6 +54,7 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     harvestStreak: 0,
     peakHarvestStreak: 0,
     unlockedPlots: config.startingPlots,
+    market: { active: null, pending: null },
   };
 }
 

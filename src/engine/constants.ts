@@ -20,6 +20,12 @@ export const EXHAUSTION_RECOVERY_DAYS = 3;
 export const FERTILIZER_COST = 30;
 export const STREAK_BONUS_PER_LEVEL = 5;
 export const STREAK_BONUS_CAP = 4;
+export const MARKET_CADENCE_DAYS = 5;
+export const MARKET_FIRE_CHANCE = 0.5;
+export const MARKET_SHORTAGE_MULTIPLIER = 1.4;
+export const MARKET_GLUT_MULTIPLIER = 0.7;
+export const MARKET_DURATION_DAYS = 3;
+export const MARKET_ANNOUNCE_LEAD_DAYS = 1;
 
 /** Integer rounding helper for all coin arithmetic. */
 export const coins = (n: number): number => Math.floor(n);
