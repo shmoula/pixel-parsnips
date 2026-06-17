@@ -1,5 +1,6 @@
 import type { DailyLogEntry } from '../engine/types';
 import { WEATHER_DEFINITIONS } from '../engine/constants';
+import { announceText, activeText } from '../engine/market';
 
 interface DailyLogProps {
   log: DailyLogEntry;
@@ -52,6 +53,38 @@ function LogAccountingRows({ log }: { log: DailyLogEntry }) {
   );
 }
 
+function MarketLines({ log }: { log: DailyLogEntry }) {
+  return (
+    <>
+      {/* Active market event */}
+      {log.marketActive && (
+        <div
+          aria-label="Market event"
+          className={
+            log.marketActive.kind === 'shortage'
+              ? 'flex items-center gap-1 px-2 py-1 rounded bg-farm-grass/20 border border-farm-grass/40 text-farm-parchment'
+              : 'flex items-center gap-1 px-2 py-1 rounded bg-farm-red/20 border border-farm-red/40 text-farm-parchment'
+          }
+        >
+          <span aria-hidden="true">📊</span>
+          <span>{activeText(log.marketActive)}</span>
+        </div>
+      )}
+
+      {/* Tomorrow's announced market event */}
+      {log.marketAnnounced && (
+        <div
+          aria-label="Market forecast"
+          className="flex items-center gap-1 px-2 py-1 rounded bg-farm-parchment/10 text-farm-stone"
+        >
+          <span aria-hidden="true">📈</span>
+          <span>Tomorrow: {announceText(log.marketAnnounced)}</span>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function DailyLog({ log }: DailyLogProps) {
   const weather = WEATHER_DEFINITIONS[log.weatherId];
   return (
@@ -73,6 +106,8 @@ export function DailyLog({ log }: DailyLogProps) {
         <span className="font-pixel text-farm-parchment">{weather.name}</span>
         <span className="text-farm-stone ml-auto">×{(log.weatherMultiplier).toFixed(1)}</span>
       </div>
+
+      <MarketLines log={log} />
 
       {/* Harvest line-items */}
       {log.harvests.length > 0 && (

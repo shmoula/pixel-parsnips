@@ -23,6 +23,8 @@ function makeLog(over: Partial<DailyLogEntry> = {}): DailyLogEntry {
     streakBefore: 0,
     streakAfter: 0,
     streakBonus: 0,
+    marketActive: null,
+    marketAnnounced: null,
     ...over,
   };
 }
@@ -67,5 +69,36 @@ describe('DailyLog — harvest streak rows', () => {
     const { container } = render(<DailyLog log={makeLog()} />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+});
+
+describe('DailyLog — market', () => {
+  it('shows the active event line', () => {
+    render(
+      <DailyLog
+        log={makeLog({
+          marketActive: { cropId: 'pumpkin', kind: 'shortage', multiplier: 1.4, daysRemaining: 2 },
+        })}
+      />,
+    );
+    expect(screen.getByText(/Pumpkins shortage: yield \+40% \(2 days left\)/)).toBeInTheDocument();
+  });
+
+  it('shows the tomorrow announcement line', () => {
+    render(
+      <DailyLog
+        log={makeLog({
+          marketAnnounced: { cropId: 'radish', kind: 'glut', multiplier: 0.7 },
+        })}
+      />,
+    );
+    expect(screen.getByText(/Tomorrow:/)).toBeInTheDocument();
+    expect(screen.getByText(/flooded with Radishes/)).toBeInTheDocument();
+  });
+
+  it('shows neither line when there is no market activity', () => {
+    render(<DailyLog log={makeLog()} />);
+    expect(screen.queryByText(/Tomorrow:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/yield/)).not.toBeInTheDocument();
   });
 });
