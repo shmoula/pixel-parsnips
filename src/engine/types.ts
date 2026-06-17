@@ -111,6 +111,10 @@ export interface DailyLogEntry {
   streakAfter: number;
   /** Coins awarded this turn from streak bonus; 0 when no harvest occurred. */
   streakBonus: number;
+  /** Active market event affecting THIS turn's harvest (post-activation), or null. */
+  marketActive: ActiveMarketEvent | null;
+  /** Event scheduled THIS turn to take effect next turn, or null. */
+  marketAnnounced: MarketEvent | null;
 }
 
 export interface GameState {

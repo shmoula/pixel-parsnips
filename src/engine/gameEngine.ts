@@ -4,7 +4,7 @@ import {
   coins,
 } from './constants';
 import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
-import { EMPTY_MARKET } from './market';
+import { EMPTY_MARKET, activatePending, expireActive, marketMultiplierFor, rollSchedule } from './market';
 import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
 import type {
   GameState,
@@ -284,6 +284,10 @@ export function processTurn(
   // Compute season once — reused for both lease and weather band selection
   const season = getSeasonForDay(state.currentDay, config);
 
+  // Market Step A: activate any pending event so its modifier applies to THIS harvest.
+  const marketAfterActivate = activatePending(state.market, config.market);
+  const activeMarket = marketAfterActivate.active;
+
   // Step 1: Decrement daysRemaining on all occupied plots
   const plots = state.plots.map(plot => {
     if (plot.cropId === null || plot.daysRemaining === null) return plot;
@@ -341,7 +345,8 @@ export function processTurn(
   const harvestedPlots = plotsAfterPest.map(plot => {
     if (plot.cropId === null || plot.daysRemaining !== 0) return plot;
     const crop = config.crops[plot.cropId];
-    const adjustedYield = coins(crop.baseYield * weather.multiplier);
+    const marketMod = marketMultiplierFor(activeMarket, plot.cropId);
+    const adjustedYield = coins(crop.baseYield * weather.multiplier * marketMod);
     harvests.push({
       plotId: plot.id,
       cropId: plot.cropId,
@@ -414,6 +419,8 @@ export function processTurn(
       streakBefore,
       streakAfter,
       streakBonus,
+      marketActive: activeMarket,
+      marketAnnounced: null,
     };
     const bankruptState: GameState = {
       ...state,
@@ -424,6 +431,7 @@ export function processTurn(
       lastDailyLog: log,
       harvestStreak: streakAfter,
       peakHarvestStreak,
+      market: marketAfterActivate,
     };
     return { state: bankruptState, log, isBankrupt: true };
   }
@@ -470,6 +478,16 @@ export function processTurn(
   // Step 9: Update peakBalance
   const peakBalance = Math.max(state.peakBalance, coinBalance);
 
+  // Market Step B: expire the active event, then maybe schedule a new one at a boundary.
+  const activeAfterExpire = expireActive(activeMarket);
+  const scheduled = rollSchedule(
+    { active: activeAfterExpire, pending: null },
+    state.currentDay,
+    config.market,
+    rng,
+  );
+  const nextMarket = { active: activeAfterExpire, pending: scheduled };
+
   // Step 10: Build DailyLogEntry
   const log: DailyLogEntry = {
     day: state.currentDay,
@@ -489,6 +507,8 @@ export function processTurn(
     streakBefore,
     streakAfter: harvestStreakAfterSeason,
     streakBonus,
+    marketActive: activeMarket,
+    marketAnnounced: scheduled,
   };
 
   // Step 9.5: Increment disastersSurvived if this turn's weather was a disaster
@@ -508,6 +528,7 @@ export function processTurn(
     disastersSurvived,
     harvestStreak: harvestStreakAfterSeason,
     peakHarvestStreak,
+    market: nextMarket,
   };
 
   return { state: nextState, log, isBankrupt: false };
