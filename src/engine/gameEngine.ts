@@ -4,6 +4,7 @@ import {
   coins,
 } from './constants';
 import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
+import { EMPTY_MARKET } from './market';
 import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
 import type {
   GameState,
@@ -54,7 +55,7 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     harvestStreak: 0,
     peakHarvestStreak: 0,
     unlockedPlots: config.startingPlots,
-    market: { active: null, pending: null },
+    market: EMPTY_MARKET,
   };
 }
 

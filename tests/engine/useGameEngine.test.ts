@@ -625,7 +625,7 @@ describe('useGameEngine — endOfRunRecap (007)', () => {
   // TODO: assert recap does not fire on season_passed/season_failed
 });
 
-describe('v6 → v7 migration', () => {
+describe('v6 → v8 migration', () => {
   beforeEach(() => localStorage.clear());
 
   it('adds unlockedPlots = plots.length to a v6 save (existing runs keep all plots)', () => {
@@ -646,16 +646,43 @@ describe('v6 → v7 migration', () => {
     localStorage.setItem('pixel-parsnips-state', JSON.stringify(v6Save));
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.unlockedPlots).toBe(12);
-    expect(result.current.state.schemaVersion).toBe(7);
+    expect(result.current.state.market).toEqual({ active: null, pending: null });
+    expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
   });
 });
 
-describe('v7 load — corrupt/missing unlockedPlots', () => {
+describe('v7 → v8 migration (Market Events)', () => {
   beforeEach(() => localStorage.clear());
 
-  it('hydrates unlockedPlots = plots.length for a v7 save missing the field', () => {
+  it('adds an empty market to a v7 save and bumps to v8', () => {
     const v7Save = {
       schemaVersion: 7,
+      state: {
+        phase: 'playing',
+        plots: new Array(12).fill(null).map((_, i) => ({
+          id: i, cropId: null, dayPlanted: null, daysRemaining: null,
+          consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
+        })),
+        currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
+        harvestStreak: 0, peakHarvestStreak: 0, unlockedPlots: 12, schemaVersion: 7,
+        // market intentionally absent (added in v8)
+      },
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v7Save));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.market).toEqual({ active: null, pending: null });
+    expect(result.current.state.schemaVersion).toBe(8);
+  });
+});
+
+describe('v8 load — corrupt/missing unlockedPlots/market', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('hydrates unlockedPlots = plots.length and an empty market for a v8 save missing the fields', () => {
+    const v8Save = {
+      schemaVersion: SCHEMA_VERSION,
       state: {
         phase: 'playing',
         plots: new Array(6).fill(null).map((_, i) => ({
@@ -665,19 +692,20 @@ describe('v7 load — corrupt/missing unlockedPlots', () => {
         currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
         upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
         flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
-        harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: 7,
-        // unlockedPlots intentionally absent (tampered/corrupt save)
+        harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: SCHEMA_VERSION,
+        // unlockedPlots and market intentionally absent (tampered/corrupt save)
       },
     };
-    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v7Save));
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v8Save));
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.unlockedPlots).toBe(6);
-    expect(result.current.state.schemaVersion).toBe(7);
+    expect(result.current.state.market).toEqual({ active: null, pending: null });
+    expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
   });
 
-  it('recovers plots to an array and clamps unlockedPlots for a tampered v7 save', () => {
-    const v7Save = {
-      schemaVersion: 7,
+  it('recovers plots to an array and clamps unlockedPlots for a tampered v8 save', () => {
+    const v8Save = {
+      schemaVersion: SCHEMA_VERSION,
       state: {
         phase: 'playing',
         plots: 'not-an-array', // tampered
@@ -685,14 +713,15 @@ describe('v7 load — corrupt/missing unlockedPlots', () => {
         currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
         upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
         flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
-        harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: 7,
+        harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: SCHEMA_VERSION,
       },
     };
-    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v7Save));
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v8Save));
     const { result } = renderHook(() => useGameEngine());
     expect(Array.isArray(result.current.state.plots)).toBe(true);
     expect(result.current.state.plots).toHaveLength(0);
     expect(result.current.state.unlockedPlots).toBe(0); // clamped to [0, plots.length]
+    expect(result.current.state.market).toEqual({ active: null, pending: null });
   });
 });
 

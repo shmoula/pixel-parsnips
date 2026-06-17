@@ -8,7 +8,7 @@ import type {
 
 // ── Scalar constants ──────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 export const STARTING_BALANCE = 130;
 export const PLOT_COUNT = 12;
 export const STARTING_PLOTS = 4;
