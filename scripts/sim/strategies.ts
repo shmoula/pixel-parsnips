@@ -74,6 +74,8 @@ export function pickCropWithMarket(
   const shortage = isShortage(active) ? active : isShortage(pending) ? pending : null;
   if (shortage) return shortage.cropId;
 
+  // Only an active glut is dodged; a pending glut is an intentional no-op since it
+  // doesn't affect harvests yet (and the bot may pivot away before it activates).
   const glut = active?.kind === 'glut' ? active : null;
   if (glut && glut.cropId === basePick) {
     return basePick === 'radish' ? 'parsnip' : 'radish';

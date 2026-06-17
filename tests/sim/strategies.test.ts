@@ -61,6 +61,14 @@ describe('pickCropWithMarket', () => {
     const active = { cropId: 'pumpkin' as const, kind: 'glut' as const, multiplier: 0.7, daysRemaining: 2 };
     expect(pickCropWithMarket('pumpkin', active, null)).not.toBe('pumpkin');
   });
+  it('leaves the base pick alone when an active glut hits a different crop', () => {
+    const active = { cropId: 'radish' as const, kind: 'glut' as const, multiplier: 0.7, daysRemaining: 2 };
+    expect(pickCropWithMarket('pumpkin', active, null)).toBe('pumpkin');
+  });
+  it('does not dodge a pending glut (it does not affect harvests yet)', () => {
+    const pending = { cropId: 'pumpkin' as const, kind: 'glut' as const, multiplier: 0.7 };
+    expect(pickCropWithMarket('pumpkin', null, pending)).toBe('pumpkin');
+  });
   it('returns the base pick when the market is quiet', () => {
     expect(pickCropWithMarket(base, null, null)).toBe('pumpkin');
   });
