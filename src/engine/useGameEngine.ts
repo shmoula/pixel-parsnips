@@ -14,10 +14,19 @@ import {
 } from './gameEngine';
 import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
 import { DEFAULT_ECONOMY } from './economy';
-import type { GameState, CropId, DailyLogEntry } from './types';
+import type {
+  GameState,
+  CropId,
+  DailyLogEntry,
+  MarketState,
+  MarketEvent,
+  ActiveMarketEvent,
+  MarketEventKind,
+} from './types';
 import { recordRunEnd, type PersonalBests } from './records';
 import { deriveMedal, type Medal } from './medals';
 import { getSeasonForDay } from './seasons';
+import { EMPTY_MARKET } from './market';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 
@@ -26,11 +35,46 @@ function isGameStateShape(state: unknown): state is Record<string, unknown> {
   return typeof state === 'object' && state !== null && 'phase' in state && 'plots' in state;
 }
 
+const isCropId = (v: unknown): v is CropId =>
+  v === 'radish' || v === 'parsnip' || v === 'pumpkin';
+const isKind = (v: unknown): v is MarketEventKind => v === 'shortage' || v === 'glut';
+
+/** Structurally validate a pending (announced) event, or null if malformed. */
+function toPendingEvent(v: unknown): MarketEvent | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const e = v as Record<string, unknown>;
+  if (!isCropId(e.cropId) || !isKind(e.kind) || typeof e.multiplier !== 'number') return null;
+  return { cropId: e.cropId, kind: e.kind, multiplier: e.multiplier };
+}
+
+/** Structurally validate an active event (pending shape + daysRemaining), or null. */
+function toActiveEvent(v: unknown): ActiveMarketEvent | null {
+  const base = toPendingEvent(v);
+  if (base === null) return null;
+  const daysRemaining = (v as Record<string, unknown>).daysRemaining;
+  if (typeof daysRemaining !== 'number') return null;
+  return { ...base, daysRemaining: Math.max(0, Math.floor(daysRemaining)) };
+}
+
+/**
+ * Normalize a raw `market` value from a (possibly tampered) save. Accepts only
+ * structurally valid active/pending events and enforces the one-at-a-time
+ * invariant (active wins) so malformed shapes like `{}`, arrays, or both slots
+ * populated cannot leak into the turn/log/render paths.
+ */
+function normalizeMarket(raw: unknown): MarketState {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...EMPTY_MARKET };
+  const m = raw as Record<string, unknown>;
+  const active = toActiveEvent(m.active);
+  if (active) return { active, pending: null };
+  return { active: null, pending: toPendingEvent(m.pending) };
+}
+
 /**
  * Hardens a current-schema save against tampering/corruption before use.
  * Downstream code (state.plots.every, plots.map, getNextPlotPrice, market
  * helpers) assumes plots is an array, unlockedPlots is a number in
- * [0, plots.length], and market is an object with active/pending.
+ * [0, plots.length], and market is a normalized object with active/pending.
  */
 function hardenCurrentSchema(st: Record<string, unknown>): GameState {
   const plots = Array.isArray(st.plots) ? st.plots : [];
@@ -41,10 +85,7 @@ function hardenCurrentSchema(st: Record<string, unknown>): GameState {
     0,
     Math.min(Number.isNaN(rawUnlocked) ? plots.length : rawUnlocked, plots.length),
   );
-  const market =
-    st.market && typeof st.market === 'object'
-      ? (st.market as GameState['market'])
-      : { active: null, pending: null };
+  const market = normalizeMarket(st.market);
   return {
     ...(st as unknown as GameState),
     plots,
@@ -75,57 +116,57 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
   if (parsed.schemaVersion === 7) {
     console.info('[PixelParsnips] Migrating save from v7 to v8 (Market Events).');
     const st = parsed.state as Record<string, unknown>;
-    return {
-      ...(st as unknown as Omit<GameState, 'market'>),
+    return hardenCurrentSchema({
+      ...st,
       schemaVersion: SCHEMA_VERSION,
       market: { active: null, pending: null },
-    };
+    });
   }
 
   // Schema 6 → 8 — add unlockedPlots (existing runs keep all plots unlocked) + market
   if (parsed.schemaVersion === 6) {
     console.info('[PixelParsnips] Migrating save from v6 to v8 (Plot Progression + Market Events).');
     const st = parsed.state as Record<string, unknown>;
-    return {
-      ...(st as unknown as Omit<GameState, 'unlockedPlots' | 'market'>),
+    return hardenCurrentSchema({
+      ...st,
       schemaVersion: SCHEMA_VERSION,
       unlockedPlots: Array.isArray(st.plots) ? st.plots.length : DEFAULT_ECONOMY.maxPlots,
       market: { active: null, pending: null },
-    };
+    });
   }
 
   // Schema 5 → 8 — add harvestStreak, peakHarvestStreak, unlockedPlots, and market
   if (parsed.schemaVersion === 5) {
     console.info('[PixelParsnips] Migrating save from v5 to v8 (Harvest Streak + Plot Progression + Market Events).');
-    return {
-      ...(parsed.state as unknown as Omit<GameState, 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots' | 'market'>),
+    return hardenCurrentSchema({
+      ...(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
       harvestStreak: 0,
       peakHarvestStreak: 0,
       unlockedPlots: DEFAULT_ECONOMY.maxPlots,
       market: { active: null, pending: null },
-    };
+    });
   }
 
   // Schema 4 → 8 — chained: add disastersSurvived + streak fields + unlockedPlots + market
   if (parsed.schemaVersion === 4) {
     console.info('[PixelParsnips] Migrating save from v4 to v8.');
-    return {
-      ...(parsed.state as unknown as Omit<GameState, 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots' | 'market'>),
+    return hardenCurrentSchema({
+      ...(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
       disastersSurvived: 0,
       harvestStreak: 0,
       peakHarvestStreak: 0,
       unlockedPlots: DEFAULT_ECONOMY.maxPlots,
       market: { active: null, pending: null },
-    };
+    });
   }
 
   // Schema 3 → 8 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots + market
   if (parsed.schemaVersion === 3) {
     console.info('[PixelParsnips] Migrating save from v3 to v8 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression + Market Events).');
-    return {
-      ...(parsed.state as unknown as Omit<GameState, 'endlessMode' | 'disastersSurvived' | 'harvestStreak' | 'peakHarvestStreak' | 'unlockedPlots' | 'market'>),
+    return hardenCurrentSchema({
+      ...(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
       endlessMode: false,
       disastersSurvived: 0,
@@ -133,7 +174,7 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
       peakHarvestStreak: 0,
       unlockedPlots: DEFAULT_ECONOMY.maxPlots,
       market: { active: null, pending: null },
-    };
+    });
   }
 
   // Unrecognised / malformed save — discard

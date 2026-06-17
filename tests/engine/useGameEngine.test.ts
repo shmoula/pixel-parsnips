@@ -723,6 +723,58 @@ describe('v8 load — corrupt/missing unlockedPlots/market', () => {
     expect(result.current.state.unlockedPlots).toBe(0); // clamped to [0, plots.length]
     expect(result.current.state.market).toEqual({ active: null, pending: null });
   });
+
+  it('normalizes a malformed object market (empty/array shapes) to an empty market', () => {
+    for (const badMarket of [{}, [], { active: {}, pending: 'nope' }, { active: 42 }]) {
+      localStorage.clear();
+      const v8Save = {
+        schemaVersion: SCHEMA_VERSION,
+        state: {
+          phase: 'playing',
+          plots: new Array(6).fill(null).map((_, i) => ({
+            id: i, cropId: null, dayPlanted: null, daysRemaining: null,
+            consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
+          })),
+          currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+          upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+          flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
+          harvestStreak: 0, peakHarvestStreak: 0, unlockedPlots: 6, schemaVersion: SCHEMA_VERSION,
+          market: badMarket,
+        },
+      };
+      localStorage.setItem('pixel-parsnips-state', JSON.stringify(v8Save));
+      const { result, unmount } = renderHook(() => useGameEngine());
+      expect(result.current.state.market).toEqual({ active: null, pending: null });
+      unmount();
+    }
+  });
+
+  it('enforces the one-at-a-time invariant when both active and pending are present', () => {
+    const v8Save = {
+      schemaVersion: SCHEMA_VERSION,
+      state: {
+        phase: 'playing',
+        plots: new Array(6).fill(null).map((_, i) => ({
+          id: i, cropId: null, dayPlanted: null, daysRemaining: null,
+          consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
+        })),
+        currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
+        harvestStreak: 0, peakHarvestStreak: 0, unlockedPlots: 6, schemaVersion: SCHEMA_VERSION,
+        market: {
+          active: { cropId: 'radish', kind: 'shortage', multiplier: 1.4, daysRemaining: 2 },
+          pending: { cropId: 'pumpkin', kind: 'glut', multiplier: 0.7 },
+        },
+      },
+    };
+    localStorage.setItem('pixel-parsnips-state', JSON.stringify(v8Save));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.market.active).toEqual({
+      cropId: 'radish', kind: 'shortage', multiplier: 1.4, daysRemaining: 2,
+    });
+    expect(result.current.state.market.pending).toBeNull();
+  });
 });
 
 describe('useGameEngine — v5 → v7 migration (chained: Harvest Streak + Plot Progression)', () => {

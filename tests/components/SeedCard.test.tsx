@@ -30,7 +30,7 @@ describe('SeedCard — market indicator', () => {
   });
   it('shows no indicator when there is no market event', () => {
     renderCard(undefined);
-    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Market /i)).not.toBeInTheDocument();
   });
 });
 
