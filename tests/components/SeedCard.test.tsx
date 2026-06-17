@@ -59,4 +59,21 @@ describe('SeedCard — market-adjusted yield/profit', () => {
     expect(screen.getByText('65🪙 yield').className).not.toContain('line-through');
     expect(screen.getByText('Est. profit: +45🪙')).toBeInTheDocument();
   });
+
+  it('renders a negative net profit without a stray plus sign', () => {
+    // price (80) above pumpkin baseYield (65) → netProfit -15
+    render(
+      <SeedCard
+        cropId="pumpkin"
+        price={80}
+        seedCount={0}
+        onBuy={noop}
+        onSelect={noop}
+        canAfford
+        isSelected={false}
+      />,
+    );
+    expect(screen.getByText('Est. profit: -15🪙')).toBeInTheDocument();
+    expect(screen.queryByText(/\+-/)).not.toBeInTheDocument();
+  });
 });

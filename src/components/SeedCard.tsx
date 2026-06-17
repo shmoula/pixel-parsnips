@@ -76,13 +76,13 @@ function CropStats({
         {adjustedProfit !== null ? (
           <span>
             Est. profit:{' '}
-            <span className="line-through opacity-60">+{netProfit}🪙</span>{' '}
+            <span className="line-through opacity-60">{netProfit >= 0 ? '+' : ''}{netProfit}🪙</span>{' '}
             <span className={tint}>
               {adjustedProfit >= 0 ? '+' : ''}{adjustedProfit}🪙
             </span>
           </span>
         ) : (
-          <span>Est. profit: +{netProfit}🪙</span>
+          <span>Est. profit: {netProfit >= 0 ? '+' : ''}{netProfit}🪙</span>
         )}
       </p>
     </>
