@@ -91,6 +91,23 @@ describe('processTurn — market activation, yield, expiry', () => {
     const { log } = processTurn(state, 'sunny', undefined, undefined, DEFAULT_ECONOMY, NO_FIRE);
     expect(log.marketActive?.cropId).toBe('pumpkin');
   });
+
+  it('uses the multiplier frozen at schedule time, not the live config value', () => {
+    // The event captured 1.4 when scheduled; a later config change to a different
+    // shortageMultiplier must not retroactively alter the live event's yield.
+    const mutatedConfig = {
+      ...DEFAULT_ECONOMY,
+      market: { ...DEFAULT_ECONOMY.market, shortageMultiplier: 2.0 },
+    };
+    const state = pumpkinReady({
+      currentDay: 6,
+      market: { active: { cropId: 'pumpkin', kind: 'shortage', multiplier: 1.4, daysRemaining: 2 }, pending: null },
+    });
+    const { log } = processTurn(state, 'sunny', undefined, undefined, mutatedConfig, NO_FIRE);
+    // Yield reflects the captured 1.4, NOT the mutated 2.0.
+    expect(log.harvests[0].adjustedYield).toBe(coins(DEFAULT_ECONOMY.crops.pumpkin.baseYield * 1.0 * 1.4));
+    expect(log.marketActive?.multiplier).toBe(1.4);
+  });
 });
 
 describe('processTurn — market on bankruptcy', () => {
