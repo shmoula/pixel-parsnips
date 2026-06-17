@@ -3,7 +3,7 @@ import {
 } from '../../src/engine/gameEngine';
 import { getSeasonForDay } from '../../src/engine/seasons';
 import type { EconomyConfig } from '../../src/engine/economy';
-import type { GameState, CropId } from '../../src/engine/types';
+import type { GameState, CropId, ActiveMarketEvent, MarketEvent } from '../../src/engine/types';
 
 export type Strategy = (state: GameState, config: EconomyConfig) => GameState;
 
@@ -61,10 +61,32 @@ function maybeBuyPlots(state: GameState, config: EconomyConfig): GameState {
 const single = (crop: CropId): Strategy => (state, config) =>
   fillBoard(maybeUpgrade(state, config), config, () => crop);
 
+/**
+ * Adjust a base crop choice for the current market: chase a shortage, dodge a glut.
+ * `active` takes precedence over `pending` (it affects harvests now).
+ */
+export function pickCropWithMarket(
+  basePick: CropId,
+  active: ActiveMarketEvent | null,
+  pending: MarketEvent | null,
+): CropId {
+  const isShortage = (e: MarketEvent | null) => e?.kind === 'shortage';
+  const shortage = isShortage(active) ? active : isShortage(pending) ? pending : null;
+  if (shortage) return shortage.cropId;
+
+  const glut = active?.kind === 'glut' ? active : null;
+  if (glut && glut.cropId === basePick) {
+    return basePick === 'radish' ? 'parsnip' : 'radish';
+  }
+  return basePick;
+}
+
 const smartMixed: Strategy = (state, config) => {
   let s = maybeUpgrade(state, config);
-  const pick = (cur: GameState): CropId =>
-    cur.coinBalance > 250 ? 'pumpkin' : cur.coinBalance > 60 ? 'parsnip' : 'radish';
+  const pick = (cur: GameState): CropId => {
+    const base: CropId = cur.coinBalance > 250 ? 'pumpkin' : cur.coinBalance > 60 ? 'parsnip' : 'radish';
+    return pickCropWithMarket(base, cur.market.active, cur.market.pending);
+  };
   // Fill, then expand, then fill the new plot(s); a couple of rounds converge.
   for (let round = 0; round < 3; round++) {
     s = fillBoard(s, config, pick);
