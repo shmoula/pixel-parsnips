@@ -1,4 +1,4 @@
-import type { CropId, UpgradeTier, GameState } from '../engine/types';
+import type { CropId, UpgradeTier, GameState, ActiveMarketEvent } from '../engine/types';
 import { UPGRADE_TIER_DEFINITIONS, FERTILIZER_COST } from '../engine/constants';
 import { SeedCard } from './SeedCard';
 import { UpgradeCard } from './UpgradeCard';
@@ -17,6 +17,7 @@ interface ShopProps {
   onBuyUpgrade: () => void;
   onBuyFertilizer: () => void;
   getNextUpgradeCost: () => number | null;
+  marketActive: ActiveMarketEvent | null;
 }
 
 export function Shop({
@@ -31,6 +32,7 @@ export function Shop({
   onBuyUpgrade,
   onBuyFertilizer,
   getNextUpgradeCost,
+  marketActive,
 }: ShopProps) {
   const nextUpgradeCost = getNextUpgradeCost();
 
@@ -69,6 +71,11 @@ export function Shop({
                 onSelect={onSelectCrop}
                 canAfford={coinBalance >= price}
                 isSelected={selectedCrop === cropId}
+                marketEvent={
+                  marketActive && marketActive.cropId === cropId
+                    ? { kind: marketActive.kind, multiplier: marketActive.multiplier }
+                    : undefined
+                }
               />
             );
           })}

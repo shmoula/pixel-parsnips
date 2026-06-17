@@ -21,6 +21,18 @@ interface SeedCardProps {
   onSelect: (cropId: CropId) => void;
   canAfford: boolean;
   isSelected: boolean;
+  /** Active market event for THIS crop, if any (drives the price-direction badge). */
+  marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number };
+}
+
+/** Build the price-direction badge label, or null when there is no event. */
+function formatMarketBadge(
+  marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number },
+): string | null {
+  if (!marketEvent) return null;
+  const pct = Math.round((marketEvent.multiplier - 1) * 100);
+  const arrow = marketEvent.kind === 'shortage' ? '▲' : '▼';
+  return `${arrow} ${pct >= 0 ? '+' : ''}${pct}%`;
 }
 
 export function SeedCard({
@@ -31,12 +43,16 @@ export function SeedCard({
   onSelect,
   canAfford,
   isSelected,
+  marketEvent,
 }: SeedCardProps) {
   const crop = CROP_DEFINITIONS[cropId];
   const disabled = !canAfford;
 
   // T018a — net profit per seed after buy cost
   const netProfit = crop.baseYield - price;
+
+  // G7 — price-direction badge for an active market event on this crop
+  const marketLabel = formatMarketBadge(marketEvent);
 
   return (
     // T018c — active border: gold ring instead of grass
@@ -55,6 +71,19 @@ export function SeedCard({
         {seedCount > 0 && (
           <span className="text-xs font-pixel bg-farm-grass text-farm-parchment px-1.5 py-0.5 rounded">
             ×{seedCount}
+          </span>
+        )}
+        {marketLabel && (
+          <span
+            aria-label={`Market ${marketEvent!.kind}`}
+            className={[
+              'text-xs font-pixel px-1.5 py-0.5 rounded',
+              marketEvent!.kind === 'shortage'
+                ? 'bg-farm-grass/30 text-farm-grass'
+                : 'bg-farm-red/30 text-farm-red',
+            ].join(' ')}
+          >
+            {marketLabel}
           </span>
         )}
       </div>

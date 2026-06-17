@@ -191,6 +191,7 @@ export function GameBoard({
             onBuyUpgrade={onBuyUpgrade}
             onBuyFertilizer={onBuyFertilizer}
             getNextUpgradeCost={getNextUpgradeCost}
+            marketActive={state.market.active}
           />
         </div>
       </div>
