@@ -14,7 +14,7 @@ const DISASTER_ICON: Record<string, string> = {
   flash_drought: '☀️🔥',
 };
 
-/** Heading text per disaster type (the body lines come from `renderBody`). */
+/** Heading text per disaster type (the body lines come from `bodyLines`). */
 const DISASTER_TITLE: Record<string, string> = {
   blight: 'BLIGHT',
   pest_infestation: 'PEST INFESTATION',
@@ -49,11 +49,11 @@ export function DisasterBanner({ log, animate = false }: DisasterBannerProps) {
         'bg-farm-red/40 border-2 border-farm-red',
         'shadow-[0_0_12px_rgba(200,40,40,0.4)]',
         animate ? 'disaster-banner-anim' : '',
-      ].join(' ')}
+      ].filter(Boolean).join(' ')}
     >
       <span
         aria-hidden="true"
-        className={['text-2xl leading-none', animate ? 'disaster-icon-anim' : ''].join(' ')}
+        className={['text-2xl leading-none', animate ? 'disaster-icon-anim' : ''].filter(Boolean).join(' ')}
       >
         {icon}
       </span>

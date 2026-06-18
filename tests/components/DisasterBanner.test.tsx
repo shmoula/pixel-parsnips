@@ -66,4 +66,14 @@ describe('DisasterBanner', () => {
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  it('adds animation classes only when animate is set', () => {
+    const { rerender } = render(
+      <DisasterBanner log={makeLog({ weatherId: 'blight' })} animate />,
+    );
+    expect(screen.getByLabelText(/disaster/i)).toHaveClass('disaster-banner-anim');
+
+    rerender(<DisasterBanner log={makeLog({ weatherId: 'blight' })} />);
+    expect(screen.getByLabelText(/disaster/i)).not.toHaveClass('disaster-banner-anim');
+  });
 });
