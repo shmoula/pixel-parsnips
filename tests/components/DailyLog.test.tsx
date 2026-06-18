@@ -102,3 +102,32 @@ describe('DailyLog — market', () => {
     expect(screen.queryByText(/yield/)).not.toBeInTheDocument();
   });
 });
+
+describe('DailyLog — disaster lines moved to DisasterBanner', () => {
+  it('no longer renders the inline flash-drought line', () => {
+    render(<DailyLog log={makeLog({ weatherId: 'flash_drought', flashDroughtDaysAfter: 2 })} />);
+    expect(screen.queryByText(/grow at half speed/i)).toBeNull();
+  });
+
+  it('no longer renders the inline pest-destroyed lines', () => {
+    render(<DailyLog log={makeLog({ weatherId: 'pest_infestation', pestDestroyedPlots: [0, 1] })} />);
+    expect(screen.queryByText(/destroyed by pests/i)).toBeNull();
+  });
+
+  it('still renders the exhaustion line', () => {
+    render(<DailyLog log={makeLog({ exhaustedPlots: [3] })} />);
+    expect(screen.getByText(/Plot #4 became exhausted/i)).toBeInTheDocument();
+  });
+
+  it('renders the weather badge neutrally when suppressDisasterStyling is set', () => {
+    render(<DailyLog log={makeLog({ weatherId: 'blight' })} suppressDisasterStyling />);
+    const badge = screen.getByText('Blight').closest('div')!;
+    expect(badge.className).not.toMatch(/farm-red/);
+  });
+
+  it('renders the weather badge with alarm styling by default for disasters', () => {
+    render(<DailyLog log={makeLog({ weatherId: 'blight' })} />);
+    const badge = screen.getByText('Blight').closest('div')!;
+    expect(badge.className).toMatch(/farm-red/);
+  });
+});
