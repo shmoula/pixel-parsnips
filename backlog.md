@@ -89,11 +89,11 @@ This is the measurement tool that should gate **all future balance work** (G5 cr
 **Phase 1 — "Give the run a shape"** ✅ shipped 2026-06-03 as [006-season-system](specs/006-season-system/spec.md) + 2026-06-04 as [007-enriched-run-summary](specs/007-enriched-run-summary/spec.md)
 ~~G1 Season System~~ ✅ + ~~G2 Escalating Difficulty~~ ✅ + ~~G3 Enriched Summary~~ ✅ + G5 Parsnip rebalance (deferred)
 
-**Phase 2 — "Give each day a hook"** ← **next up**
-~~G4 Daily Objectives~~ (deferred 2026-06-05) + ~~G12 Harvest Streak~~ ✅ (shipped 2026-06-06) + G13 Reputation Tier + F2 Disaster reveal juice + G5 Parsnip rebalance (still trivial, can slot anywhere). The per-day hook gap is now filled by G12.
+**Phase 2 — "Give each day a hook"** ✅ core shipped
+~~G4 Daily Objectives~~ (deferred 2026-06-05) + ~~G12 Harvest Streak~~ ✅ (shipped 2026-06-06) + ~~G13 Reputation Tier~~ ✅ (shipped 2026-06-16 as [011](specs/011-farm-reputation-tier/spec.md)) + F2 Disaster reveal juice + G5 Parsnip rebalance (still trivial, can slot anywhere). The per-day hook gap is now filled by G12.
 
-**Phase 3 — "Give wealth somewhere to go"** (target: 1–2 sprints) — *partially started*
-~~G10 Plot unlocking~~ ✅ (shipped 2026-06-08 as [010](specs/010-plot-progression-rebalance/spec.md); escalating plot prices are now the primary scaling capital sink) + the simulator-tuned economy rebalance ([009](specs/009-balance-simulator/spec.md)+010). G7 Market Events ✅ (shipped 2026-06-17 as [012](specs/012-market-events/spec.md) — late-game variance regulator). Still open: G8 Infrastructure Upgrades *or* G9 Farm Expansion (pick one to start) + G6 Rotation Bonus.
+**Phase 3 — "Give wealth somewhere to go"** (target: 1–2 sprints) — *partially shipped* ← **next up**
+~~G10 Plot unlocking~~ ✅ (shipped 2026-06-08 as [010](specs/010-plot-progression-rebalance/spec.md); escalating plot prices are now the primary scaling capital sink) + the simulator-tuned economy rebalance ([009](specs/009-balance-simulator/spec.md)+010). ~~G7 Market Events~~ ✅ (shipped 2026-06-17 as [012](specs/012-market-events/spec.md) — late-game variance regulator). Still open: G8 Infrastructure Upgrades *or* G9 Farm Expansion (pick one to start) + G6 Rotation Bonus.
 
 **Phase 4 — "Depth & memorable moments"**
 G11 Narrative Events + G14 Achievements + G15 Run Legacy + F1/F3 remaining juice
@@ -112,4 +112,4 @@ M1 Rewarded Ads → M2 Founder's Pack → M3 Cosmetic Themes → (later) M4/M5
 
 ---
 
-*Generated 2026-06-02 from p1–p6 analyses. Updated 2026-06-03 after shipping 006-season-system, then 2026-06-04 after shipping 007-enriched-run-summary, then 2026-06-05 after deferring G4 (Daily Objectives / Milestones / Contracts), then 2026-06-08 after shipping 009-balance-simulator (tooling) + 010-plot-progression-rebalance (G10 plot unlocking + simulator-tuned economy).*
+*Generated 2026-06-02 from p1–p6 analyses. Updated 2026-06-03 after shipping 006-season-system, then 2026-06-04 after shipping 007-enriched-run-summary, then 2026-06-05 after deferring G4 (Daily Objectives / Milestones / Contracts), then 2026-06-08 after shipping 009-balance-simulator (tooling) + 010-plot-progression-rebalance (G10 plot unlocking + simulator-tuned economy), then 2026-06-16 after shipping 011-farm-reputation-tier (G13), then 2026-06-17 after shipping 012-market-events (G7).*
