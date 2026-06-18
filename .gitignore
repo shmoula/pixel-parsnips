@@ -34,3 +34,6 @@ coverage
 *.njsproj
 *.sln
 *.sw?
+
+# Brainstorming visual companion (transient mockups)
+.superpowers/
