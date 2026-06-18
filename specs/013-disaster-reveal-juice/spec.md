@@ -32,7 +32,7 @@ base for all three). They differ only by icon and text:
 
 | Weather | Icon | Banner text |
 |---|---|---|
-| `blight` | 🍄 | **BLIGHT** — a fungal blight devastated the harvest. (×0.2 yield) |
+| `blight` | 🍄 | **BLIGHT** — a fungal blight devastated the harvest. (the ×multiplier is already shown on the weather badge; the banner does not restate a number) |
 | `pest_infestation` | 🐛 | **PEST INFESTATION** — one line per destroyed plot: "Plot #N destroyed by pests." |
 | `flash_drought` | ☀️🔥 | **FLASH DROUGHT** — next 2 days' crops grow at half speed. |
 
@@ -66,6 +66,10 @@ Unchanged from today — no neutral-then-red transition, no banner.
 Honored. When the user prefers reduced motion, skip the stagger and all keyframe
 animation entirely and render the resolved state immediately (equivalent to the
 "Last Turn" reopen path).
+
+> Test note: jsdom does not implement `window.matchMedia`, so `tests/setup.ts` must
+> register a default stub (reports "no preference") before any component using the
+> reduced-motion hook is rendered.
 
 ## 4. Components
 
