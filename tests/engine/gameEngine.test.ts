@@ -37,12 +37,16 @@ describe('initialGameState — schema 5 fields', () => {
     expect(s.endlessMode).toBe(false);
   });
 
-  it('has schemaVersion 7', () => {
-    expect(initialGameState().schemaVersion).toBe(7);
+  it('has schemaVersion 8', () => {
+    expect(initialGameState().schemaVersion).toBe(8);
   });
 
   it('starts with disastersSurvived: 0', () => {
     expect(initialGameState().disastersSurvived).toBe(0);
+  });
+
+  it('starts with an empty market (no active or pending event)', () => {
+    expect(initialGameState().market).toEqual({ active: null, pending: null });
   });
 });
 

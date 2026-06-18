@@ -128,7 +128,9 @@ describe('processTurn — 80-day deterministic run canary (regression)', () => {
 
     // Advance 80 days with sunny weather, replanting after each turn
     for (let d = 0; d < 80; d++) {
-      const result = processTurn(state, 'sunny', undefined, undefined, baseline);
+      // 6th arg: no-fire rng (>= fireChance) so market scheduling never perturbs this
+      // deterministic baseline canary.
+      const result = processTurn(state, 'sunny', undefined, undefined, baseline, () => 1);
       state = result.state;
       if (state.phase === 'bankrupt' || state.phase === 'season_failed' || state.phase === 'season_4_won') break;
       // Auto-acknowledge season transitions like a player tapping "Begin Season N+1"

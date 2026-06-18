@@ -9,6 +9,7 @@ export const baseline: EconomyConfig = {
   maxPlots: 12,
   plotPrices: [],
   taxRate: 0.05,
+  market: { cadenceDays: 5, fireChance: 0, shortageMultiplier: 1.4, glutMultiplier: 0.7, durationDays: 3, announceLeadDays: 1 },
   crops: {
     radish:  { id: 'radish',  name: 'Radish',  growthDays: 1, baseSeedCost: 5,  baseYield: 12 },
     parsnip: { id: 'parsnip', name: 'Parsnip', growthDays: 2, baseSeedCost: 10, baseYield: 28 },
@@ -36,6 +37,7 @@ export const proposed: EconomyConfig = {
   maxPlots: 12,
   plotPrices: [30, 55, 85, 120, 160, 210, 280, 360],
   taxRate: 0.06,
+  market: { cadenceDays: 5, fireChance: 0.5, shortageMultiplier: 1.4, glutMultiplier: 0.7, durationDays: 3, announceLeadDays: 1 },
   crops: {
     radish:  { id: 'radish',  name: 'Radish',  growthDays: 1, baseSeedCost: 5,  baseYield: 12 },
     parsnip: { id: 'parsnip', name: 'Parsnip', growthDays: 2, baseSeedCost: 10, baseYield: 28 },

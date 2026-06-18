@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initialGameState } from '../../src/engine/gameEngine';
 import { DEFAULT_ECONOMY } from '../../src/engine/economy';
-import { STRATEGIES } from '../../scripts/sim/strategies';
+import { STRATEGIES, pickCropWithMarket } from '../../scripts/sim/strategies';
 import { baseline, proposed } from '../../scripts/sim/economyPresets';
 
 describe('strategies', () => {
@@ -44,5 +44,32 @@ describe('smartMixed plot buying', () => {
     const plantedBeyondUnlocked = s.plots.slice(s.unlockedPlots).some(p => p.cropId !== null);
     expect(plantedBeyondUnlocked).toBe(false);
     expect(s.coinBalance).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('pickCropWithMarket', () => {
+  const base = 'pumpkin' as const;
+  it('prefers the crop under an active shortage', () => {
+    const active = { cropId: 'radish' as const, kind: 'shortage' as const, multiplier: 1.4, daysRemaining: 2 };
+    expect(pickCropWithMarket(base, active, null)).toBe('radish');
+  });
+  it('prefers the crop under a pending shortage when none active', () => {
+    const pending = { cropId: 'parsnip' as const, kind: 'shortage' as const, multiplier: 1.4 };
+    expect(pickCropWithMarket(base, null, pending)).toBe('parsnip');
+  });
+  it('avoids planting the crop under a glut (falls back to base or radish)', () => {
+    const active = { cropId: 'pumpkin' as const, kind: 'glut' as const, multiplier: 0.7, daysRemaining: 2 };
+    expect(pickCropWithMarket('pumpkin', active, null)).not.toBe('pumpkin');
+  });
+  it('leaves the base pick alone when an active glut hits a different crop', () => {
+    const active = { cropId: 'radish' as const, kind: 'glut' as const, multiplier: 0.7, daysRemaining: 2 };
+    expect(pickCropWithMarket('pumpkin', active, null)).toBe('pumpkin');
+  });
+  it('does not dodge a pending glut (it does not affect harvests yet)', () => {
+    const pending = { cropId: 'pumpkin' as const, kind: 'glut' as const, multiplier: 0.7 };
+    expect(pickCropWithMarket('pumpkin', null, pending)).toBe('pumpkin');
+  });
+  it('returns the base pick when the market is quiet', () => {
+    expect(pickCropWithMarket(base, null, null)).toBe('pumpkin');
   });
 });
