@@ -1,20 +1,39 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import type { DailyLogEntry } from '../engine/types';
 import { DailyLog, DISASTER_WEATHER_IDS } from './DailyLog';
+import { DisasterBanner } from './DisasterBanner';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface DaySummaryModalProps {
   log: DailyLogEntry;
   onClose: () => void;
+  /** True on the auto-open after advancing a day (plays the staged reveal);
+      false when reopened via "Last Turn" (show the resolved state at once). */
+  animateReveal?: boolean;
 }
 
-export function DaySummaryModal({ log, onClose }: DaySummaryModalProps) {
+const REVEAL_DELAY_MS = 700;
+
+export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySummaryModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const reducedMotion = useReducedMotion();
+
+  const isDisaster = DISASTER_WEATHER_IDS.has(log.weatherId);
+  const isQuietDay = log.harvests.length === 0 && log.totalHarvestIncome === 0;
+
+  // Stage the reveal only on a fresh disaster open with motion allowed.
+  const shouldStage = isDisaster && animateReveal && !reducedMotion;
+  const [revealed, setRevealed] = useState(!shouldStage);
 
   useEffect(() => {
-    // Auto-focus close button so keyboard users can dismiss immediately
-    closeButtonRef.current?.focus();
+    if (!shouldStage) return;
+    const id = window.setTimeout(() => setRevealed(true), REVEAL_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [shouldStage]);
 
+  useEffect(() => {
+    closeButtonRef.current?.focus();
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
     }
@@ -22,8 +41,8 @@ export function DaySummaryModal({ log, onClose }: DaySummaryModalProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const isQuietDay = log.harvests.length === 0 && log.totalHarvestIncome === 0;
-  const isDisaster = DISASTER_WEATHER_IDS.has(log.weatherId);
+  // Disaster chrome (red bg + badge + banner) is shown once revealed.
+  const showDisasterChrome = isDisaster && revealed;
 
   return ReactDOM.createPortal(
     <div
@@ -33,12 +52,13 @@ export function DaySummaryModal({ log, onClose }: DaySummaryModalProps) {
       <div
         className={[
           'rounded-2xl p-4 max-w-sm w-full mx-4 shadow-xl max-h-[80vh] flex flex-col',
-          isDisaster ? 'bg-[#2A0A0A]' : 'bg-farm-soil',
+          'transition-colors duration-500',
+          showDisasterChrome ? 'bg-[#2A0A0A]' : 'bg-farm-soil',
         ].join(' ')}
         onClick={e => e.stopPropagation()}
       >
         <div className="overflow-y-auto overscroll-contain flex-1">
-          {isDisaster && (
+          {showDisasterChrome && (
             <div className="flex items-center gap-2 px-3 py-2 rounded bg-farm-red/20 border border-farm-red/50 mb-2">
               <span className="text-xl" aria-hidden="true">⚠️</span>
               <span className="font-pixel text-xs text-farm-red uppercase tracking-widest">Disaster!</span>
@@ -50,7 +70,11 @@ export function DaySummaryModal({ log, onClose }: DaySummaryModalProps) {
             </p>
           )}
 
-          <DailyLog log={log} />
+          <DailyLog log={log} suppressDisasterStyling={isDisaster && !revealed} />
+
+          {showDisasterChrome && (
+            <DisasterBanner log={log} animate={animateReveal && !reducedMotion} />
+          )}
         </div>
 
         <button
