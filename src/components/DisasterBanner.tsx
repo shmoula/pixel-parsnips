@@ -43,6 +43,10 @@ export function DisasterBanner({ log, animate = false }: DisasterBannerProps) {
 
   return (
     <div
+      // The banner is inserted into the DOM after the staged reveal delay, so a screen
+      // reader needs a live region to announce the disaster (the close button is auto-focused).
+      role="alert"
+      aria-live="assertive"
       aria-label="Disaster"
       className={[
         'flex items-center gap-3 mt-2 px-3 py-3 rounded-lg',

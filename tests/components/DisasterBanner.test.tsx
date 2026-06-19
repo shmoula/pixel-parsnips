@@ -59,6 +59,15 @@ describe('DisasterBanner', () => {
     expect(banner).toHaveTextContent(/half speed/i);
   });
 
+  it('exposes the banner as an assertive live region so the staged reveal is announced', () => {
+    render(<DisasterBanner log={makeLog({ weatherId: 'blight' })} />);
+    const banner = screen.getByRole('alert');
+    // Still findable by the aria-label the modal/banner tests rely on.
+    expect(banner).toBe(screen.getByLabelText(/disaster/i));
+    // role="alert" implies an assertive live region; be explicit in case it changes.
+    expect(banner).toHaveAttribute('aria-live', 'assertive');
+  });
+
   it('passes axe accessibility checks', async () => {
     const { container } = render(
       <DisasterBanner log={makeLog({ weatherId: 'blight' })} />,
