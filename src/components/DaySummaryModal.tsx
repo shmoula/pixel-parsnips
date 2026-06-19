@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import type { DailyLogEntry } from '../engine/types';
-import { DailyLog, DISASTER_WEATHER_IDS } from './DailyLog';
+import { DailyLog } from './DailyLog';
 import { DisasterBanner } from './DisasterBanner';
-import { useReducedMotion } from '../hooks/useReducedMotion';
+import { useDisasterReveal } from '../hooks/useDisasterReveal';
 
 interface DaySummaryModalProps {
   log: DailyLogEntry;
@@ -13,24 +13,10 @@ interface DaySummaryModalProps {
   animateReveal?: boolean;
 }
 
-const REVEAL_DELAY_MS = 700;
-
 export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySummaryModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const reducedMotion = useReducedMotion();
-
-  const isDisaster = DISASTER_WEATHER_IDS.has(log.weatherId);
+  const { showDisasterChrome, suppressDisasterStyling, animate } = useDisasterReveal(log, animateReveal);
   const isQuietDay = log.harvests.length === 0 && log.totalHarvestIncome === 0;
-
-  // Stage the reveal only on a fresh disaster open with motion allowed.
-  const shouldStage = isDisaster && animateReveal && !reducedMotion;
-  const [revealed, setRevealed] = useState(!shouldStage);
-
-  useEffect(() => {
-    if (!shouldStage) return;
-    const id = window.setTimeout(() => setRevealed(true), REVEAL_DELAY_MS);
-    return () => window.clearTimeout(id);
-  }, [shouldStage]);
 
   useEffect(() => {
     closeButtonRef.current?.focus();
@@ -40,9 +26,6 @@ export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySumma
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
-
-  // Disaster chrome (red bg + badge + banner) is shown once revealed.
-  const showDisasterChrome = isDisaster && revealed;
 
   return ReactDOM.createPortal(
     <div
@@ -70,10 +53,10 @@ export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySumma
             </p>
           )}
 
-          <DailyLog log={log} suppressDisasterStyling={isDisaster && !revealed} />
+          <DailyLog log={log} suppressDisasterStyling={suppressDisasterStyling} />
 
           {showDisasterChrome && (
-            <DisasterBanner log={log} animate={animateReveal && !reducedMotion} />
+            <DisasterBanner log={log} animate={animate} />
           )}
         </div>
 
