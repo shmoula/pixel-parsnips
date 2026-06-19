@@ -195,6 +195,15 @@ describe('DisasterBanner', () => {
     expect(banner).toHaveTextContent(/half speed/i);
   });
 
+  it('exposes the banner as an assertive live region so the staged reveal is announced', () => {
+    render(<DisasterBanner log={makeLog({ weatherId: 'blight' })} />);
+    const banner = screen.getByRole('alert');
+    // Still findable by the aria-label the modal/banner tests rely on.
+    expect(banner).toBe(screen.getByLabelText(/disaster/i));
+    // role="alert" implies an assertive live region; be explicit in case it changes.
+    expect(banner).toHaveAttribute('aria-live', 'assertive');
+  });
+
   it('passes axe accessibility checks', async () => {
     const { container } = render(
       <DisasterBanner log={makeLog({ weatherId: 'blight' })} />,
@@ -260,6 +269,10 @@ export function DisasterBanner({ log, animate = false }: DisasterBannerProps) {
 
   return (
     <div
+      // The banner is inserted after the reveal delay; the screen reader needs a
+      // live region to announce the disaster (the close button is auto-focused).
+      role="alert"
+      aria-live="assertive"
       aria-label="Disaster"
       className={[
         'flex items-center gap-3 mt-2 px-3 py-3 rounded-lg',
@@ -529,12 +542,12 @@ Expected: FAIL — `animateReveal` prop is not accepted and there is no `Disaste
 Replace the full contents of `src/components/DaySummaryModal.tsx`:
 
 ```tsx
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import type { DailyLogEntry } from '../engine/types';
-import { DailyLog, DISASTER_WEATHER_IDS } from './DailyLog';
+import { DailyLog } from './DailyLog';
 import { DisasterBanner } from './DisasterBanner';
-import { useReducedMotion } from '../hooks/useReducedMotion';
+import { useDisasterReveal } from '../hooks/useDisasterReveal';
 
 interface DaySummaryModalProps {
   log: DailyLogEntry;
@@ -544,24 +557,12 @@ interface DaySummaryModalProps {
   animateReveal?: boolean;
 }
 
-const REVEAL_DELAY_MS = 700;
-
 export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySummaryModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const reducedMotion = useReducedMotion();
-
-  const isDisaster = DISASTER_WEATHER_IDS.has(log.weatherId);
+  // The staged "dread-then-hit" reveal lives in its own hook (keeps this component
+  // under the cyclomatic-complexity lint gate).
+  const { showDisasterChrome, suppressDisasterStyling, animate } = useDisasterReveal(log, animateReveal);
   const isQuietDay = log.harvests.length === 0 && log.totalHarvestIncome === 0;
-
-  // Stage the reveal only on a fresh disaster open with motion allowed.
-  const shouldStage = isDisaster && animateReveal && !reducedMotion;
-  const [revealed, setRevealed] = useState(!shouldStage);
-
-  useEffect(() => {
-    if (!shouldStage) return;
-    const id = window.setTimeout(() => setRevealed(true), REVEAL_DELAY_MS);
-    return () => window.clearTimeout(id);
-  }, [shouldStage]);
 
   useEffect(() => {
     closeButtonRef.current?.focus();
@@ -571,9 +572,6 @@ export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySumma
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
-
-  // Disaster chrome (red bg + badge + banner) is shown once revealed.
-  const showDisasterChrome = isDisaster && revealed;
 
   return ReactDOM.createPortal(
     <div
@@ -601,10 +599,10 @@ export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySumma
             </p>
           )}
 
-          <DailyLog log={log} suppressDisasterStyling={isDisaster && !revealed} />
+          <DailyLog log={log} suppressDisasterStyling={suppressDisasterStyling} />
 
           {showDisasterChrome && (
-            <DisasterBanner log={log} animate={animateReveal && !reducedMotion} />
+            <DisasterBanner log={log} animate={animate} />
           )}
         </div>
 

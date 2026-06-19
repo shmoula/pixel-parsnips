@@ -81,6 +81,9 @@ animation entirely and render the resolved state immediately (equivalent to the
   icon + text per the table in §2.
 - For `pest_infestation`, renders one line per id in `pestDestroyedPlots`.
 - Animations apply only under `prefers-reduced-motion: no-preference`.
+- The banner container must include `role="alert"` and `aria-live="assertive"` so
+  screen readers announce the banner when it appears after the reveal delay,
+  ensuring accessibility for users relying on assistive technology.
 
 ### Changed — `src/components/DailyLog.tsx`
 
@@ -136,7 +139,9 @@ handful of one-off keyframes.
 Vitest + Testing Library, following `tests/components/DailyLog.test.tsx`.
 
 - **`DisasterBanner`**: renders the correct icon + text for each of the three disaster
-  types; the pest banner renders one line per id in `pestDestroyedPlots`.
+  types; the pest banner renders one line per id in `pestDestroyedPlots`. Verify the
+  banner includes `role="alert"` and `aria-live="assertive"` so screen readers announce
+  the delayed insertion; run an axe accessibility audit to confirm no violations.
 - **`DailyLog`**: no longer renders the old inline flash-drought / pest-destroyed
   lines; the exhaustion line still renders.
 - **`DaySummaryModal`**:
