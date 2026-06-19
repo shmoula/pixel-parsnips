@@ -51,6 +51,7 @@ export function GameBoard({
   // T010 — Day Summary modal state
   const [daySummary, setDaySummary] = useState<DailyLogEntry | null>(null);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [summaryAnimate, setSummaryAnimate] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   // Ref flag: set true when we want the next lastDailyLog update to open the modal
   const awaitingModalRef = useRef(false);
@@ -61,6 +62,7 @@ export function GameBoard({
     if (awaitingModalRef.current && lastDailyLog !== null) {
       awaitingModalRef.current = false;
       setDaySummary(lastDailyLog);
+      setSummaryAnimate(true);
       setIsSummaryOpen(true);
       setIsProcessing(false);
     }
@@ -107,7 +109,10 @@ export function GameBoard({
         coinBalance={state.coinBalance}
         onToggleShop={toggleShop}
         onNextDay={handleNextDay}
-        onLastTurn={() => setIsSummaryOpen(true)}
+        onLastTurn={() => {
+          setSummaryAnimate(false);
+          setIsSummaryOpen(true);
+        }}
         isProcessing={isProcessing}
         hasLastTurn={lastDailyLog !== null}
         endlessMode={state.endlessMode}
@@ -200,6 +205,7 @@ export function GameBoard({
       {isSummaryOpen && daySummary !== null && (
         <DaySummaryModal
           log={daySummary}
+          animateReveal={summaryAnimate}
           onClose={() => setIsSummaryOpen(false)}
         />
       )}

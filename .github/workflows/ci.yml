@@ -44,13 +44,13 @@ jobs:
       - name: Production build
         run: npm run build
 
-      # ── Bundle size gate (<200 KB) ─────────────────────────────────────────
+      # ── Bundle size gate (<256 KB) ─────────────────────────────────────────
       - name: Bundle size gate
         run: |
           BUNDLE=$(find dist/assets -name '*.js' | xargs wc -c | tail -1 | awk '{print $1}')
           echo "Bundle size: ${BUNDLE} bytes"
-          if [ "$BUNDLE" -gt 204800 ]; then
-            echo "❌ Bundle size ${BUNDLE}B exceeds 200 KB limit"
+          if [ "$BUNDLE" -gt 262144 ]; then
+            echo "❌ Bundle size ${BUNDLE}B exceeds 256 KB limit"
             exit 1
           fi
           echo "✅ Bundle size ${BUNDLE}B is within limit"

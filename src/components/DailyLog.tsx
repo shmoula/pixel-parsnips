@@ -4,6 +4,9 @@ import { announceText, activeText } from '../engine/market';
 
 interface DailyLogProps {
   log: DailyLogEntry;
+  /** When true, the weather badge renders without disaster (red) styling — used while
+      the Day Summary reveal is still pending so the disaster is not spoiled early. */
+  suppressDisasterStyling?: boolean;
 }
 
 const WEATHER_EMOJI: Record<string, string> = {
@@ -85,7 +88,7 @@ function MarketLines({ log }: { log: DailyLogEntry }) {
   );
 }
 
-export function DailyLog({ log }: DailyLogProps) {
+export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps) {
   const weather = WEATHER_DEFINITIONS[log.weatherId];
   return (
     <section
@@ -97,7 +100,7 @@ export function DailyLog({ log }: DailyLogProps) {
       {/* Weather badge — disaster events get red/amber styling */}
       <div
         className={
-          DISASTER_WEATHER_IDS.has(log.weatherId)
+          DISASTER_WEATHER_IDS.has(log.weatherId) && !suppressDisasterStyling
             ? 'flex items-center gap-1 px-2 py-1 rounded bg-farm-red/20 border border-farm-red/40'
             : 'flex items-center gap-1 px-2 py-1 rounded bg-farm-parchment/20'
         }
@@ -116,26 +119,6 @@ export function DailyLog({ log }: DailyLogProps) {
             <div key={h.plotId} className="flex justify-between text-farm-stone">
               <span>Plot {h.plotId + 1} {h.cropId}</span>
               <span className="text-farm-grass">+{h.adjustedYield}🪙</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Flash Drought announcement */}
-      {log.weatherId === 'flash_drought' && (
-        <div className="flex items-center gap-1 px-2 py-1 rounded bg-farm-red/20 border border-farm-red/40 text-farm-parchment font-pixel">
-          <span aria-hidden="true">☀️🔥</span>
-          <span>Flash Drought! Crops planted in the next 2 days grow at half speed.</span>
-        </div>
-      )}
-
-      {/* Pest destroyed plots */}
-      {log.pestDestroyedPlots.length > 0 && (
-        <div className="flex flex-col gap-1">
-          {log.pestDestroyedPlots.map(plotId => (
-            <div key={plotId} className="flex items-center gap-1 text-farm-stone">
-              <span aria-hidden="true">🐛</span>
-              <span>Plot #{plotId + 1} destroyed by pests.</span>
             </div>
           ))}
         </div>
