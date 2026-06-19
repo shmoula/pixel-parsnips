@@ -57,7 +57,7 @@ export function DisasterBanner({ log, animate = false }: DisasterBannerProps) {
     >
       <span
         aria-hidden="true"
-        className={['text-2xl leading-none', animate ? 'disaster-icon-anim' : ''].filter(Boolean).join(' ')}
+        className={['inline-block text-2xl leading-none', animate ? 'disaster-icon-anim' : ''].filter(Boolean).join(' ')}
       >
         {icon}
       </span>
