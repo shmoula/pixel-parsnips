@@ -120,6 +120,8 @@ export function OnboardingOverlay({ step, harvestIncome, onStart, onSkip, onDism
             />
           )}
           <div
+            role="status"
+            aria-live="polite"
             className="pointer-events-auto absolute max-w-[220px] bg-farm-soil border border-farm-gold/50 rounded-lg px-3 py-2"
             style={
               rect

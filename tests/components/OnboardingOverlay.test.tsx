@@ -50,4 +50,65 @@ describe('OnboardingOverlay', () => {
     );
     expect(screen.getByText(/fill every plot/i)).toBeInTheDocument();
   });
+
+  it('omits the pulse animation on the highlight ring under reduced motion', () => {
+    // Force prefers-reduced-motion: reduce
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      onchange: null,
+      dispatchEvent: () => false,
+    }));
+
+    // The 'advance' step anchors to [data-onboarding="next-day"]; insert it so the ring renders.
+    const anchor = document.createElement('button');
+    anchor.setAttribute('data-onboarding', 'next-day');
+    document.body.appendChild(anchor);
+
+    const { container } = render(
+      <OnboardingOverlay step="advance" harvestIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+
+    const ring = container.querySelector('.ring-farm-gold');
+    expect(ring).toBeTruthy();
+    expect(ring!.className).not.toContain('animate-pulse');
+
+    document.body.removeChild(anchor);
+    vi.unstubAllGlobals();
+  });
+
+  it('includes the pulse animation on the highlight ring when motion is allowed', () => {
+    // matchMedia returns matches: false for reduced-motion query (motion allowed)
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      onchange: null,
+      dispatchEvent: () => false,
+    }));
+
+    const anchor = document.createElement('button');
+    anchor.setAttribute('data-onboarding', 'next-day');
+    document.body.appendChild(anchor);
+
+    const { container } = render(
+      <OnboardingOverlay step="advance" harvestIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+
+    const ring = container.querySelector('.ring-farm-gold');
+    expect(ring).toBeTruthy();
+    expect(ring!.className).toContain('animate-pulse');
+
+    document.body.removeChild(anchor);
+    vi.unstubAllGlobals();
+  });
 });
