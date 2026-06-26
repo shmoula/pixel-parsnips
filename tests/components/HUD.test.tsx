@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { HUD } from '../../src/components/HUD';
@@ -9,6 +10,7 @@ const baseProps = {
   isProcessing: false,
   hasLastTurn: false,
   endlessMode: false,
+  canAdvanceProductively: true,
 };
 
 describe('HUD — Season indicator (US1)', () => {
@@ -92,5 +94,46 @@ describe('HUD — reputation chip', () => {
   it('shows "Seasoned Grower" on Day 14', () => {
     render(<HUD {...baseProps} currentDay={14} coinBalance={100} />);
     expect(screen.getByLabelText(/reputation/i)).toHaveTextContent(/Seasoned Grower/i);
+  });
+});
+
+function renderHUD(over: Partial<React.ComponentProps<typeof HUD>> = {}) {
+  render(
+    <HUD
+      currentDay={1}
+      coinBalance={130}
+      onToggleShop={vi.fn()}
+      onNextDay={vi.fn()}
+      onLastTurn={vi.fn()}
+      isProcessing={false}
+      hasLastTurn={false}
+      endlessMode={false}
+      harvestStreak={0}
+      canAdvanceProductively={true}
+      {...over}
+    />,
+  );
+}
+
+describe('HUD — empty-day safeguard label', () => {
+  it('shows the normal Next Day label when advancing is productive', () => {
+    renderHUD({ canAdvanceProductively: true });
+    expect(screen.getByRole('button', { name: /advance to next day/i })).toHaveTextContent(/next day/i);
+  });
+
+  it('warns to plant first when advancing is unproductive', () => {
+    renderHUD({ canAdvanceProductively: false });
+    expect(screen.getByText(/plant seeds first/i)).toBeInTheDocument();
+  });
+
+  it('marks the shop, next-day, and balance anchors', () => {
+    const { container } = render(
+      <HUD currentDay={1} coinBalance={130} onToggleShop={vi.fn()} onNextDay={vi.fn()}
+        onLastTurn={vi.fn()} isProcessing={false} hasLastTurn={false} endlessMode={false}
+        harvestStreak={0} canAdvanceProductively={true} />,
+    );
+    expect(container.querySelector('[data-onboarding="shop-button"]')).toBeTruthy();
+    expect(container.querySelector('[data-onboarding="next-day"]')).toBeTruthy();
+    expect(container.querySelector('[data-onboarding="balance-chip"]')).toBeTruthy();
   });
 });
