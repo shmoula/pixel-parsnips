@@ -598,6 +598,17 @@ export function getNextPlotPrice(state: GameState, config: EconomyConfig = DEFAU
   return config.plotPrices[state.unlockedPlots - config.startingPlots] ?? null;
 }
 
+/**
+ * True when advancing a day can produce value: a seed is held in inventory OR
+ * a crop is growing on a plot. False means advancing only burns lease + tax
+ * (the empty-day bankruptcy trap) and the UI should warn first.
+ */
+export function canAdvanceProductively(state: GameState): boolean {
+  const hasSeed = (Object.values(state.seedInventory) as number[]).some(n => n > 0);
+  const hasGrowingCrop = state.plots.some(p => p.cropId !== null);
+  return hasSeed || hasGrowingCrop;
+}
+
 /** Unlocks the next farm plot at its escalating price. Pure — no mutations. */
 export function buyPlot(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): BuyPlotResult {
   if (state.unlockedPlots >= config.maxPlots) {
