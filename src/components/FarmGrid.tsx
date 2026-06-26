@@ -79,7 +79,7 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, unloc
 
       {/* Farm plots grid */}
       <section aria-label="Farm plots">
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-6">
+        <div data-onboarding="farm-grid" className="grid grid-cols-4 gap-2 md:grid-cols-6">
           {plots.map(plot => {
             const locked = plot.id >= (unlockedPlots ?? plots.length);
             const isNextPurchasable = plot.id === (unlockedPlots ?? plots.length);

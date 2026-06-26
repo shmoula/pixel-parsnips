@@ -23,6 +23,22 @@ interface SeedCardProps {
   isSelected: boolean;
   /** Active market event for THIS crop, if any (drives the price-direction badge). */
   marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number };
+  dimmed?: boolean;
+}
+
+/** Build the card root className given selection + dim state. */
+function seedCardClass(isSelected: boolean, dimmed: boolean | undefined): string {
+  return [
+    'flex flex-col gap-1 p-3 rounded-lg border transition-all',
+    'bg-[#261808]',
+    isSelected ? 'border-farm-gold ring-2 ring-farm-gold' : 'border-[#5C3D1E]/60',
+    dimmed ? 'opacity-40' : '',
+  ].join(' ');
+}
+
+/** data-onboarding anchor value for a seed card, if any. */
+function seedCardAnchor(cropId: CropId): string | undefined {
+  return cropId === 'radish' ? 'shop-radish' : undefined;
 }
 
 /** Build the price-direction badge label, or null when there is no event. */
@@ -98,6 +114,7 @@ export function SeedCard({
   canAfford,
   isSelected,
   marketEvent,
+  dimmed,
 }: SeedCardProps) {
   const crop = CROP_DEFINITIONS[cropId];
   const disabled = !canAfford;
@@ -108,13 +125,8 @@ export function SeedCard({
   return (
     // T018c — active border: gold ring instead of grass
     <div
-      className={[
-        'flex flex-col gap-1 p-3 rounded-lg border transition-all',
-        'bg-[#261808]',
-        isSelected
-          ? 'border-farm-gold ring-2 ring-farm-gold'
-          : 'border-[#5C3D1E]/60',
-      ].join(' ')}
+      data-onboarding={seedCardAnchor(cropId)}
+      className={seedCardClass(isSelected, dimmed)}
       style={{ borderLeftColor: CROP_ACCENT[cropId], borderLeftWidth: '3px' }}
     >
       <div className="flex items-center justify-between">

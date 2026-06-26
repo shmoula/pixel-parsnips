@@ -18,6 +18,7 @@ interface ShopProps {
   onBuyFertilizer: () => void;
   getNextUpgradeCost: () => number | null;
   marketActive: ActiveMarketEvent | null;
+  dimNonRadish?: boolean;
 }
 
 export function Shop({
@@ -33,6 +34,7 @@ export function Shop({
   onBuyFertilizer,
   getNextUpgradeCost,
   marketActive,
+  dimNonRadish,
 }: ShopProps) {
   const nextUpgradeCost = getNextUpgradeCost();
 
@@ -76,6 +78,7 @@ export function Shop({
                     ? { kind: marketActive.kind, multiplier: marketActive.multiplier }
                     : undefined
                 }
+                dimmed={dimNonRadish === true && cropId !== 'radish'}
               />
             );
           })}

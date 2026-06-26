@@ -5,6 +5,7 @@ import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
 import { GameBoard } from '../../src/components/GameBoard';
 import { PlotCard } from '../../src/components/PlotCard';
 import { initialGameState } from '../../src/engine/gameEngine';
+import { markOnboardingComplete } from '../../src/engine/onboarding';
 import type { DailyLogEntry, PlotState } from '../../src/engine/types';
 import type { PersonalBests } from '../../src/engine/records';
 
@@ -103,6 +104,7 @@ const sampleLog: DailyLogEntry = {
 describe('GameBoard — smoke tests (T047)', () => {
   beforeEach(() => {
     localStorage.clear();
+    markOnboardingComplete();
   });
 
   it('renders HUD with game status header', () => {
@@ -222,6 +224,7 @@ describe('PlotCard — FR-014: consecutiveHarvests never rendered (T022)', () =>
 describe('GameBoard — WCAG with exhausted plot (T023/T024)', () => {
   beforeEach(() => {
     localStorage.clear();
+    markOnboardingComplete();
   });
 
   it('passes WCAG 2.1 AA axe check — GameBoard with exhausted plot', async () => {
@@ -247,6 +250,7 @@ describe('GameBoard — WCAG with exhausted plot (T023/T024)', () => {
 describe('GameBoard — Flash Drought banner (T027, FR-010)', () => {
   beforeEach(() => {
     localStorage.clear();
+    markOnboardingComplete();
   });
 
   it('renders Flash Drought banner when flashDroughtDaysRemaining > 0', () => {
