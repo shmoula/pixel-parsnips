@@ -45,6 +45,7 @@
 | F2 | **Juice pass — disaster reveal** — reveal disasters last in Day Summary; pest "scurrying" animation; Blight uses heavier visual weight | Medium | S–M | p2·E | Small modal-order change + a couple animations. Maximizes "dread-then-hit" moment. |
 | F3 | **Juice pass — weather flavor** — distinct background tint per weather type in modal | Low | S | p2·E | Pure CSS/animation work. Low effort, low-but-cumulative impact. |
 | F4 | **Bankruptcy "final day" sequence** — at 0–14 coins trigger a dramatic last-day playthrough instead of immediate end | Low | M | p2·E | Adds cinematic closure to runs. Requires state-machine work to defer end-of-run logic. |
+| F5 | ✅ **Player onboarding ("Your First Harvest")** — first-run guided overlay (fill plots with radishes → advance → payoff) + always-on empty-day safeguard + run-end "Replay tutorial". | High | M | UI.md #5 → shipped as [014-player-onboarding](specs/014-player-onboarding/spec.md) | **DONE.** Own localStorage key (survives Restart); turn-1 weather pinned safe; analytics deferred to A1. |
 
 ---
 
@@ -112,4 +113,4 @@ M1 Rewarded Ads → M2 Founder's Pack → M3 Cosmetic Themes → (later) M4/M5
 
 ---
 
-*Generated 2026-06-02 from p1–p6 analyses. Updated 2026-06-03 after shipping 006-season-system, then 2026-06-04 after shipping 007-enriched-run-summary, then 2026-06-05 after deferring G4 (Daily Objectives / Milestones / Contracts), then 2026-06-08 after shipping 009-balance-simulator (tooling) + 010-plot-progression-rebalance (G10 plot unlocking + simulator-tuned economy), then 2026-06-16 after shipping 011-farm-reputation-tier (G13), then 2026-06-17 after shipping 012-market-events (G7).*
+*Generated 2026-06-02 from p1–p6 analyses. Updated 2026-06-03 after shipping 006-season-system, then 2026-06-04 after shipping 007-enriched-run-summary, then 2026-06-05 after deferring G4 (Daily Objectives / Milestones / Contracts), then 2026-06-08 after shipping 009-balance-simulator (tooling) + 010-plot-progression-rebalance (G10 plot unlocking + simulator-tuned economy), then 2026-06-16 after shipping 011-farm-reputation-tier (G13), then 2026-06-17 after shipping 012-market-events (G7), then 2026-06-26 after shipping 014-player-onboarding (F5).*

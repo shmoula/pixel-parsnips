@@ -15,6 +15,7 @@ interface BankruptcyScreenProps {
   newBests: Set<keyof PersonalBests>;
   lastDailyLog?: DailyLogEntry | null;
   onRestart: () => void;
+  onReplayTutorial: () => void;
 }
 
 function deriveInsight(
@@ -76,6 +77,7 @@ export function BankruptcyScreen({
   newBests,
   lastDailyLog,
   onRestart,
+  onReplayTutorial,
 }: BankruptcyScreenProps) {
   const season = getSeasonForDay(daysPlayed);
   const insight = deriveInsight(lastDailyLog, daysPlayed, peakBalance);
@@ -153,19 +155,33 @@ export function BankruptcyScreen({
         <p className="font-pixel text-xs text-farm-parchment leading-relaxed">{insight}</p>
       </div>
 
-      <button
-        type="button"
-        aria-label="Restart game"
-        onClick={onRestart}
-        className="
-          px-8 py-3 rounded-lg font-pixel text-sm
-          bg-farm-grass text-farm-parchment
-          hover:bg-farm-gold hover:text-farm-ink
-          transition-colors mt-2
-        "
-      >
-        Restart
-      </button>
+      <div className="flex flex-col gap-2 w-full max-w-xs mt-2">
+        <button
+          type="button"
+          aria-label="Restart game"
+          onClick={onRestart}
+          className="
+            px-8 py-3 rounded-lg font-pixel text-sm
+            bg-farm-grass text-farm-parchment
+            hover:bg-farm-gold hover:text-farm-ink
+            transition-colors
+          "
+        >
+          Restart
+        </button>
+        <button
+          type="button"
+          aria-label="Replay tutorial"
+          onClick={onReplayTutorial}
+          className="
+            px-8 py-2 rounded-lg font-pixel text-[10px]
+            bg-farm-ink text-farm-parchment border border-farm-stone/40
+            hover:bg-farm-soil transition-colors
+          "
+        >
+          Replay tutorial
+        </button>
+      </div>
     </div>
   );
 }
