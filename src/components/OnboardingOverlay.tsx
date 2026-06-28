@@ -13,7 +13,7 @@ interface Props {
 /** Anchor selector + short copy for each anchored step. */
 const ANCHORS: Partial<Record<OnboardingStep, { selector: string; copy: string }>> = {
   'open-shop':    { selector: '[data-onboarding="shop-button"]', copy: 'Pop open the shop.' },
-  'buy-radishes': { selector: '[data-onboarding="shop-radish"]', copy: 'Radishes sprout overnight — grab one per plot.' },
+  'buy-radishes': { selector: '[data-onboarding="shop-radish"]', copy: 'Radishes sprout overnight — grab 4, one for each open plot.' },
   'plant':        { selector: '[data-onboarding="farm-grid"]',   copy: 'Fill every plot — more crops, more coins.' },
   'advance':      { selector: '[data-onboarding="next-day"]',    copy: 'Sleep on it — advance a day.' },
 };
