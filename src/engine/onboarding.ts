@@ -33,7 +33,9 @@ export function loadOnboarding(): OnboardingRecord {
   try {
     const raw = localStorage.getItem(ONBOARDING_KEY);
     if (!raw) return { ...DEFAULT_RECORD };
-    const parsed = JSON.parse(raw) as Partial<OnboardingRecord>;
+    const parsed = JSON.parse(raw) as Partial<OnboardingRecord> | null;
+    // Reject unknown/missing schema versions rather than silently treating them as v1.
+    if (!parsed || parsed.schemaVersion !== 1) return { ...DEFAULT_RECORD };
     return {
       schemaVersion: 1,
       completed: parsed.completed === true,

@@ -24,6 +24,8 @@ interface SeedCardProps {
   /** Active market event for THIS crop, if any (drives the price-direction badge). */
   marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number };
   dimmed?: boolean;
+  /** When true, BUY/Plant are disabled (e.g. non-radish cards during the tutorial buy step). */
+  interactionDisabled?: boolean;
 }
 
 /** Build the card root className given selection + dim state. */
@@ -115,9 +117,10 @@ export function SeedCard({
   isSelected,
   marketEvent,
   dimmed,
+  interactionDisabled,
 }: SeedCardProps) {
   const crop = CROP_DEFINITIONS[cropId];
-  const disabled = !canAfford;
+  const disabled = !canAfford || interactionDisabled === true;
 
   // G7 — price-direction badge for an active market event on this crop
   const marketLabel = formatMarketBadge(marketEvent);
@@ -178,6 +181,7 @@ export function SeedCard({
           type="button"
           aria-label={`Select ${crop.name} seed to plant`}
           aria-pressed={isSelected}
+          disabled={interactionDisabled === true}
           onClick={() => onSelect(cropId)}
           className={`
             w-full py-1 rounded font-pixel text-xs transition-colors

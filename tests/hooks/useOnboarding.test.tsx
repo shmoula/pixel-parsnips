@@ -92,6 +92,18 @@ describe('useOnboarding — advancement', () => {
     expect(loadOnboarding().completed).toBe(true);
   });
 
+  it('resumes at a persisted intermediate step after refresh', () => {
+    // Player got as far as buying radishes last session; nothing planted yet.
+    localStorage.setItem(
+      'pixel-parsnips-onboarding',
+      JSON.stringify({ schemaVersion: 1, completed: false, step: 'buy-radishes' }),
+    );
+    const { result } = renderHook(() => useOnboarding(day1(), { isShopVisible: true }));
+    expect(result.current.active).toBe(true);
+    // Resumes at buy-radishes — neither restarting at welcome nor skipping ahead.
+    expect(result.current.step).toBe('buy-radishes');
+  });
+
   it('shouldPinWeather is true only on the advance step', () => {
     const state = plantAll(day1());
     localStorage.setItem(

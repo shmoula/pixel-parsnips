@@ -79,6 +79,7 @@ export function Shop({
                     : undefined
                 }
                 dimmed={dimNonRadish === true && cropId !== 'radish'}
+                interactionDisabled={dimNonRadish === true && cropId !== 'radish'}
               />
             );
           })}

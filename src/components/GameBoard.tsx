@@ -114,6 +114,7 @@ export function GameBoard({
   const onboarding = useOnboarding(state, { isShopVisible });
   const canAdvance = canAdvanceProductively(state);
   const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
+  const [hasConfirmedEmptyDay, setHasConfirmedEmptyDay] = useState(false);
 
   // T010 — When the parent re-renders with a new lastDailyLog after onNextDay(),
   // open the Day Summary modal with that log.
@@ -148,7 +149,7 @@ export function GameBoard({
 
   function handleNextDay() {
     if (isProcessing) return;
-    if (!canAdvance) { setShowEmptyConfirm(true); return; }
+    if (!canAdvance && !hasConfirmedEmptyDay) { setShowEmptyConfirm(true); return; }
     doAdvance();
   }
 
@@ -276,7 +277,11 @@ export function GameBoard({
       {showEmptyConfirm && (
         <EmptyDayConfirm
           onCancel={() => setShowEmptyConfirm(false)}
-          onAdvance={() => { setShowEmptyConfirm(false); doAdvance(); }}
+          onAdvance={() => {
+            setShowEmptyConfirm(false);
+            setHasConfirmedEmptyDay(true);
+            doAdvance();
+          }}
         />
       )}
     </div>

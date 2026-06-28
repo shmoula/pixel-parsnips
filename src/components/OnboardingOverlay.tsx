@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState, type CSSProperties } from 'react';
 import type { OnboardingStep } from '../engine/onboarding';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 
@@ -17,6 +17,28 @@ const ANCHORS: Partial<Record<OnboardingStep, { selector: string; copy: string }
   'plant':        { selector: '[data-onboarding="farm-grid"]',   copy: 'Fill every plot — more crops, more coins.' },
   'advance':      { selector: '[data-onboarding="next-day"]',    copy: 'Sleep on it — advance a day.' },
 };
+
+/** Approximate bubble footprint used for viewport clamping (max-w-[220px] + padding). */
+const BUBBLE_WIDTH = 220;
+const BUBBLE_HEIGHT = 64;
+const EDGE_MARGIN = 8;
+
+/**
+ * Place the copy bubble near the anchor while keeping it fully on-screen: clamp the
+ * left edge within the viewport, and flip above the anchor when there's no room below.
+ */
+function bubbleStyle(rect: DOMRect): CSSProperties {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const left = Math.min(
+    Math.max(EDGE_MARGIN, rect.left),
+    Math.max(EDGE_MARGIN, vw - BUBBLE_WIDTH - EDGE_MARGIN),
+  );
+  const fitsBelow = rect.bottom + 10 + BUBBLE_HEIGHT + EDGE_MARGIN <= vh;
+  return fitsBelow
+    ? { left, top: rect.bottom + 10 }
+    : { left, top: rect.top - 10, transform: 'translateY(-100%)' };
+}
 
 function useAnchorRect(selector: string | null): DOMRect | null {
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -44,6 +66,7 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
       onClick={onSkip}
       aria-label="Skip tutorial"
       className="fixed bottom-3 right-3 z-[60] font-pixel text-[10px] px-3 py-1.5 rounded
+                 pointer-events-auto
                  bg-farm-ink/90 text-farm-parchment border border-farm-stone/40
                  hover:bg-farm-ink"
     >
@@ -125,7 +148,7 @@ export function OnboardingOverlay({ step, harvestIncome, onStart, onSkip, onDism
             className="pointer-events-auto absolute max-w-[220px] bg-farm-soil border border-farm-gold/50 rounded-lg px-3 py-2"
             style={
               rect
-                ? { left: Math.max(8, rect.left), top: rect.bottom + 10 }
+                ? bubbleStyle(rect)
                 : { left: '50%', bottom: 24, transform: 'translateX(-50%)' }
             }
           >
