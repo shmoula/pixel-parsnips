@@ -47,7 +47,7 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
                  bg-farm-ink/90 text-farm-parchment border border-farm-stone/40
                  hover:bg-farm-ink"
     >
-      Skip ✕
+      Skip <span aria-hidden="true">✕</span>
     </button>
   );
 }

@@ -147,8 +147,9 @@ describe('GameBoard — smoke tests (T047)', () => {
 
   it('"Next Day" button is rendered and enabled initially', () => {
     render(<GameBoard {...makeGameBoardProps()} />);
+    // Initial state has nothing planted, so the button shows the empty-day safeguard label.
     expect(
-      screen.getByRole('button', { name: /advance to next day/i })
+      screen.getByRole('button', { name: /plant seeds first/i })
     ).not.toBeDisabled();
   });
 

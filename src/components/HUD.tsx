@@ -25,11 +25,12 @@ function getBalanceBorderClass(danger: DangerLevel): string {
 }
 
 function getNextDayLabel(canAdvanceProductively: boolean): string {
-  return canAdvanceProductively ? 'Advance to next day' : 'Advance to next day — nothing planted';
+  // Accessible name must contain the button's visible text (axe label-content-name-mismatch).
+  return canAdvanceProductively ? 'Advance to next day' : 'Plant seeds first — nothing planted yet';
 }
 
 function getNextDayText(canAdvanceProductively: boolean): string {
-  return canAdvanceProductively ? 'Next Day →' : 'Plant seeds first →';
+  return canAdvanceProductively ? 'Next Day' : 'Plant seeds first';
 }
 
 function getBalanceTextClass(danger: DangerLevel, targetMet: boolean): string {
@@ -192,7 +193,7 @@ export function HUD({
             active:enabled:scale-95 disabled:opacity-50 transition-all
           "
         >
-          {nextDayText}
+          {nextDayText} <span aria-hidden="true">→</span>
         </button>
       </div>
 
