@@ -22,6 +22,7 @@ import type {
   MarketEvent,
   ActiveMarketEvent,
   MarketEventKind,
+  WeatherId,
 } from './types';
 import { recordRunEnd, type PersonalBests } from './records';
 import { deriveMedal, type Medal } from './medals';
@@ -210,7 +211,7 @@ export interface GameEngineHook {
   state: GameState;
   lastDailyLog: DailyLogEntry | null;
   endOfRunRecap: EndOfRunRecap | null;
-  nextDay: () => void;
+  nextDay: (weatherOverride?: WeatherId) => void;
   plantSeed: (plotId: number, cropId: CropId) => boolean;
   buySeed: (cropId: CropId, quantity: number) => boolean;
   buyUpgrade: () => boolean;
@@ -277,9 +278,9 @@ export function useGameEngine(): GameEngineHook {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, state.endlessMode, state.currentDay, state.peakBalance, state.disastersSurvived]);
 
-  const nextDay = useCallback(() => {
+  const nextDay = useCallback((weatherOverride?: WeatherId) => {
     setState(prev => {
-      return processTurn(prev).state;
+      return processTurn(prev, weatherOverride).state;
     });
   }, []);
 

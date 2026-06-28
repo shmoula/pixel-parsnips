@@ -2,6 +2,7 @@ import { useGameEngine } from './engine/useGameEngine';
 import { GameBoard } from './components/GameBoard';
 import { BankruptcyScreen } from './components/BankruptcyScreen';
 import { SeasonTransitionModal } from './components/SeasonTransitionModal';
+import { requestOnboardingReplay } from './engine/onboarding';
 import type { PersonalBests } from './engine/records';
 
 function GrainFilter() {
@@ -53,6 +54,7 @@ function App() {
           newBests={newBests}
           lastDailyLog={state.lastDailyLog}
           onRestart={restart}
+          onReplayTutorial={() => { requestOnboardingReplay(); restart(); }}
         />
       </>
     );

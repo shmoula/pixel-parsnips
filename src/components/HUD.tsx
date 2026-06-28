@@ -24,6 +24,15 @@ function getBalanceBorderClass(danger: DangerLevel): string {
   return 'border-[#5C3D1E]/60';
 }
 
+function getNextDayLabel(canAdvanceProductively: boolean): string {
+  // Accessible name must contain the button's visible text (axe label-content-name-mismatch).
+  return canAdvanceProductively ? 'Advance to next day' : 'Plant seeds first — nothing planted yet';
+}
+
+function getNextDayText(canAdvanceProductively: boolean): string {
+  return canAdvanceProductively ? 'Next Day' : 'Plant seeds first';
+}
+
 function getBalanceTextClass(danger: DangerLevel, targetMet: boolean): string {
   // Lighter than farm-red so the "critical" balance keeps a ≥4.5:1 contrast
   // ratio against the dark #261808 chip (WCAG AA / Lighthouse a11y).
@@ -52,6 +61,8 @@ interface HUDProps {
   endlessMode: boolean;
   /** Current uncapped consecutive-harvest-day count; chip is hidden at 0. */
   harvestStreak: number;
+  /** False when advancing only burns lease+tax (no seeds, nothing growing). Drives the warning label. */
+  canAdvanceProductively: boolean;
 }
 
 export function HUD({
@@ -64,6 +75,7 @@ export function HUD({
   hasLastTurn,
   endlessMode,
   harvestStreak,
+  canAdvanceProductively,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
   const reputation = getReputationTier(currentDay);
@@ -77,6 +89,9 @@ export function HUD({
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);
   const balanceTextClass = getBalanceTextClass(dangerLevel, targetMet);
+
+  const nextDayLabel = getNextDayLabel(canAdvanceProductively);
+  const nextDayText = getNextDayText(canAdvanceProductively);
 
   return (
     <header
@@ -97,7 +112,7 @@ export function HUD({
             Day {dayIntoSeason} / {season.endDay - season.startDay + 1}
           </span>
         </div>
-        <div className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
+        <div data-onboarding="balance-chip" className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
           <span
             className={`font-pixel text-sm ${balanceTextClass}`}
@@ -167,7 +182,8 @@ export function HUD({
         </button>
         <button
           type="button"
-          aria-label="Advance to next day"
+          data-onboarding="next-day"
+          aria-label={nextDayLabel}
           onClick={onNextDay}
           disabled={isProcessing}
           className="
@@ -177,13 +193,14 @@ export function HUD({
             active:enabled:scale-95 disabled:opacity-50 transition-all
           "
         >
-          Next Day →
+          {nextDayText} <span aria-hidden="true">→</span>
         </button>
       </div>
 
       {/* Shop toggle — mobile only */}
       <button
         type="button"
+        data-onboarding="shop-button"
         aria-label="Open shop"
         onClick={onToggleShop}
         className="

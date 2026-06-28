@@ -103,7 +103,7 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
       <span className="text-xs font-pixel text-farm-red/90 mt-1">Pest Damage</span>
       <button
         type="button"
-        aria-label="Clear pest damage from this plot"
+        aria-label="Clear Plot — remove pest damage"
         onClick={() => onClearPestDamage?.(plot.id)}
         className="
           mt-1 font-pixel text-xs px-1.5 py-0.5 rounded

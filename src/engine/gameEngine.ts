@@ -598,6 +598,17 @@ export function getNextPlotPrice(state: GameState, config: EconomyConfig = DEFAU
   return config.plotPrices[state.unlockedPlots - config.startingPlots] ?? null;
 }
 
+/**
+ * True when advancing a day can produce value: a crop is planted and growing on
+ * a plot. A seed merely held in inventory does NOT count — an unplanted seed
+ * grows nothing when the day advances, so advancing only burns lease + tax (the
+ * empty-day bankruptcy trap) and the UI should warn ("Plant seeds first") until
+ * something is actually planted.
+ */
+export function canAdvanceProductively(state: GameState): boolean {
+  return state.plots.some(p => p.cropId !== null);
+}
+
 /** Unlocks the next farm plot at its escalating price. Pure — no mutations. */
 export function buyPlot(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): BuyPlotResult {
   if (state.unlockedPlots >= config.maxPlots) {

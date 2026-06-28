@@ -1,0 +1,25 @@
+import { useEffect, useState } from 'react';
+
+/**
+ * Returns true when `query` currently matches. Reads on mount and updates on change.
+ * SSR/no-matchMedia safe (returns false).
+ */
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia(query).matches,
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mql = window.matchMedia(query);
+    const onChange = () => setMatches(mql.matches);
+    setMatches(mql.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, [query]);
+
+  return matches;
+}

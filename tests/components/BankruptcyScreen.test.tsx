@@ -1,5 +1,6 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
 import type { PersonalBests } from '../../src/engine/records';
@@ -107,5 +108,32 @@ describe('BankruptcyScreen — harvest streak (008)', () => {
     expect(streakRow).toHaveTextContent('6');
     expect(within(streakRow).getByLabelText(/new personal best/i)).toBeInTheDocument();
     expect(screen.getByText(/Best streak/i)).toBeInTheDocument();
+  });
+});
+
+describe('BankruptcyScreen — replay tutorial (014)', () => {
+  function renderWithReplay(over: Partial<React.ComponentProps<typeof BankruptcyScreen>> = {}) {
+    render(
+      <BankruptcyScreen
+        daysPlayed={3} peakBalance={100} peakHarvestStreak={0} disastersSurvived={0}
+        seasonReached={1} medal="none"
+        records={{ schemaVersion: 2, bestDaysSurvived: 0, bestPeakBalance: 0, bestSeasonReached: 0, mostDisastersSurvived: 0, bestHarvestStreak: 0, totalRunsCompleted: 1 }}
+        newBests={new Set()} lastDailyLog={null}
+        onRestart={vi.fn()} onReplayTutorial={vi.fn()}
+        {...over}
+      />,
+    );
+  }
+
+  it('renders a Replay tutorial button', () => {
+    renderWithReplay();
+    expect(screen.getByRole('button', { name: /replay tutorial/i })).toBeInTheDocument();
+  });
+
+  it('fires onReplayTutorial when clicked', () => {
+    const onReplayTutorial = vi.fn();
+    renderWithReplay({ onReplayTutorial });
+    fireEvent.click(screen.getByRole('button', { name: /replay tutorial/i }));
+    expect(onReplayTutorial).toHaveBeenCalledOnce();
   });
 });
