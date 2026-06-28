@@ -13,9 +13,9 @@ describe('canAdvanceProductively', () => {
     expect(canAdvanceProductively(freshEmpty())).toBe(false);
   });
 
-  it('is true when a seed is held in inventory', () => {
+  it('is false when a seed is only held in inventory (not yet planted)', () => {
     const s = freshEmpty();
-    expect(canAdvanceProductively({ ...s, seedInventory: { ...s.seedInventory, radish: 1 } })).toBe(true);
+    expect(canAdvanceProductively({ ...s, seedInventory: { ...s.seedInventory, radish: 1 } })).toBe(false);
   });
 
   it('is true when a crop is growing on a plot', () => {
