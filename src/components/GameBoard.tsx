@@ -136,6 +136,16 @@ export function GameBoard({
     }
   }, [selectedCrop, state.seedInventory]);
 
+  // When onboarding reaches the planting step, close the mobile shop sheet so the
+  // farm grid it covers becomes visible and tappable — otherwise the "fill every
+  // plot" highlight floats over the open sheet and the plots can't be reached.
+  // No-op on desktop, where the shop is an always-open sidebar and isShopOpen stays false.
+  useEffect(() => {
+    if (onboarding.active && onboarding.step === 'plant') {
+      setIsShopOpen(false);
+    }
+  }, [onboarding.active, onboarding.step]);
+
   function toggleShop() {
     setIsShopOpen(prev => !prev);
   }
