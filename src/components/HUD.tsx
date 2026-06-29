@@ -142,8 +142,8 @@ export function HUD({
             className={`font-pixel text-sm ${balanceTextClass}`}
             aria-label={`Coins: ${coinBalance}, season target: ${season.target}`}
           >
-            <span aria-hidden="true" className="sm:hidden">{coinBalance} / {season.target}</span>
-            <span aria-hidden="true" className="hidden sm:inline">{coinBalance} / {season.target} target</span>
+            <span className="sm:hidden">{coinBalance} / {season.target}</span>
+            <span className="hidden sm:inline">{coinBalance} / {season.target} target</span>
             {showWarning && (
               <span className="ml-1 text-farm-red">
                   — {daysRemainingInSeason} {daysRemainingInSeason === 1 ? 'day' : 'days'} left
