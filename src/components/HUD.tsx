@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { TAX_RATE } from '../engine/constants';
 import { getReputationTier } from '../engine/reputation';
-import { getSeasonForDay, type SeasonConfig } from '../engine/seasons';
+import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
 function getNextSeasonLease(season: SeasonConfig, endlessMode: boolean): number | null {
@@ -22,6 +23,14 @@ function getBalanceBorderClass(danger: DangerLevel): string {
   if (danger === 'critical') return 'border-farm-red/80 animate-pulse';
   if (danger === 'low') return 'border-yellow-600/70';
   return 'border-[#5C3D1E]/60';
+}
+
+function getSeasonMobileLabel(expanded: boolean, number: number, name: string, short: string): string {
+  return expanded ? `Season ${number} · ${name}` : short;
+}
+
+function getRepTitleClass(expanded: boolean): string {
+  return `font-pixel text-[10px] text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
 }
 
 function getNextDayLabel(canAdvanceProductively: boolean): string {
@@ -86,6 +95,13 @@ export function HUD({
   const showLeasePreview = currentDay === season.endDay;
   const nextSeasonLease = showLeasePreview ? getNextSeasonLease(season, endlessMode) : null;
 
+  const [seasonExpanded, setSeasonExpanded] = useState(false);
+  const [repExpanded, setRepExpanded] = useState(false);
+  const seasonLen = season.endDay - season.startDay + 1;
+  const seasonShort = shortSeasonLabel(season.name);
+  const seasonMobileLabel = getSeasonMobileLabel(seasonExpanded, season.number, season.name, seasonShort);
+  const repTitleClass = getRepTitleClass(repExpanded);
+
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);
   const balanceTextClass = getBalanceTextClass(dangerLevel, targetMet);
@@ -103,22 +119,31 @@ export function HUD({
       "
     >
       {/* Left: Season chip + Day chip + Balance/target chip */}
-      <div className="flex items-stretch gap-2">
-        <div className="flex flex-col leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded">
+      <div className="flex flex-wrap items-stretch gap-2">
+        <button
+          type="button"
+          aria-label={`Season ${season.number}: ${season.name}`}
+          aria-expanded={seasonExpanded}
+          onClick={() => setSeasonExpanded(v => !v)}
+          className="flex flex-col leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"
+        >
           <span className="font-pixel text-[8px] text-farm-parchment/70 uppercase tracking-widest">
-            Season {season.number} · {season.name}
+            <span className="sm:hidden">{seasonMobileLabel}</span>
+            <span className="hidden sm:inline">Season {season.number} · {season.name}</span>
           </span>
           <span className="font-pixel text-[10px] text-farm-gold">
-            Day {dayIntoSeason} / {season.endDay - season.startDay + 1}
+            <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
+            <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
           </span>
-        </div>
+        </button>
         <div data-onboarding="balance-chip" className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
           <span
             className={`font-pixel text-sm ${balanceTextClass}`}
             aria-label={`Coins: ${coinBalance}, season target: ${season.target}`}
           >
-            {coinBalance} / {season.target} target
+            <span aria-hidden="true" className="sm:hidden">{coinBalance} / {season.target}</span>
+            <span aria-hidden="true" className="hidden sm:inline">{coinBalance} / {season.target} target</span>
             {showWarning && (
               <span className="ml-1 text-farm-red">
                   — {daysRemainingInSeason} {daysRemainingInSeason === 1 ? 'day' : 'days'} left
@@ -136,16 +161,19 @@ export function HUD({
             <span className="font-pixel text-[10px] text-farm-gold">×{harvestStreak}</span>
           </div>
         )}
-        <div
+        <button
+          type="button"
           aria-label={`Reputation: ${reputation.title}`}
+          aria-expanded={repExpanded}
           title={`Reputation: ${reputation.title}. Your standing grows as you survive more days this run.`}
-          className="flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
+          onClick={() => setRepExpanded(v => !v)}
+          className="flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
         >
           <span className="text-base leading-none" aria-hidden="true">🎖️</span>
-          <span className="font-pixel text-[10px] text-farm-parchment/90 whitespace-nowrap">
+          <span className={repTitleClass}>
             {reputation.title}
           </span>
-        </div>
+        </button>
       </div>
 
       {/* Centre-right: Lease + Tax — hidden on small screens */}

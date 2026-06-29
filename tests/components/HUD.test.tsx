@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { HUD } from '../../src/components/HUD';
 
 const baseProps = {
@@ -94,6 +94,31 @@ describe('HUD — reputation chip', () => {
   it('shows "Seasoned Grower" on Day 14', () => {
     render(<HUD {...baseProps} currentDay={14} coinBalance={100} />);
     expect(screen.getByLabelText(/reputation/i)).toHaveTextContent(/Seasoned Grower/i);
+  });
+});
+
+describe('HUD — mobile compaction', () => {
+  it('shows the short season label and the full name in the DOM', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
+    // short label (mobile) and full name (desktop span) both present
+    expect(screen.getByText('SPRING')).toBeInTheDocument();
+    expect(screen.getByText(/Season 1 · Spring Thaw/)).toBeInTheDocument();
+  });
+
+  it('toggles the season chip aria-expanded on click', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
+    const chip = screen.getByRole('button', { name: /season 1: spring thaw/i });
+    expect(chip).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('toggles the reputation chip aria-expanded on click', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
+    const chip = screen.getByRole('button', { name: /reputation/i });
+    expect(chip).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-expanded', 'true');
   });
 });
 
