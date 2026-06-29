@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { OnboardingOverlay } from '../../src/components/OnboardingOverlay';
 
 const noop = () => {};
@@ -165,5 +165,46 @@ describe('OnboardingOverlay — anchor robustness', () => {
     visibleSpy.mockRestore();
     document.body.removeChild(hidden);
     document.body.removeChild(visible);
+  });
+
+  it('re-measures the ring when the anchor element grows (ResizeObserver)', () => {
+    // Controllable ResizeObserver so we can fire the resize callback on demand.
+    let resizeCb: ResizeObserverCallback | null = null;
+    const observed: Element[] = [];
+    const OrigRO = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      constructor(cb: ResizeObserverCallback) { resizeCb = cb; }
+      observe(el: Element) { observed.push(el); }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+
+    const anchor = document.createElement('div');
+    anchor.setAttribute('data-onboarding', 'shop-radish');
+    document.body.appendChild(anchor);
+    // jsdom returns [] for getClientRects → make the anchor "visible".
+    anchor.getClientRects = () => [{ width: 100, height: 50 } as DOMRect] as unknown as DOMRectList;
+    let height = 50;
+    anchor.getBoundingClientRect = () =>
+      ({ top: 100, left: 10, width: 100, height, bottom: 100 + height, right: 110, x: 10, y: 100, toJSON() {} }) as DOMRect;
+
+    const { container } = render(
+      <OnboardingOverlay step="buy-radishes" harvestIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+
+    const ringHeight = () => (container.querySelector('.ring-farm-gold') as HTMLElement).style.height;
+    // Ring sized to the initial card height (+12 padding on each measurement).
+    expect(ringHeight()).toBe('62px');
+    // The overlay observed the anchor for size changes.
+    expect(observed).toContain(anchor);
+
+    // Card grows (the Plant button appears after the first purchase) → observer fires.
+    height = 92;
+    act(() => { resizeCb?.([], {} as ResizeObserver); });
+    expect(ringHeight()).toBe('104px');
+
+    globalThis.ResizeObserver = OrigRO;
+    document.body.removeChild(anchor);
   });
 });

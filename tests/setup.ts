@@ -7,6 +7,18 @@ import { expect } from 'vitest';
 const axeMatchers: any = require('vitest-axe/matchers');
 expect.extend(axeMatchers);
 
+// jsdom has no ResizeObserver; provide a no-op default so components that observe
+// element size don't crash. Individual tests can override globalThis.ResizeObserver
+// to capture and drive the resize callback.
+if (!('ResizeObserver' in globalThis)) {
+  class ResizeObserverStub {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+  globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+}
+
 // jsdom has no matchMedia; default to "no preference" (motion allowed).
 // Individual tests can override window.matchMedia to simulate reduced motion.
 if (!window.matchMedia) {

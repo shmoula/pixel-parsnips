@@ -62,10 +62,17 @@ function useAnchorRect(selector: string | null): DOMRect | null {
     const timers = REMEASURE_DELAYS.map(d => window.setTimeout(measure, d));
     window.addEventListener('resize', measure);
     window.addEventListener('scroll', measure, true);
+    // Track the anchor's OWN size changes — e.g. the shop card grows when its
+    // "Plant" button appears after the first purchase. resize/scroll don't fire
+    // for that, so the ring would otherwise keep its stale (smaller) rect.
+    const observed = findVisibleAnchor(selector);
+    const ro = new ResizeObserver(measure);
+    if (observed) ro.observe(observed);
     return () => {
       timers.forEach(clearTimeout);
       window.removeEventListener('resize', measure);
       window.removeEventListener('scroll', measure, true);
+      ro.disconnect();
     };
   }, [selector]);
   return rect;
