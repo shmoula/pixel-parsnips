@@ -278,6 +278,7 @@ export function GameBoard({
         <OnboardingOverlay
           step={onboarding.step}
           harvestIncome={getHarvestIncome(state)}
+          isShopOpen={isShopOpen}
           onStart={onboarding.onStart}
           onSkip={onboarding.onSkip}
           onDismissPayoff={onboarding.onDismissPayoff}

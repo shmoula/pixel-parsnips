@@ -207,4 +207,46 @@ describe('OnboardingOverlay — anchor robustness', () => {
     globalThis.ResizeObserver = OrigRO;
     document.body.removeChild(anchor);
   });
+
+  it('suppresses a behind-sheet highlight (plant) while the shop sheet is open', () => {
+    const grid = document.createElement('div');
+    grid.setAttribute('data-onboarding', 'farm-grid');
+    grid.getClientRects = () => [{ width: 100, height: 50 } as DOMRect] as unknown as DOMRectList;
+    document.body.appendChild(grid);
+
+    const { container, rerender } = render(
+      <OnboardingOverlay step="plant" isShopOpen={false} harvestIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+    // Shop closed → the grid is reachable, so its highlight + copy show.
+    expect(container.querySelector('.ring-farm-gold')).toBeTruthy();
+    expect(container.querySelector('[role="status"]')).toBeTruthy();
+
+    // Shop open → the grid is behind the sheet; the highlight would frame over the
+    // shop (the user's z-index complaint), so it is suppressed entirely.
+    rerender(
+      <OnboardingOverlay step="plant" isShopOpen={true} harvestIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+    expect(container.querySelector('.ring-farm-gold')).toBeNull();
+    expect(container.querySelector('[role="status"]')).toBeNull();
+
+    document.body.removeChild(grid);
+  });
+
+  it('keeps an in-sheet highlight (buy-radishes) visible while the shop sheet is open', () => {
+    const card = document.createElement('div');
+    card.setAttribute('data-onboarding', 'shop-radish');
+    card.getClientRects = () => [{ width: 100, height: 50 } as DOMRect] as unknown as DOMRectList;
+    document.body.appendChild(card);
+
+    const { container } = render(
+      <OnboardingOverlay step="buy-radishes" isShopOpen={true} harvestIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+    // The radish card lives inside the sheet, so its highlight must remain.
+    expect(container.querySelector('.ring-farm-gold')).toBeTruthy();
+
+    document.body.removeChild(card);
+  });
 });

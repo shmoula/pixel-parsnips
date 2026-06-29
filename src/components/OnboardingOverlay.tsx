@@ -5,15 +5,21 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 interface Props {
   step: OnboardingStep;
   harvestIncome: number;
+  /** True when the mobile shop bottom-sheet is open (covers anchors behind it). */
+  isShopOpen?: boolean;
   onStart: () => void;
   onSkip: () => void;
   onDismissPayoff: () => void;
 }
 
-/** Anchor selector + short copy for each anchored step. */
-const ANCHORS: Partial<Record<OnboardingStep, { selector: string; copy: string }>> = {
+/**
+ * Anchor selector + short copy for each anchored step. `inShopSheet` marks anchors
+ * that live INSIDE the mobile shop sheet (so they stay highlightable while it's open);
+ * all other anchors sit behind the sheet and their highlight is suppressed when it opens.
+ */
+const ANCHORS: Partial<Record<OnboardingStep, { selector: string; copy: string; inShopSheet?: boolean }>> = {
   'open-shop':    { selector: '[data-onboarding="shop-button"]', copy: 'Pop open the shop.' },
-  'buy-radishes': { selector: '[data-onboarding="shop-radish"]', copy: 'Radishes sprout overnight — grab 4, one for each open plot.' },
+  'buy-radishes': { selector: '[data-onboarding="shop-radish"]', copy: 'Radishes sprout overnight — grab 4, one for each open plot.', inShopSheet: true },
   'plant':        { selector: '[data-onboarding="farm-grid"]',   copy: 'Fill every plot — more crops, more coins.' },
   'advance':      { selector: '[data-onboarding="next-day"]',    copy: 'Sleep on it — advance a day.' },
 };
@@ -38,6 +44,19 @@ function bubbleStyle(rect: DOMRect): CSSProperties {
   return fitsBelow
     ? { left, top: rect.bottom + 10 }
     : { left, top: rect.top - 10, transform: 'translateY(-100%)' };
+}
+
+/**
+ * The anchor whose highlight should currently render, or null. While the mobile
+ * shop sheet is open it covers every anchor except the radish card inside it, so
+ * behind-sheet anchors (the farm grid, the bottom bar) are suppressed — otherwise
+ * their frame would draw over the shop at the overlay's higher z-index.
+ */
+function activeAnchor(step: OnboardingStep, isShopOpen: boolean) {
+  const anchor = ANCHORS[step] ?? null;
+  if (!anchor) return null;
+  if (isShopOpen && !anchor.inShopSheet) return null;
+  return anchor;
 }
 
 /** Among all elements matching the selector, prefer one that is actually rendered. */
@@ -94,9 +113,9 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
   );
 }
 
-export function OnboardingOverlay({ step, harvestIncome, onStart, onSkip, onDismissPayoff }: Props) {
+export function OnboardingOverlay({ step, harvestIncome, isShopOpen = false, onStart, onSkip, onDismissPayoff }: Props) {
   const reduced = useReducedMotion();
-  const anchor = ANCHORS[step] ?? null;
+  const anchor = activeAnchor(step, isShopOpen);
   const rect = useAnchorRect(anchor ? anchor.selector : null);
 
   if (step === 'done') return null;
@@ -146,7 +165,8 @@ export function OnboardingOverlay({ step, harvestIncome, onStart, onSkip, onDism
         </div>
       )}
 
-      {/* Anchored bubble: open-shop / buy-radishes / plant / advance */}
+      {/* Anchored bubble: open-shop / buy-radishes / plant / advance.
+          activeAnchor() returns null while the shop sheet covers this anchor. */}
       {anchor && (
         <>
           {rect && (
