@@ -124,7 +124,7 @@ export function HUD({
           // abbreviations and trips axe's label-content-name-mismatch (WCAG 2.5.3).
           aria-expanded={seasonExpanded}
           onClick={() => setSeasonExpanded(v => !v)}
-          className="flex flex-col leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"
+          className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"
         >
           <span className="font-pixel text-[8px] text-farm-parchment/70 uppercase tracking-widest">
             <span className="sm:hidden">{seasonMobileLabel}</span>
@@ -166,7 +166,7 @@ export function HUD({
           aria-expanded={repExpanded}
           title={`Reputation: ${reputation.title}. Your standing grows as you survive more days this run.`}
           onClick={() => setRepExpanded(v => !v)}
-          className="flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
+          className="flex min-h-[44px] md:min-h-0 items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
         >
           <span className="text-base leading-none" aria-hidden="true">🎖️</span>
           <span className={repTitleClass}>

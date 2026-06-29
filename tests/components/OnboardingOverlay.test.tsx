@@ -128,7 +128,9 @@ describe('OnboardingOverlay — anchor robustness', () => {
     const initialCalls = spy.mock.calls.length;
     expect(initialCalls).toBeGreaterThan(0);
 
-    vi.advanceTimersByTime(400);
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
     expect(spy.mock.calls.length).toBeGreaterThan(initialCalls);
 
     spy.mockRestore();
