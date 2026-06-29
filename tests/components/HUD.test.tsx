@@ -4,7 +4,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { HUD } from '../../src/components/HUD';
 
 const baseProps = {
-  onToggleShop: vi.fn(),
   onNextDay: vi.fn(),
   onLastTurn: vi.fn(),
   isProcessing: false,
@@ -127,7 +126,6 @@ function renderHUD(over: Partial<React.ComponentProps<typeof HUD>> = {}) {
     <HUD
       currentDay={1}
       coinBalance={130}
-      onToggleShop={vi.fn()}
       onNextDay={vi.fn()}
       onLastTurn={vi.fn()}
       isProcessing={false}
@@ -151,13 +149,12 @@ describe('HUD — empty-day safeguard label', () => {
     expect(screen.getByText(/plant seeds first/i)).toBeInTheDocument();
   });
 
-  it('marks the shop, next-day, and balance anchors', () => {
+  it('marks the next-day and balance anchors', () => {
     const { container } = render(
-      <HUD currentDay={1} coinBalance={130} onToggleShop={vi.fn()} onNextDay={vi.fn()}
+      <HUD currentDay={1} coinBalance={130} onNextDay={vi.fn()}
         onLastTurn={vi.fn()} isProcessing={false} hasLastTurn={false} endlessMode={false}
         harvestStreak={0} canAdvanceProductively={true} />,
     );
-    expect(container.querySelector('[data-onboarding="shop-button"]')).toBeTruthy();
     expect(container.querySelector('[data-onboarding="next-day"]')).toBeTruthy();
     expect(container.querySelector('[data-onboarding="balance-chip"]')).toBeTruthy();
   });

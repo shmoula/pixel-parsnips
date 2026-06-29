@@ -145,12 +145,12 @@ describe('GameBoard — smoke tests (T047)', () => {
     ).not.toBeDisabled();
   });
 
-  it('"Next Day" button is rendered and enabled initially', () => {
+  it('"Next Day" button is rendered in both HUD and bottom bar, enabled initially', () => {
     render(<GameBoard {...makeGameBoardProps()} />);
-    // Initial state has nothing planted, so the button shows the empty-day safeguard label.
-    expect(
-      screen.getByRole('button', { name: /plant seeds first/i })
-    ).not.toBeDisabled();
+    // Nothing planted → both copies show the empty-day safeguard label.
+    const buttons = screen.getAllByRole('button', { name: /plant seeds first/i });
+    expect(buttons).toHaveLength(2);
+    buttons.forEach(b => expect(b).not.toBeDisabled());
   });
 
   it('passes WCAG 2.1 AA axe check — Day 1 (no log)', async () => {

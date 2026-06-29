@@ -3,6 +3,7 @@ import type { GameState, CropId, DailyLogEntry, WeatherId } from '../engine/type
 import { canAdvanceProductively } from '../engine/gameEngine';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { BottomActionBar } from './BottomActionBar';
 import { HUD } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
@@ -173,7 +174,6 @@ export function GameBoard({
       <HUD
         currentDay={state.currentDay}
         coinBalance={state.coinBalance}
-        onToggleShop={toggleShop}
         onNextDay={handleNextDay}
         onLastTurn={() => {
           setSummaryAnimate(false);
@@ -187,7 +187,7 @@ export function GameBoard({
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}
-      <div className="flex flex-col md:flex-row gap-4 p-4">
+      <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
           <FlashDroughtBanner daysRemaining={state.flashDroughtDaysRemaining} />
@@ -284,6 +284,13 @@ export function GameBoard({
           }}
         />
       )}
+
+      <BottomActionBar
+        onToggleShop={toggleShop}
+        onNextDay={handleNextDay}
+        isProcessing={isProcessing}
+        canAdvanceProductively={canAdvance}
+      />
     </div>
   );
 }

@@ -56,8 +56,6 @@ function getBalanceTextClass(danger: DangerLevel, targetMet: boolean): string {
 interface HUDProps {
   currentDay: number;
   coinBalance: number;
-  /** Mobile only: opens/closes the shop bottom sheet. */
-  onToggleShop: () => void;
   /** Advance the game by one day. */
   onNextDay: () => void;
   /** Reopen the Day Summary modal from the previous turn. */
@@ -77,7 +75,6 @@ interface HUDProps {
 export function HUD({
   currentDay,
   coinBalance,
-  onToggleShop,
   onNextDay,
   onLastTurn,
   isProcessing,
@@ -215,6 +212,7 @@ export function HUD({
           onClick={onNextDay}
           disabled={isProcessing}
           className="
+            hidden md:inline-flex
             font-pixel text-[10px] px-4 py-1.5 rounded uppercase tracking-widest
             bg-farm-grass text-farm-parchment
             hover:bg-farm-gold hover:text-farm-ink
@@ -224,22 +222,6 @@ export function HUD({
           {nextDayText} <span aria-hidden="true">→</span>
         </button>
       </div>
-
-      {/* Shop toggle — mobile only */}
-      <button
-        type="button"
-        data-onboarding="shop-button"
-        aria-label="Open shop"
-        onClick={onToggleShop}
-        className="
-          md:hidden
-          font-pixel text-[9px] px-4 py-2 rounded uppercase tracking-widest
-          bg-farm-gold text-farm-ink ring-1 ring-farm-gold/50
-          hover:brightness-110 transition-all
-        "
-      >
-        🌾 Shop
-      </button>
     </header>
   );
 }
