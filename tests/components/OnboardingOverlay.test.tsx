@@ -112,3 +112,58 @@ describe('OnboardingOverlay', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('OnboardingOverlay — anchor robustness', () => {
+  it('re-measures the anchor after mount (covers the shop-sheet slide)', () => {
+    vi.useFakeTimers();
+    const anchor = document.createElement('div');
+    anchor.setAttribute('data-onboarding', 'shop-radish');
+    document.body.appendChild(anchor);
+    const spy = vi.spyOn(anchor, 'getBoundingClientRect');
+
+    render(
+      <OnboardingOverlay step="buy-radishes" harvestIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+    const initialCalls = spy.mock.calls.length;
+    expect(initialCalls).toBeGreaterThan(0);
+
+    vi.advanceTimersByTime(400);
+    expect(spy.mock.calls.length).toBeGreaterThan(initialCalls);
+
+    spy.mockRestore();
+    document.body.removeChild(anchor);
+    vi.useRealTimers();
+  });
+
+  it('prefers a visible anchor when duplicates exist', () => {
+    // Hidden is appended FIRST so it is els[0]; naive code taking els[0] would
+    // measure it. The visible one must be chosen regardless of DOM order.
+    const hidden = document.createElement('button');
+    hidden.setAttribute('data-onboarding', 'next-day');
+    // jsdom: getClientRects() returns [] by default → treated as not visible
+    const visible = document.createElement('button');
+    visible.setAttribute('data-onboarding', 'next-day');
+    visible.getClientRects = () => [{ width: 10, height: 10 } as DOMRect] as unknown as DOMRectList;
+    document.body.append(hidden, visible);
+
+    const hiddenSpy = vi.spyOn(hidden, 'getBoundingClientRect');
+    const visibleSpy = vi.spyOn(visible, 'getBoundingClientRect');
+
+    const { container } = render(
+      <OnboardingOverlay step="advance" harvestIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+
+    // The visible duplicate is measured; the hidden one is never touched.
+    expect(visibleSpy).toHaveBeenCalled();
+    expect(hiddenSpy).not.toHaveBeenCalled();
+    // Ring renders against the chosen (visible) anchor without throwing.
+    expect(container.querySelector('.ring-farm-gold')).toBeTruthy();
+
+    hiddenSpy.mockRestore();
+    visibleSpy.mockRestore();
+    document.body.removeChild(hidden);
+    document.body.removeChild(visible);
+  });
+});

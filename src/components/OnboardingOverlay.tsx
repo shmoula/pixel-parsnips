@@ -40,18 +40,30 @@ function bubbleStyle(rect: DOMRect): CSSProperties {
     : { left, top: rect.top - 10, transform: 'translateY(-100%)' };
 }
 
+/** Among all elements matching the selector, prefer one that is actually rendered. */
+function findVisibleAnchor(selector: string): Element | null {
+  const els = Array.from(document.querySelectorAll(selector));
+  return els.find(el => el.getClientRects().length > 0) ?? els[0] ?? null;
+}
+
+/** Delays (ms) at which we re-measure after the anchor changes, covering the
+ *  shop bottom-sheet's 300ms slide-up animation. */
+const REMEASURE_DELAYS = [120, 260, 360];
+
 function useAnchorRect(selector: string | null): DOMRect | null {
   const [rect, setRect] = useState<DOMRect | null>(null);
   useLayoutEffect(() => {
     if (!selector) { setRect(null); return; }
     const measure = () => {
-      const el = document.querySelector(selector);
+      const el = findVisibleAnchor(selector);
       setRect(el ? el.getBoundingClientRect() : null);
     };
     measure();
+    const timers = REMEASURE_DELAYS.map(d => window.setTimeout(measure, d));
     window.addEventListener('resize', measure);
     window.addEventListener('scroll', measure, true);
     return () => {
+      timers.forEach(clearTimeout);
       window.removeEventListener('resize', measure);
       window.removeEventListener('scroll', measure, true);
     };
