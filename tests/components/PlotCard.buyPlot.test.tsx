@@ -29,4 +29,16 @@ describe('PlotCard — buy-plot tile', () => {
     screen.getByRole('button', { name: /buy plot · 30/i }).click();
     expect(onBuyPlot).toHaveBeenCalledWith(4);
   });
+
+  it('disables the tile and does not fire onBuyPlot when the plot is unaffordable', () => {
+    const onBuyPlot = vi.fn();
+    render(
+      <PlotCard plot={lockedPlot} locked isNextPurchasable plotPrice={30}
+        canAffordPlot={false} onBuyPlot={onBuyPlot} />,
+    );
+    const tile = screen.getByRole('button', { name: /buy plot · 30/i });
+    expect(tile).toBeDisabled();
+    tile.click();
+    expect(onBuyPlot).not.toHaveBeenCalled();
+  });
 });

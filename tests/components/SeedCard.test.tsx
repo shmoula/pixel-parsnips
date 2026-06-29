@@ -88,4 +88,14 @@ describe('SeedCard — mobile touch targets', () => {
     expect(buy.className).toContain('min-h-[44px]');
     expect(buy.className).toContain('md:min-h-0');
   });
+
+  it('gives the Plant button a 44px minimum height on mobile', () => {
+    render(
+      <SeedCard cropId="radish" price={5} seedCount={2}
+        onBuy={vi.fn()} onSelect={vi.fn()} canAfford={true} isSelected={false} />,
+    );
+    const plant = screen.getByRole('button', { name: /select radish seed to plant/i });
+    expect(plant.className).toContain('min-h-[44px]');
+    expect(plant.className).toContain('md:min-h-0');
+  });
 });

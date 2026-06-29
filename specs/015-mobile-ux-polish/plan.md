@@ -304,31 +304,31 @@ Expected: FAIL — class not present.
 
 In `src/components/SeedCard.tsx`, the BUY button `className` (line ~167) — change the first line `mt-1 w-full py-1 rounded font-pixel text-xs` to:
 
-```
+```text
 mt-1 w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs
 ```
 
 In the same file, the Plant/Select button `className` (line ~186) — change `w-full py-1 rounded font-pixel text-xs transition-colors` to:
 
-```
+```text
 w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs transition-colors
 ```
 
 In `src/components/Shop.tsx`, the fertilizer buy button (line ~114) — change `w-full font-pixel text-xs py-1.5 rounded` to:
 
-```
+```text
 w-full font-pixel text-xs py-1.5 min-h-[44px] md:min-h-0 rounded
 ```
 
 In `src/components/UpgradeCard.tsx`, the next-tier buy button (line ~43) — change `px-2 py-1 rounded font-pixel text-xs` to:
 
-```
+```text
 px-2 py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs
 ```
 
 In `src/components/HUD.tsx`, the Last Turn button (line ~173) — change `font-pixel text-[9px] px-2 py-1.5 rounded uppercase tracking-widest` to:
 
-```
+```text
 font-pixel text-[9px] px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
 ```
 
