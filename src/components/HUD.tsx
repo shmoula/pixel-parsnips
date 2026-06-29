@@ -119,7 +119,9 @@ export function HUD({
       <div className="flex flex-wrap items-stretch gap-2">
         <button
           type="button"
-          aria-label={`Season ${season.number}: ${season.name}`}
+          // No aria-label: the visible compact text ("Spring", "D1/20") is the
+          // accessible name. A prose label here would not contain the visible
+          // abbreviations and trips axe's label-content-name-mismatch (WCAG 2.5.3).
           aria-expanded={seasonExpanded}
           onClick={() => setSeasonExpanded(v => !v)}
           className="flex flex-col leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"

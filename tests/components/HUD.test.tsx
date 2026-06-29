@@ -106,7 +106,7 @@ describe('HUD — mobile compaction', () => {
 
   it('toggles the season chip aria-expanded on click', () => {
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
-    const chip = screen.getByRole('button', { name: /season 1: spring thaw/i });
+    const chip = screen.getByRole('button', { name: /season 1 · spring thaw/i });
     expect(chip).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(chip);
     expect(chip).toHaveAttribute('aria-expanded', 'true');
