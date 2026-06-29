@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
@@ -151,6 +151,20 @@ describe('GameBoard — smoke tests (T047)', () => {
     const buttons = screen.getAllByRole('button', { name: /plant seeds first/i });
     expect(buttons).toHaveLength(2);
     buttons.forEach(b => expect(b).not.toBeDisabled());
+  });
+
+  it('hides the bottom action bar while the mobile shop sheet is open', () => {
+    render(<GameBoard {...makeGameBoardProps()} />);
+    // Bar present initially: its Shop control + its Next Day copy (alongside the HUD copy).
+    expect(screen.getByRole('button', { name: /open shop/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /plant seeds first/i })).toHaveLength(2);
+
+    // Open the mobile shop bottom sheet via the bar's Shop button.
+    fireEvent.click(screen.getByRole('button', { name: /open shop/i }));
+
+    // Bar unmounts so it can't overlay the sheet; only the HUD's (DOM-only) Next Day copy remains.
+    expect(screen.queryByRole('button', { name: /open shop/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /plant seeds first/i })).toHaveLength(1);
   });
 
   it('passes WCAG 2.1 AA axe check — Day 1 (no log)', async () => {

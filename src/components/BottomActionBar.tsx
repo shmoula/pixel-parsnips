@@ -3,6 +3,8 @@ interface BottomActionBarProps {
   onNextDay: () => void;
   isProcessing: boolean;
   canAdvanceProductively: boolean;
+  /** Suppress the bar entirely (e.g. while the mobile shop sheet covers the bottom edge). */
+  hidden?: boolean;
 }
 
 function nextDayLabel(canAdvance: boolean): string {
@@ -23,7 +25,9 @@ export function BottomActionBar({
   onNextDay,
   isProcessing,
   canAdvanceProductively,
+  hidden = false,
 }: BottomActionBarProps) {
+  if (hidden) return null;
   return (
     <div
       className="

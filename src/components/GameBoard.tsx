@@ -285,7 +285,12 @@ export function GameBoard({
         />
       )}
 
+      {/* Hidden while the mobile shop sheet is open: the sheet is anchored to the
+          same bottom edge, so a visible bar would overlay (and steal taps from) its
+          bottom rows. Desktop keeps isShopOpen false, so the bar still renders there
+          (and is md:hidden). Dismiss the sheet via the backdrop. */}
       <BottomActionBar
+        hidden={isShopOpen}
         onToggleShop={toggleShop}
         onNextDay={handleNextDay}
         isProcessing={isProcessing}

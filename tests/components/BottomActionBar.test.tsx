@@ -35,4 +35,10 @@ describe('BottomActionBar', () => {
     render(<BottomActionBar {...base} canAdvanceProductively={false} />);
     expect(screen.getByRole('button', { name: /plant seeds first/i })).toBeInTheDocument();
   });
+
+  it('renders nothing when hidden', () => {
+    const { container } = render(<BottomActionBar {...base} hidden={true} />);
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByRole('button', { name: /open shop/i })).not.toBeInTheDocument();
+  });
 });
