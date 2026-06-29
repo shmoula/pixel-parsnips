@@ -199,7 +199,7 @@ export function HUD({
           onClick={onLastTurn}
           disabled={!hasLastTurn}
           className="
-            font-pixel text-[9px] px-2 py-1.5 rounded uppercase tracking-widest
+            font-pixel text-[9px] px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
             bg-[#261808] text-farm-stone/60 border border-[#5C3D1E]/50
             hover:enabled:bg-[#3A2510] hover:enabled:text-farm-parchment/80 hover:enabled:border-[#5C3D1E]
             active:enabled:scale-95 transition-all

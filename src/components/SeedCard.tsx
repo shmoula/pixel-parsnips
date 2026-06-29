@@ -165,7 +165,7 @@ export function SeedCard({
         disabled={disabled}
         onClick={() => onBuy(cropId)}
         className="
-          mt-1 w-full py-1 rounded font-pixel text-xs
+          mt-1 w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs
           bg-farm-gold text-farm-ink
           hover:bg-farm-grass hover:text-farm-parchment
           active:scale-95 active:brightness-90
@@ -184,7 +184,7 @@ export function SeedCard({
           disabled={interactionDisabled === true}
           onClick={() => onSelect(cropId)}
           className={`
-            w-full py-1 rounded font-pixel text-xs transition-colors
+            w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs transition-colors
             ${isSelected
               ? 'bg-farm-grass text-farm-parchment'
               : 'bg-farm-sky text-farm-ink hover:bg-farm-grass hover:text-farm-parchment'}

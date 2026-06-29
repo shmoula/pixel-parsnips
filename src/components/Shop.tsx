@@ -112,7 +112,7 @@ export function Shop({
               disabled={coinBalance < FERTILIZER_COST}
               onClick={onBuyFertilizer}
               className="
-                w-full font-pixel text-xs py-1.5 rounded
+                w-full font-pixel text-xs py-1.5 min-h-[44px] md:min-h-0 rounded
                 bg-farm-gold text-farm-ink
                 hover:enabled:bg-farm-grass hover:enabled:text-farm-parchment
                 active:enabled:scale-95 transition-all
