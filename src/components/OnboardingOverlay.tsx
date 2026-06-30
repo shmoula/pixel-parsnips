@@ -4,7 +4,10 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface Props {
   step: OnboardingStep;
+  /** Gross crop sale from the last day (shown as context). */
   harvestIncome: number;
+  /** Net coins that actually landed in the wallet, after lease & tax (the headline). */
+  netIncome: number;
   /** True when the mobile shop bottom-sheet is open (covers anchors behind it). */
   isShopOpen?: boolean;
   onStart: () => void;
@@ -113,7 +116,7 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
   );
 }
 
-export function OnboardingOverlay({ step, harvestIncome, isShopOpen = false, onStart, onSkip, onDismissPayoff }: Props) {
+export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen = false, onStart, onSkip, onDismissPayoff }: Props) {
   const reduced = useReducedMotion();
   const anchor = activeAnchor(step, isShopOpen);
   const rect = useAnchorRect(anchor ? anchor.selector : null);
@@ -150,8 +153,9 @@ export function OnboardingOverlay({ step, harvestIncome, isShopOpen = false, onS
       {step === 'payoff' && (
         <div className="absolute inset-0 flex items-center justify-center p-6">
           <div className="pointer-events-auto max-w-xs w-full bg-farm-soil border border-farm-gold/50 rounded-xl p-5 flex flex-col gap-4 text-center">
-            <p className="font-pixel text-sm text-farm-gold">Sold for +{harvestIncome} coins! 🎉</p>
+            <p className="font-pixel text-sm text-farm-gold">+{netIncome} coins profit! 🎉</p>
             <p className="font-pixel text-[10px] text-farm-parchment leading-relaxed">
+              Sold your radishes for {harvestIncome} — lease &amp; tax took the rest.
               That's the loop. Now hit your season target.
             </p>
             <button

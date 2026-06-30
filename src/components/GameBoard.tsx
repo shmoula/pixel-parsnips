@@ -15,9 +15,14 @@ function canAfford(balance: number, price: number | null): boolean {
   return balance >= price;
 }
 
-/** Null-safe harvest income from the last daily log. */
+/** Null-safe gross harvest income from the last daily log. */
 function getHarvestIncome(state: GameState): number {
   return state.lastDailyLog?.totalHarvestIncome ?? 0;
+}
+
+/** Null-safe net coins change from the last daily log (after lease & tax). */
+function getNetIncome(state: GameState): number {
+  return state.lastDailyLog?.netChange ?? 0;
 }
 
 function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
@@ -278,6 +283,7 @@ export function GameBoard({
         <OnboardingOverlay
           step={onboarding.step}
           harvestIncome={getHarvestIncome(state)}
+          netIncome={getNetIncome(state)}
           isShopOpen={isShopOpen}
           onStart={onboarding.onStart}
           onSkip={onboarding.onSkip}
