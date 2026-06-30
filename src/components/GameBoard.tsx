@@ -3,6 +3,7 @@ import type { GameState, CropId, DailyLogEntry, WeatherId } from '../engine/type
 import { canAdvanceProductively } from '../engine/gameEngine';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { BottomActionBar } from './BottomActionBar';
 import { HUD } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
@@ -140,6 +141,16 @@ export function GameBoard({
     }
   }, [selectedCrop, state.seedInventory]);
 
+  // When onboarding reaches the planting step, close the mobile shop sheet so the
+  // farm grid it covers becomes visible and tappable — otherwise the "fill every
+  // plot" highlight floats over the open sheet and the plots can't be reached.
+  // No-op on desktop, where the shop is an always-open sidebar and isShopOpen stays false.
+  useEffect(() => {
+    if (onboarding.active && onboarding.step === 'plant') {
+      setIsShopOpen(false);
+    }
+  }, [onboarding.active, onboarding.step]);
+
   function toggleShop() {
     setIsShopOpen(prev => !prev);
   }
@@ -178,7 +189,6 @@ export function GameBoard({
       <HUD
         currentDay={state.currentDay}
         coinBalance={state.coinBalance}
-        onToggleShop={toggleShop}
         onNextDay={handleNextDay}
         onLastTurn={() => {
           setSummaryAnimate(false);
@@ -192,7 +202,7 @@ export function GameBoard({
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}
-      <div className="flex flex-col md:flex-row gap-4 p-4">
+      <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
           <FlashDroughtBanner daysRemaining={state.flashDroughtDaysRemaining} />
@@ -274,6 +284,7 @@ export function GameBoard({
           step={onboarding.step}
           harvestIncome={getHarvestIncome(state)}
           netIncome={getNetIncome(state)}
+          isShopOpen={isShopOpen}
           onStart={onboarding.onStart}
           onSkip={onboarding.onSkip}
           onDismissPayoff={onboarding.onDismissPayoff}
@@ -290,6 +301,18 @@ export function GameBoard({
           }}
         />
       )}
+
+      {/* Hidden while the mobile shop sheet is open: the sheet is anchored to the
+          same bottom edge, so a visible bar would overlay (and steal taps from) its
+          bottom rows. Desktop keeps isShopOpen false, so the bar still renders there
+          (and is md:hidden). Dismiss the sheet via the backdrop. */}
+      <BottomActionBar
+        hidden={isShopOpen}
+        onToggleShop={toggleShop}
+        onNextDay={handleNextDay}
+        isProcessing={isProcessing}
+        canAdvanceProductively={canAdvance}
+      />
     </div>
   );
 }

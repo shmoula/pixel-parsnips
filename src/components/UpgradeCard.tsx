@@ -41,7 +41,7 @@ export function UpgradeCard({
           disabled={!canAfford}
           onClick={onBuy}
           className="
-            px-2 py-1 rounded font-pixel text-xs
+            px-2 py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs
             bg-farm-gold text-farm-ink
             hover:bg-farm-grass hover:text-farm-parchment
             active:scale-95 active:brightness-90

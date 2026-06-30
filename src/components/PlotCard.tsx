@@ -62,25 +62,27 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
   plot: PlotState; isNextPurchasable?: boolean; plotPrice?: number;
   canAffordPlot?: boolean; onBuyPlot?: (plotId: number) => void;
 }) {
+  if (isNextPurchasable && plotPrice !== undefined) {
+    return (
+      <button
+        type="button"
+        aria-label={`Buy plot · ${plotPrice}🪙, plot ${plot.id + 1}`}
+        disabled={!canAffordPlot}
+        onClick={() => onBuyPlot?.(plot.id)}
+        className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-gold/60 bg-[#160F07] p-1 select-none hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <span className="text-2xl opacity-70">🔒</span>
+        <span className="font-pixel text-[9px] leading-none text-farm-gold text-center">Buy plot · {plotPrice}🪙</span>
+      </button>
+    );
+  }
   return (
     <div
       aria-label={`Locked plot ${plot.id + 1}`}
-      className="flex flex-col items-center justify-center w-full aspect-square rounded-lg border-2 border-[#3D2510]/80 bg-[#160F07] opacity-80 select-none p-1"
+      className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-[#3D2510]/80 bg-[#160F07] opacity-80 select-none p-1"
     >
       <span className="text-2xl opacity-60">🔒</span>
-      {isNextPurchasable && plotPrice !== undefined ? (
-        <button
-          type="button"
-          aria-label={`Buy plot · ${plotPrice}🪙, plot ${plot.id + 1}`}
-          disabled={!canAffordPlot}
-          onClick={() => onBuyPlot?.(plot.id)}
-          className="mt-1 font-pixel text-[10px] px-1.5 py-0.5 rounded bg-farm-gold text-farm-ink hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Buy plot · {plotPrice}🪙
-        </button>
-      ) : (
-        <span className="mt-1 font-pixel text-[9px] text-farm-stone">Locked</span>
-      )}
+      <span className="font-pixel text-[9px] text-farm-stone">Locked</span>
     </div>
   );
 }
@@ -94,7 +96,7 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
       aria-label={`Plot ${plot.id + 1}: Pest Damage — click to clear`}
       className="
         flex flex-col items-center justify-center
-        w-full aspect-square rounded-lg border-2
+        w-full aspect-square overflow-hidden rounded-lg border-2
         border-farm-red bg-[#2A1010]
         select-none p-1 shadow-inner
       "
@@ -129,7 +131,7 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
       aria-label={`Plot ${plot.id + 1}: Exhausted — ${daysUntilRecovery} day${daysUntilRecovery === 1 ? '' : 's'} until recovery`}
       className="
         flex flex-col items-center justify-center
-        w-full aspect-square rounded-lg border-2
+        w-full aspect-square overflow-hidden rounded-lg border-2
         border-farm-red/60
         select-none p-1 opacity-75
       "
@@ -189,7 +191,7 @@ function GrowingCropCard({ plot }: {
       aria-label={`Plot ${plot.id + 1}: ${label}, planted day ${plot.dayPlanted}, ${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining`}
       className={[
         'flex flex-col items-center justify-center',
-        'w-full aspect-square rounded-lg border-2',
+        'w-full aspect-square overflow-hidden rounded-lg border-2',
         isReady
           ? 'border-farm-grass ring-2 ring-farm-grass/50 bg-[#162810]'
           : 'border-farm-gold/60 bg-[#1A2C10]',
@@ -264,7 +266,7 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked
       className="
         group
         flex flex-col items-center justify-center
-        w-full aspect-square rounded-lg
+        w-full aspect-square overflow-hidden rounded-lg
         border border-[#3D2510]/80
         hover:border-farm-gold/50 hover:brightness-125
         cursor-pointer select-none

@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
 import { GameBoard } from '../../src/components/GameBoard';
 import { PlotCard } from '../../src/components/PlotCard';
 import { initialGameState } from '../../src/engine/gameEngine';
-import { markOnboardingComplete } from '../../src/engine/onboarding';
+import { markOnboardingComplete, saveOnboarding } from '../../src/engine/onboarding';
 import type { DailyLogEntry, PlotState } from '../../src/engine/types';
 import type { PersonalBests } from '../../src/engine/records';
 
@@ -145,12 +145,48 @@ describe('GameBoard — smoke tests (T047)', () => {
     ).not.toBeDisabled();
   });
 
-  it('"Next Day" button is rendered and enabled initially', () => {
+  it('"Next Day" button is rendered in both HUD and bottom bar, enabled initially', () => {
     render(<GameBoard {...makeGameBoardProps()} />);
-    // Initial state has nothing planted, so the button shows the empty-day safeguard label.
-    expect(
-      screen.getByRole('button', { name: /plant seeds first/i })
-    ).not.toBeDisabled();
+    // Nothing planted → both copies show the empty-day safeguard label.
+    const buttons = screen.getAllByRole('button', { name: /plant seeds first/i });
+    expect(buttons).toHaveLength(2);
+    buttons.forEach(b => expect(b).not.toBeDisabled());
+  });
+
+  it('hides the bottom action bar while the mobile shop sheet is open', () => {
+    render(<GameBoard {...makeGameBoardProps()} />);
+    // Bar present initially: its Shop control + its Next Day copy (alongside the HUD copy).
+    expect(screen.getByRole('button', { name: /open shop/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /plant seeds first/i })).toHaveLength(2);
+
+    // Open the mobile shop bottom sheet via the bar's Shop button.
+    fireEvent.click(screen.getByRole('button', { name: /open shop/i }));
+
+    // Bar unmounts so it can't overlay the sheet; only the HUD's (DOM-only) Next Day copy remains.
+    expect(screen.queryByRole('button', { name: /open shop/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /plant seeds first/i })).toHaveLength(1);
+  });
+
+  it('closes the mobile shop sheet when onboarding advances to the plant step', () => {
+    // Active tutorial sitting on buy-radishes; nothing planted, no radishes yet.
+    saveOnboarding({ schemaVersion: 1, completed: false, step: 'buy-radishes' });
+    const props = makeGameBoardProps();
+    const empty = initialGameState();
+    const { rerender } = render(<GameBoard {...props} state={empty} />);
+
+    // Open the mobile shop sheet → the bar (with the Open shop control) hides.
+    fireEvent.click(screen.getByRole('button', { name: /open shop/i }));
+    expect(screen.queryByRole('button', { name: /open shop/i })).not.toBeInTheDocument();
+
+    // Player now holds enough radishes → onboarding derives the 'plant' step.
+    const withRadishes = {
+      ...empty,
+      seedInventory: { ...empty.seedInventory, radish: empty.unlockedPlots },
+    };
+    rerender(<GameBoard {...props} state={withRadishes} />);
+
+    // Shop auto-closes so the (previously covered) farm grid is reachable: bar returns.
+    expect(screen.getByRole('button', { name: /open shop/i })).toBeInTheDocument();
   });
 
   it('passes WCAG 2.1 AA axe check — Day 1 (no log)', async () => {

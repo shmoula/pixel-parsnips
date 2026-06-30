@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { TAX_RATE } from '../engine/constants';
 import { getReputationTier } from '../engine/reputation';
-import { getSeasonForDay, type SeasonConfig } from '../engine/seasons';
+import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
 function getNextSeasonLease(season: SeasonConfig, endlessMode: boolean): number | null {
@@ -22,6 +23,14 @@ function getBalanceBorderClass(danger: DangerLevel): string {
   if (danger === 'critical') return 'border-farm-red/80 animate-pulse';
   if (danger === 'low') return 'border-yellow-600/70';
   return 'border-[#5C3D1E]/60';
+}
+
+function getSeasonMobileLabel(expanded: boolean, number: number, name: string, short: string): string {
+  return expanded ? `Season ${number} · ${name}` : short;
+}
+
+function getRepTitleClass(expanded: boolean): string {
+  return `font-pixel text-[10px] text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
 }
 
 function getNextDayLabel(canAdvanceProductively: boolean): string {
@@ -47,8 +56,6 @@ function getBalanceTextClass(danger: DangerLevel, targetMet: boolean): string {
 interface HUDProps {
   currentDay: number;
   coinBalance: number;
-  /** Mobile only: opens/closes the shop bottom sheet. */
-  onToggleShop: () => void;
   /** Advance the game by one day. */
   onNextDay: () => void;
   /** Reopen the Day Summary modal from the previous turn. */
@@ -68,7 +75,6 @@ interface HUDProps {
 export function HUD({
   currentDay,
   coinBalance,
-  onToggleShop,
   onNextDay,
   onLastTurn,
   isProcessing,
@@ -85,6 +91,13 @@ export function HUD({
   const showWarning = currentDay >= season.startDay + 17 && !targetMet && currentDay <= season.endDay;
   const showLeasePreview = currentDay === season.endDay;
   const nextSeasonLease = showLeasePreview ? getNextSeasonLease(season, endlessMode) : null;
+
+  const [seasonExpanded, setSeasonExpanded] = useState(false);
+  const [repExpanded, setRepExpanded] = useState(false);
+  const seasonLen = season.endDay - season.startDay + 1;
+  const seasonShort = shortSeasonLabel(season.name);
+  const seasonMobileLabel = getSeasonMobileLabel(seasonExpanded, season.number, season.name, seasonShort);
+  const repTitleClass = getRepTitleClass(repExpanded);
 
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);
@@ -103,22 +116,33 @@ export function HUD({
       "
     >
       {/* Left: Season chip + Day chip + Balance/target chip */}
-      <div className="flex items-stretch gap-2">
-        <div className="flex flex-col leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded">
+      <div className="flex flex-wrap items-stretch gap-2">
+        <button
+          type="button"
+          // No aria-label: the visible compact text ("Spring", "D1/20") is the
+          // accessible name. A prose label here would not contain the visible
+          // abbreviations and trips axe's label-content-name-mismatch (WCAG 2.5.3).
+          aria-expanded={seasonExpanded}
+          onClick={() => setSeasonExpanded(v => !v)}
+          className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"
+        >
           <span className="font-pixel text-[8px] text-farm-parchment/70 uppercase tracking-widest">
-            Season {season.number} · {season.name}
+            <span className="sm:hidden">{seasonMobileLabel}</span>
+            <span className="hidden sm:inline">Season {season.number} · {season.name}</span>
           </span>
           <span className="font-pixel text-[10px] text-farm-gold">
-            Day {dayIntoSeason} / {season.endDay - season.startDay + 1}
+            <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
+            <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
           </span>
-        </div>
+        </button>
         <div data-onboarding="balance-chip" className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
           <span
             className={`font-pixel text-sm ${balanceTextClass}`}
             aria-label={`Coins: ${coinBalance}, season target: ${season.target}`}
           >
-            {coinBalance} / {season.target} target
+            <span className="sm:hidden">{coinBalance} / {season.target}</span>
+            <span className="hidden sm:inline">{coinBalance} / {season.target} target</span>
             {showWarning && (
               <span className="ml-1 text-farm-red">
                   — {daysRemainingInSeason} {daysRemainingInSeason === 1 ? 'day' : 'days'} left
@@ -136,16 +160,19 @@ export function HUD({
             <span className="font-pixel text-[10px] text-farm-gold">×{harvestStreak}</span>
           </div>
         )}
-        <div
+        <button
+          type="button"
           aria-label={`Reputation: ${reputation.title}`}
+          aria-expanded={repExpanded}
           title={`Reputation: ${reputation.title}. Your standing grows as you survive more days this run.`}
-          className="flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
+          onClick={() => setRepExpanded(v => !v)}
+          className="flex min-h-[44px] md:min-h-0 items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
         >
           <span className="text-base leading-none" aria-hidden="true">🎖️</span>
-          <span className="font-pixel text-[10px] text-farm-parchment/90 whitespace-nowrap">
+          <span className={repTitleClass}>
             {reputation.title}
           </span>
-        </div>
+        </button>
       </div>
 
       {/* Centre-right: Lease + Tax — hidden on small screens */}
@@ -171,7 +198,7 @@ export function HUD({
           onClick={onLastTurn}
           disabled={!hasLastTurn}
           className="
-            font-pixel text-[9px] px-2 py-1.5 rounded uppercase tracking-widest
+            font-pixel text-[9px] px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
             bg-[#261808] text-farm-stone/60 border border-[#5C3D1E]/50
             hover:enabled:bg-[#3A2510] hover:enabled:text-farm-parchment/80 hover:enabled:border-[#5C3D1E]
             active:enabled:scale-95 transition-all
@@ -187,6 +214,7 @@ export function HUD({
           onClick={onNextDay}
           disabled={isProcessing}
           className="
+            hidden md:inline-flex
             font-pixel text-[10px] px-4 py-1.5 rounded uppercase tracking-widest
             bg-farm-grass text-farm-parchment
             hover:bg-farm-gold hover:text-farm-ink
@@ -196,22 +224,6 @@ export function HUD({
           {nextDayText} <span aria-hidden="true">→</span>
         </button>
       </div>
-
-      {/* Shop toggle — mobile only */}
-      <button
-        type="button"
-        data-onboarding="shop-button"
-        aria-label="Open shop"
-        onClick={onToggleShop}
-        className="
-          md:hidden
-          font-pixel text-[9px] px-4 py-2 rounded uppercase tracking-widest
-          bg-farm-gold text-farm-ink ring-1 ring-farm-gold/50
-          hover:brightness-110 transition-all
-        "
-      >
-        🌾 Shop
-      </button>
     </header>
   );
 }

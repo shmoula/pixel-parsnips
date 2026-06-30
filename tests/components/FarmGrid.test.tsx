@@ -12,7 +12,8 @@ const mkPlots = (n: number): PlotState[] =>
 describe('FarmGrid lock rendering', () => {
   it('renders locked plots beyond unlockedPlots and a single Buy button', () => {
     render(<FarmGrid plots={mkPlots(12)} unlockedPlots={4} nextPlotPrice={40} canAffordPlot onBuyPlot={() => {}} />);
-    expect(screen.getAllByLabelText(/locked plot/i)).toHaveLength(8);
+    // 7 plain locked tiles + 1 purchasable tile (now a full-tile button with "Buy plot" label)
+    expect(screen.getAllByLabelText(/locked plot/i)).toHaveLength(7);
     expect(screen.getAllByRole('button', { name: /buy plot/i })).toHaveLength(1);
   });
 

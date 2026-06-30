@@ -72,6 +72,15 @@ export function getSeasonForDay(day: number, config: EconomyConfig = DEFAULT_ECO
   };
 }
 
+/**
+ * Short, uppercased season label for compact mobile chips.
+ * First word of the name, with the endless "Deep Winter" collapsed to "WINTER".
+ */
+export function shortSeasonLabel(name: string): string {
+  if (name === 'Deep Winter') return 'WINTER';
+  return name.split(' ')[0].toUpperCase();
+}
+
 /** WeatherIds that count as disasters for season-based scaling. */
 export const DISASTER_WEATHER_IDS: ReadonlyArray<WeatherId> = ['blight', 'pest_infestation', 'flash_drought'];
 

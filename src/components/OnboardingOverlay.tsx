@@ -8,15 +8,21 @@ interface Props {
   harvestIncome: number;
   /** Net coins that actually landed in the wallet, after lease & tax (the headline). */
   netIncome: number;
+  /** True when the mobile shop bottom-sheet is open (covers anchors behind it). */
+  isShopOpen?: boolean;
   onStart: () => void;
   onSkip: () => void;
   onDismissPayoff: () => void;
 }
 
-/** Anchor selector + short copy for each anchored step. */
-const ANCHORS: Partial<Record<OnboardingStep, { selector: string; copy: string }>> = {
+/**
+ * Anchor selector + short copy for each anchored step. `inShopSheet` marks anchors
+ * that live INSIDE the mobile shop sheet (so they stay highlightable while it's open);
+ * all other anchors sit behind the sheet and their highlight is suppressed when it opens.
+ */
+const ANCHORS: Partial<Record<OnboardingStep, { selector: string; copy: string; inShopSheet?: boolean }>> = {
   'open-shop':    { selector: '[data-onboarding="shop-button"]', copy: 'Pop open the shop.' },
-  'buy-radishes': { selector: '[data-onboarding="shop-radish"]', copy: 'Radishes sprout overnight — grab 4, one for each open plot.' },
+  'buy-radishes': { selector: '[data-onboarding="shop-radish"]', copy: 'Radishes sprout overnight — grab 4, one for each open plot.', inShopSheet: true },
   'plant':        { selector: '[data-onboarding="farm-grid"]',   copy: 'Fill every plot — more crops, more coins.' },
   'advance':      { selector: '[data-onboarding="next-day"]',    copy: 'Sleep on it — advance a day.' },
 };
@@ -43,20 +49,52 @@ function bubbleStyle(rect: DOMRect): CSSProperties {
     : { left, top: rect.top - 10, transform: 'translateY(-100%)' };
 }
 
+/**
+ * The anchor whose highlight should currently render, or null. While the mobile
+ * shop sheet is open it covers every anchor except the radish card inside it, so
+ * behind-sheet anchors (the farm grid, the bottom bar) are suppressed — otherwise
+ * their frame would draw over the shop at the overlay's higher z-index.
+ */
+function activeAnchor(step: OnboardingStep, isShopOpen: boolean) {
+  const anchor = ANCHORS[step] ?? null;
+  if (!anchor) return null;
+  if (isShopOpen && !anchor.inShopSheet) return null;
+  return anchor;
+}
+
+/** Among all elements matching the selector, prefer one that is actually rendered. */
+function findVisibleAnchor(selector: string): Element | null {
+  const els = Array.from(document.querySelectorAll(selector));
+  return els.find(el => el.getClientRects().length > 0) ?? els[0] ?? null;
+}
+
+/** Delays (ms) at which we re-measure after the anchor changes, covering the
+ *  shop bottom-sheet's 300ms slide-up animation. */
+const REMEASURE_DELAYS = [120, 260, 360];
+
 function useAnchorRect(selector: string | null): DOMRect | null {
   const [rect, setRect] = useState<DOMRect | null>(null);
   useLayoutEffect(() => {
     if (!selector) { setRect(null); return; }
     const measure = () => {
-      const el = document.querySelector(selector);
+      const el = findVisibleAnchor(selector);
       setRect(el ? el.getBoundingClientRect() : null);
     };
     measure();
+    const timers = REMEASURE_DELAYS.map(d => window.setTimeout(measure, d));
     window.addEventListener('resize', measure);
     window.addEventListener('scroll', measure, true);
+    // Track the anchor's OWN size changes — e.g. the shop card grows when its
+    // "Plant" button appears after the first purchase. resize/scroll don't fire
+    // for that, so the ring would otherwise keep its stale (smaller) rect.
+    const observed = findVisibleAnchor(selector);
+    const ro = new ResizeObserver(measure);
+    if (observed) ro.observe(observed);
     return () => {
+      timers.forEach(clearTimeout);
       window.removeEventListener('resize', measure);
       window.removeEventListener('scroll', measure, true);
+      ro.disconnect();
     };
   }, [selector]);
   return rect;
@@ -78,9 +116,9 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
   );
 }
 
-export function OnboardingOverlay({ step, harvestIncome, netIncome, onStart, onSkip, onDismissPayoff }: Props) {
+export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen = false, onStart, onSkip, onDismissPayoff }: Props) {
   const reduced = useReducedMotion();
-  const anchor = ANCHORS[step] ?? null;
+  const anchor = activeAnchor(step, isShopOpen);
   const rect = useAnchorRect(anchor ? anchor.selector : null);
 
   if (step === 'done') return null;
@@ -131,7 +169,8 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, onStart, onS
         </div>
       )}
 
-      {/* Anchored bubble: open-shop / buy-radishes / plant / advance */}
+      {/* Anchored bubble: open-shop / buy-radishes / plant / advance.
+          activeAnchor() returns null while the shop sheet covers this anchor. */}
       {anchor && (
         <>
           {rect && (

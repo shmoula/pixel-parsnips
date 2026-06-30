@@ -1,10 +1,9 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { HUD } from '../../src/components/HUD';
 
 const baseProps = {
-  onToggleShop: vi.fn(),
   onNextDay: vi.fn(),
   onLastTurn: vi.fn(),
   isProcessing: false,
@@ -97,12 +96,36 @@ describe('HUD — reputation chip', () => {
   });
 });
 
+describe('HUD — mobile compaction', () => {
+  it('shows the short season label and the full name in the DOM', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
+    // short label (mobile) and full name (desktop span) both present
+    expect(screen.getByText('SPRING')).toBeInTheDocument();
+    expect(screen.getByText(/Season 1 · Spring Thaw/)).toBeInTheDocument();
+  });
+
+  it('toggles the season chip aria-expanded on click', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
+    const chip = screen.getByRole('button', { name: /season 1 · spring thaw/i });
+    expect(chip).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('toggles the reputation chip aria-expanded on click', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
+    const chip = screen.getByRole('button', { name: /reputation/i });
+    expect(chip).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
 function renderHUD(over: Partial<React.ComponentProps<typeof HUD>> = {}) {
   render(
     <HUD
       currentDay={1}
       coinBalance={130}
-      onToggleShop={vi.fn()}
       onNextDay={vi.fn()}
       onLastTurn={vi.fn()}
       isProcessing={false}
@@ -126,13 +149,12 @@ describe('HUD — empty-day safeguard label', () => {
     expect(screen.getByText(/plant seeds first/i)).toBeInTheDocument();
   });
 
-  it('marks the shop, next-day, and balance anchors', () => {
+  it('marks the next-day and balance anchors', () => {
     const { container } = render(
-      <HUD currentDay={1} coinBalance={130} onToggleShop={vi.fn()} onNextDay={vi.fn()}
+      <HUD currentDay={1} coinBalance={130} onNextDay={vi.fn()}
         onLastTurn={vi.fn()} isProcessing={false} hasLastTurn={false} endlessMode={false}
         harvestStreak={0} canAdvanceProductively={true} />,
     );
-    expect(container.querySelector('[data-onboarding="shop-button"]')).toBeTruthy();
     expect(container.querySelector('[data-onboarding="next-day"]')).toBeTruthy();
     expect(container.querySelector('[data-onboarding="balance-chip"]')).toBeTruthy();
   });
