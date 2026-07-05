@@ -377,6 +377,35 @@ describe('GameBoard — empty-day guardrails (017 FR-015/FR-016)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /skip day/i })[0]); // attempt a second
     expect(screen.getByRole('dialog', { name: /advance empty day/i })).toBeInTheDocument();
   });
+
+  it('re-arms across a season boundary where tomorrow\'s lease is higher than today\'s (regression)', () => {
+    // Day 20 = last day of Spring Thaw (lease 15); day 21 starts Summer Heat (lease 22).
+    // On day 20 with balance 30: tax = floor((30−15)×0.06) = 0 → remaining 15.
+    // Against TODAY's lease (15), 15 < 15 is false — looks fine (the old, buggy check
+    // that compared against today's own lease instead of tomorrow's).
+    // Against TOMORROW's lease (22, the day-21 season-boundary jump), 15 < 22 is
+    // true — genuinely ruinous (the fix), since the incoming higher lease would
+    // leave the player unable to cover it.
+    const props = makeGameBoardProps();
+    const day19State = { ...initialGameState(), currentDay: 19, coinBalance: 45 };
+    const { rerender } = render(<GameBoard {...props} state={day19State} />);
+
+    // Confirm the first empty day on day 19 to arm `hasConfirmedEmptyDay`.
+    fireEvent.click(screen.getAllByRole('button', { name: /skip day/i })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /^skip day$/i }));
+
+    // Simulate the parent applying onNextDay()'s effect: day advances to 20,
+    // balance lands at 30 (the ruinous-vs-tomorrow's-lease value computed above).
+    const day20State = { ...day19State, currentDay: 20, coinBalance: 30 };
+    rerender(
+      <GameBoard {...props} state={day20State} lastDailyLog={{ ...sampleLog, day: 19, closingBalance: 30 }} />
+    );
+
+    // Attempt a second empty day on day 20 — the ruinous check must look ahead to
+    // day 21's higher lease, not day 20's own (unchanged) lease.
+    fireEvent.click(screen.getAllByRole('button', { name: /skip day/i })[0]);
+    expect(screen.getByRole('dialog', { name: /advance empty day/i })).toBeInTheDocument();
+  });
 });
 
 // ── T019: PlotCard countdown render tests (US3) ───────────────────────────────

@@ -139,8 +139,10 @@ export function GameBoard({
   const taxEstimate = Math.max(0, Math.floor((state.coinBalance - leaseCost) * TAX_RATE));
   // FR-016: an empty day is "ruinous" when its cost would leave the player
   // unable to cover one more day's lease — re-arm the confirm in that case
-  // even if they already dismissed it once this session.
-  const emptyDayIsRuinous = state.coinBalance - leaseCost - taxEstimate < leaseCost;
+  // even if they already dismissed it once this session. Compare against
+  // *tomorrow's* lease (not today's) since a season boundary can raise it.
+  const nextDayLeaseCost = getSeasonForDay(state.currentDay + 1).leasePerDay;
+  const emptyDayIsRuinous = state.coinBalance - leaseCost - taxEstimate < nextDayLeaseCost;
 
   // T010 — When the parent re-renders with a new lastDailyLog after onNextDay(),
   // open the Day Summary modal with that log.
@@ -185,6 +187,9 @@ export function GameBoard({
 
   function handleNextDay() {
     if (isProcessing) return;
+    // FR-016: the `emptyDayIsRuinous` OR-clause re-shows the confirm even if the
+    // player already confirmed one empty day this session, when this particular
+    // empty day would leave them unable to cover tomorrow's lease.
     if (!canAdvance && (!hasConfirmedEmptyDay || emptyDayIsRuinous)) { setShowEmptyConfirm(true); return; }
     doAdvance();
   }
