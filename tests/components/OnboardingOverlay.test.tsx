@@ -338,4 +338,12 @@ describe('OnboardingOverlay — buy progress (017 FR-005)', () => {
     );
     expect(screen.getByText('2 of 4 bought')).toBeInTheDocument();
   });
+
+  it('renders no buy-progress text when buyProgress is omitted', () => {
+    render(
+      <OnboardingOverlay step="buy-radishes" harvestIncome={0} netIncome={0}
+        onStart={() => {}} onSkip={() => {}} onDismissPayoff={() => {}} />,
+    );
+    expect(screen.queryByText(/bought/)).not.toBeInTheDocument();
+  });
 });

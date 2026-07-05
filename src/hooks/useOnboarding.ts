@@ -29,6 +29,18 @@ export function emptyPlotCount(state: GameState): number {
 }
 
 /**
+ * Radishes needed to satisfy the buy-radishes step: one per open plot, floored at 1.
+ * The floor matters because if every unlocked plot happens to be pest-damaged or
+ * exhausted when the tutorial starts, `emptyPlotCount` returns 0 — without the floor
+ * the step would either "complete" with zero radishes bought, or the progress display
+ * would read "X of 0 bought". Shared by `deriveStep` (step-advance gate) and
+ * `GameBoard`'s progress display so the two can never desync.
+ */
+export function buyRadishesNeeded(state: GameState): number {
+  return Math.max(1, emptyPlotCount(state));
+}
+
+/**
  * Forward-only goal evaluation: given the current step and live state, return the
  * furthest AUTO step now justified. Manual gates (welcome, payoff) are returned as-is.
  */
@@ -38,7 +50,7 @@ function deriveStep(step: OnboardingStep, state: GameState, isShopVisible: boole
   while (true) {
     if (s === 'open-shop' && isShopVisible) { s = 'buy-radishes'; continue; }
     if (s === 'buy-radishes') {
-      const needed = Math.max(1, emptyPlotCount(state));
+      const needed = buyRadishesNeeded(state);
       if (state.seedInventory.radish >= needed) { s = 'plant'; continue; }
     }
     if (s === 'plant' && emptyPlotCount(state) === 0) { s = 'advance'; continue; }
