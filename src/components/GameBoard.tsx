@@ -269,9 +269,11 @@ export function GameBoard({
     }
   }, [onboarding.active, onboarding.step]);
 
-  function toggleShop() {
-    setIsShopOpen(prev => !prev);
-  }
+  // 017 FR-004 — the bar's shop button can only OPEN (the bar hides while the
+  // sheet is up); the backdrop CLOSES. A toggle here let double-fired events
+  // close the sheet right after opening, stranding the tutorial's buy step.
+  const openShop = () => setIsShopOpen(true);
+  const closeShop = () => setIsShopOpen(false);
 
   // T010 — Next Day handler: flag modal as awaited, then fire the engine callback
   function doAdvance() {
@@ -357,7 +359,7 @@ export function GameBoard({
             'fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden',
             isShopOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
           ].join(' ')}
-          onClick={toggleShop}
+          onClick={closeShop}
           aria-hidden="true"
         />
 
@@ -436,7 +438,7 @@ export function GameBoard({
           (and is md:hidden). Dismiss the sheet via the backdrop. */}
       <BottomActionBar
         hidden={isShopOpen}
-        onToggleShop={toggleShop}
+        onOpenShop={openShop}
         onNextDay={handleNextDay}
         isProcessing={isProcessing}
         canAdvanceProductively={canAdvance}

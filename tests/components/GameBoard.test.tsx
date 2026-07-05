@@ -471,6 +471,25 @@ describe('GameBoard — unwinnable-run notice (017 FR-017)', () => {
   });
 });
 
+// ── Task 15: Shop sheet — explicit open/close instead of toggle (017 FR-004) ──
+
+describe('GameBoard — shop sheet open/close semantics (017 FR-004)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    markOnboardingComplete();
+  });
+
+  it('shop button opens (never closes) the sheet — double taps are safe (017 FR-004)', () => {
+    render(<GameBoard {...makeGameBoardProps()} />);
+    const shopBtn = screen.getByRole('button', { name: /open shop/i });
+    fireEvent.click(shopBtn);
+    fireEvent.click(shopBtn); // second (ghost) tap must not close it
+    // The sheet wrapper is open when it lacks the translate-y-full class
+    const sheet = screen.getByRole('complementary', { name: /shop/i }).parentElement as HTMLElement;
+    expect(sheet.className).not.toContain('translate-y-full');
+  });
+});
+
 // ── Task 12: Empty-plot tap always responds (FR-014) ──────────────────────────
 
 describe('GameBoard — empty-plot tap feedback (017 FR-014)', () => {

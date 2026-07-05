@@ -1,5 +1,5 @@
 interface BottomActionBarProps {
-  onToggleShop: () => void;
+  onOpenShop: () => void;
   onNextDay: () => void;
   isProcessing: boolean;
   canAdvanceProductively: boolean;
@@ -22,7 +22,7 @@ function nextDayText(canAdvance: boolean): string {
  * Next Day lives in the HUD and the shop is an always-visible sidebar.
  */
 export function BottomActionBar({
-  onToggleShop,
+  onOpenShop,
   onNextDay,
   isProcessing,
   canAdvanceProductively,
@@ -42,7 +42,7 @@ export function BottomActionBar({
         type="button"
         data-onboarding="shop-button"
         aria-label="Open shop"
-        onClick={onToggleShop}
+        onClick={onOpenShop}
         className="
           flex-1 min-h-[44px] font-pixel text-[10px] rounded uppercase tracking-widest
           bg-farm-gold text-farm-ink ring-1 ring-farm-gold/50

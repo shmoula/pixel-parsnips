@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { BottomActionBar } from '../../src/components/BottomActionBar';
 
 const base = {
-  onToggleShop: vi.fn(),
+  onOpenShop: vi.fn(),
   onNextDay: vi.fn(),
   isProcessing: false,
   canAdvanceProductively: true,
@@ -16,12 +16,12 @@ describe('BottomActionBar', () => {
     expect(container.querySelector('[data-onboarding="next-day"]')).toBeTruthy();
   });
 
-  it('calls onToggleShop and onNextDay', () => {
-    const onToggleShop = vi.fn();
+  it('calls onOpenShop and onNextDay', () => {
+    const onOpenShop = vi.fn();
     const onNextDay = vi.fn();
-    render(<BottomActionBar {...base} onToggleShop={onToggleShop} onNextDay={onNextDay} />);
+    render(<BottomActionBar {...base} onOpenShop={onOpenShop} onNextDay={onNextDay} />);
     screen.getByRole('button', { name: /open shop/i }).click();
-    expect(onToggleShop).toHaveBeenCalledOnce();
+    expect(onOpenShop).toHaveBeenCalledOnce();
     screen.getByRole('button', { name: /advance to next day/i }).click();
     expect(onNextDay).toHaveBeenCalledOnce();
   });
