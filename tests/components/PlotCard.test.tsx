@@ -69,3 +69,16 @@ describe('PlotCard — exhausted guidance (017 FR-012/FR-013)', () => {
     expect(screen.getByRole('button', { name: /use fertilizer/i })).toHaveTextContent(/use anyway/i);
   });
 });
+
+describe('PlotCard — drought marker inline (017 FR-021)', () => {
+  it('renders the flash-drought marker inside the time badge row, not as an extra row', () => {
+    render(
+      <PlotCard
+        plot={makePlot({ cropId: 'pumpkin', daysRemaining: 4, dayPlanted: 1, droughtPenalised: true })}
+        currentDay={2}
+      />,
+    );
+    const badge = screen.getByText(/4d left/i);
+    expect(badge).toHaveTextContent('☀️🔥');
+  });
+});

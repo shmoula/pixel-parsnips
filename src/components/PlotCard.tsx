@@ -255,15 +255,14 @@ function GrowingCropCard({ plot }: {
       ) : (
         <span className="mt-1 font-pixel text-[9px] px-2 py-0.5 rounded bg-farm-gold/20 border border-farm-gold/50 text-farm-gold">
           {daysRemaining}d left
-        </span>
-      )}
-      {plot.droughtPenalised && (
-        <span
-          aria-label="Growth slowed by Flash Drought"
-          title="Growth slowed by Flash Drought"
-          className="text-xs mt-0.5"
-        >
-          ☀️🔥
+          {plot.droughtPenalised && (
+            <span
+              aria-label="Growth slowed by Flash Drought"
+              title="Growth slowed by Flash Drought"
+            >
+              {' '}☀️🔥
+            </span>
+          )}
         </span>
       )}
     </div>
