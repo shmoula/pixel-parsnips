@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState, CropId, DailyLogEntry, WeatherId } from '../engine/types';
 import { canAdvanceProductively } from '../engine/gameEngine';
+import { TAX_RATE } from '../engine/constants';
+import { getSeasonForDay } from '../engine/seasons';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { BottomActionBar } from './BottomActionBar';
@@ -40,12 +42,20 @@ function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
   );
 }
 
-function EmptyDayConfirm({ onCancel, onAdvance }: { onCancel: () => void; onAdvance: () => void }) {
+function EmptyDayConfirm({ leaseCost, taxEstimate, onCancel, onAdvance }: {
+  leaseCost: number;
+  taxEstimate: number;
+  onCancel: () => void;
+  onAdvance: () => void;
+}) {
   return (
     <div role="dialog" aria-label="Advance empty day" className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 p-6">
       <div className="max-w-xs w-full bg-farm-soil border border-farm-stone/40 rounded-xl p-5 flex flex-col gap-4 text-center">
         <p className="font-pixel text-xs text-farm-parchment leading-relaxed">
-          Nothing's planted — advance anyway?
+          Nothing's planted — skip the day?
+        </p>
+        <p className="font-pixel text-[10px] text-farm-stone leading-relaxed">
+          You'll pay {leaseCost}🪙 lease and ~{taxEstimate}🪙 tax, and earn nothing.
         </p>
         <div className="flex gap-2 justify-center">
           <button
@@ -61,7 +71,7 @@ function EmptyDayConfirm({ onCancel, onAdvance }: { onCancel: () => void; onAdva
             onClick={onAdvance}
             className="font-pixel text-xs px-4 py-2 rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-soil"
           >
-            Advance
+            Skip day
           </button>
         </div>
       </div>
@@ -122,6 +132,16 @@ export function GameBoard({
   const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
   const [hasConfirmedEmptyDay, setHasConfirmedEmptyDay] = useState(false);
 
+  // FR-015: costed empty-day copy — the exact lease + estimated tax the player
+  // will pay for skipping a day with nothing planted.
+  const season = getSeasonForDay(state.currentDay);
+  const leaseCost = season.leasePerDay;
+  const taxEstimate = Math.max(0, Math.floor((state.coinBalance - leaseCost) * TAX_RATE));
+  // FR-016: an empty day is "ruinous" when its cost would leave the player
+  // unable to cover one more day's lease — re-arm the confirm in that case
+  // even if they already dismissed it once this session.
+  const emptyDayIsRuinous = state.coinBalance - leaseCost - taxEstimate < leaseCost;
+
   // T010 — When the parent re-renders with a new lastDailyLog after onNextDay(),
   // open the Day Summary modal with that log.
   useEffect(() => {
@@ -165,7 +185,7 @@ export function GameBoard({
 
   function handleNextDay() {
     if (isProcessing) return;
-    if (!canAdvance && !hasConfirmedEmptyDay) { setShowEmptyConfirm(true); return; }
+    if (!canAdvance && (!hasConfirmedEmptyDay || emptyDayIsRuinous)) { setShowEmptyConfirm(true); return; }
     doAdvance();
   }
 
@@ -293,6 +313,8 @@ export function GameBoard({
 
       {showEmptyConfirm && (
         <EmptyDayConfirm
+          leaseCost={leaseCost}
+          taxEstimate={taxEstimate}
           onCancel={() => setShowEmptyConfirm(false)}
           onAdvance={() => {
             setShowEmptyConfirm(false);

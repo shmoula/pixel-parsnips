@@ -333,6 +333,52 @@ describe('PlotCard — drought icon (T027, FR-018)', () => {
   });
 });
 
+// ── Task 10: EmptyDayConfirm — costed copy + ruinous re-arm (FR-015/FR-016) ──
+
+describe('GameBoard — empty-day guardrails (017 FR-015/FR-016)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    markOnboardingComplete();
+  });
+
+  it('states the concrete cost of an empty day in the confirmation', () => {
+    // Season 1 (day 3): lease 15; balance 100 → tax = floor((100−15)×0.06) = 5
+    render(
+      <GameBoard
+        {...makeGameBoardProps()}
+        state={{ ...initialGameState(), currentDay: 3, coinBalance: 100 }}
+      />
+    );
+    fireEvent.click(screen.getAllByRole('button', { name: /skip day/i })[0]);
+    const dialog = screen.getByRole('dialog', { name: /advance empty day/i });
+    expect(dialog).toHaveTextContent(/15🪙 lease/i);
+    expect(dialog).toHaveTextContent(/~5🪙 tax/i);
+    expect(dialog).toHaveTextContent(/earn nothing/i);
+  });
+
+  it('re-arms the confirmation when another empty day could not be survived', () => {
+    // balance 29, lease 15, tax = floor((29−15)×0.06) = 0 → after: 14; 14 < 15 → RUINOUS
+    const props = makeGameBoardProps();
+    const day3State = { ...initialGameState(), currentDay: 3, coinBalance: 29 };
+    const { rerender } = render(<GameBoard {...props} state={day3State} />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /skip day/i })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /^skip day$/i })); // confirm the first empty day
+
+    // Simulate the parent applying onNextDay()'s effect: balance drops by lease
+    // (tax is 0 here), day advances — exactly the "ruinous" state FR-016 targets.
+    // A fresh lastDailyLog is required too: GameBoard only clears its internal
+    // isProcessing flag (and reopens for a new confirm) once it observes a new log.
+    const day4State = { ...day3State, currentDay: 4, coinBalance: 14 };
+    rerender(
+      <GameBoard {...props} state={day4State} lastDailyLog={{ ...sampleLog, day: 3, closingBalance: 14 }} />
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: /skip day/i })[0]); // attempt a second
+    expect(screen.getByRole('dialog', { name: /advance empty day/i })).toBeInTheDocument();
+  });
+});
+
 // ── T019: PlotCard countdown render tests (US3) ───────────────────────────────
 
 describe('PlotCard — exhaustion countdown (T019, US3)', () => {
