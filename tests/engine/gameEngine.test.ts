@@ -1774,3 +1774,19 @@ describe('getNextPlotPrice', () => {
     expect(getNextPlotPrice(s, cfg)).toBeNull();
   });
 });
+
+// ── 017 FR-019 — pest log must account for every destroyed plot ───────────────
+
+describe('processTurn — pest destruction logging (017 FR-019)', () => {
+  it('logs every pest-destroyed plot and matches farm state', () => {
+    let s = withSeeds(initialGameState(), { radish: 3 });
+    for (const plotId of [0, 1, 2]) {
+      const r = plantSeed(s, plotId, 'radish');
+      if (!r.ok) throw new Error(`plant failed on plot ${plotId}`);
+      s = r.state;
+    }
+    const { log, state: after } = processTurn(s, 'pest_infestation', [0, 1, 2]);
+    expect(log.pestDestroyedPlots).toEqual([0, 1, 2]);
+    expect(after.plots.filter(p => p.pestDamaged).map(p => p.id)).toEqual([0, 1, 2]);
+  });
+});

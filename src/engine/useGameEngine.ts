@@ -294,9 +294,12 @@ export function useGameEngine(): GameEngineHook {
 
   const nextDay = useCallback((weatherOverride?: WeatherId) => {
     signalPlayStarted('next_day');
-    setState(prev => {
-      return processTurn(prev, weatherOverride).state;
-    });
+    // processTurn is impure (consumes Math.random for weather/pest/market rolls),
+    // so it must not run inside a setState updater — StrictMode double-invokes
+    // updaters/reducers, and an impure call there can diverge between the kept
+    // and discarded invocations. Read the authoritative snapshot from stateRef
+    // and call processTurn exactly once, matching every other action below.
+    setState(processTurn(stateRef.current, weatherOverride).state);
   }, [signalPlayStarted]);
 
   const plant = useCallback((plotId: number, cropId: CropId): boolean => {
