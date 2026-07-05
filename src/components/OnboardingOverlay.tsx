@@ -39,6 +39,11 @@ const EDGE_MARGIN = 8;
 function bubbleStyle(rect: DOMRect): CSSProperties {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  // Anchor entirely off-screen (e.g. mid-animation or scrolled away): pin the
+  // bubble above the bottom action bar so the instruction stays readable.
+  if (rect.bottom <= 0 || rect.top >= vh) {
+    return { left: '50%', bottom: 88, transform: 'translateX(-50%)' };
+  }
   const left = Math.min(
     Math.max(EDGE_MARGIN, rect.left),
     Math.max(EDGE_MARGIN, vw - BUBBLE_WIDTH - EDGE_MARGIN),
@@ -68,34 +73,37 @@ function findVisibleAnchor(selector: string): Element | null {
   return els.find(el => el.getClientRects().length > 0) ?? els[0] ?? null;
 }
 
-/** Delays (ms) at which we re-measure after the anchor changes, covering the
- *  shop bottom-sheet's 300ms slide-up animation. */
-const REMEASURE_DELAYS = [120, 260, 360];
+/** True when two rects are identical enough to skip a state update. */
+function sameRect(a: DOMRect | null, b: DOMRect | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height;
+}
 
+/**
+ * Continuously tracks the anchor's rect with a requestAnimationFrame loop while
+ * a step is anchored. This follows transform transitions (the mobile shop
+ * sheet's 300ms slide-up), scrolls, and resizes without event bookkeeping —
+ * fixed re-measure timers missed the sheet's final position (017 FR-001/FR-002).
+ * setRect bails out via sameRect, so idle frames cause no re-renders.
+ */
 function useAnchorRect(selector: string | null): DOMRect | null {
   const [rect, setRect] = useState<DOMRect | null>(null);
   useLayoutEffect(() => {
-    if (!selector) { setRect(null); return; }
+    if (!selector) {
+      setRect(null);
+      return;
+    }
+    let raf = 0;
     const measure = () => {
       const el = findVisibleAnchor(selector);
-      setRect(el ? el.getBoundingClientRect() : null);
+      const next = el ? el.getBoundingClientRect() : null;
+      setRect(prev => (sameRect(prev, next) ? prev : next));
+      raf = requestAnimationFrame(measure);
     };
+    // Measure synchronously before first paint (so the highlight appears
+    // immediately on mount) — the rAF loop then keeps it in sync every frame.
     measure();
-    const timers = REMEASURE_DELAYS.map(d => window.setTimeout(measure, d));
-    window.addEventListener('resize', measure);
-    window.addEventListener('scroll', measure, true);
-    // Track the anchor's OWN size changes — e.g. the shop card grows when its
-    // "Plant" button appears after the first purchase. resize/scroll don't fire
-    // for that, so the ring would otherwise keep its stale (smaller) rect.
-    const observed = findVisibleAnchor(selector);
-    const ro = new ResizeObserver(measure);
-    if (observed) ro.observe(observed);
-    return () => {
-      timers.forEach(clearTimeout);
-      window.removeEventListener('resize', measure);
-      window.removeEventListener('scroll', measure, true);
-      ro.disconnect();
-    };
+    return () => cancelAnimationFrame(raf);
   }, [selector]);
   return rect;
 }
