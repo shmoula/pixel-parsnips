@@ -534,6 +534,10 @@ describe('processTurn — Pest Infestation (US2)', () => {
     expect(after.plots[0].cropId).toBeNull();
     expect(after.plots[2].pestDamaged).toBe(true);
     expect(after.plots[2].cropId).toBeNull();
+    // FR-019 regression: the log's destroyed-plots list must exactly match the
+    // set of plots the resulting farm state actually marks as pest-damaged —
+    // no plot destroyed-but-unlogged, and no plot logged-but-undamaged.
+    expect(after.plots.filter(p => p.pestDamaged).map(p => p.id)).toEqual(log.pestDestroyedPlots);
   });
 
   it('untouched plot is unaffected when override excludes it', () => {
@@ -1772,21 +1776,5 @@ describe('getNextPlotPrice', () => {
   it('returns null when all plots are unlocked', () => {
     const s = { ...initialGameState(cfg), unlockedPlots: 12 };
     expect(getNextPlotPrice(s, cfg)).toBeNull();
-  });
-});
-
-// ── 017 FR-019 — pest log must account for every destroyed plot ───────────────
-
-describe('processTurn — pest destruction logging (017 FR-019)', () => {
-  it('logs every pest-destroyed plot and matches farm state', () => {
-    let s = withSeeds(initialGameState(), { radish: 3 });
-    for (const plotId of [0, 1, 2]) {
-      const r = plantSeed(s, plotId, 'radish');
-      if (!r.ok) throw new Error(`plant failed on plot ${plotId}`);
-      s = r.state;
-    }
-    const { log, state: after } = processTurn(s, 'pest_infestation', [0, 1, 2]);
-    expect(log.pestDestroyedPlots).toEqual([0, 1, 2]);
-    expect(after.plots.filter(p => p.pestDamaged).map(p => p.id)).toEqual([0, 1, 2]);
   });
 });
