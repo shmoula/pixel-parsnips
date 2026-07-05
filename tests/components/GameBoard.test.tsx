@@ -471,6 +471,31 @@ describe('GameBoard — unwinnable-run notice (017 FR-017)', () => {
   });
 });
 
+// ── Task 12: Empty-plot tap always responds (FR-014) ──────────────────────────
+
+describe('GameBoard — empty-plot tap feedback (017 FR-014)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    markOnboardingComplete();
+  });
+
+  it('guides toward the shop when the player owns no seeds', () => {
+    render(<GameBoard {...makeGameBoardProps()} state={initialGameState()} />);
+    fireEvent.click(screen.getByRole('button', { name: /empty plot 1/i }));
+    expect(screen.getByRole('status')).toHaveTextContent(/you need seeds — grab some in the shop/i);
+  });
+
+  it('prompts seed selection when seeds are owned but none selected', () => {
+    const seededState = {
+      ...initialGameState(),
+      seedInventory: { radish: 2, parsnip: 0, pumpkin: 0 },
+    };
+    render(<GameBoard {...makeGameBoardProps()} state={seededState} />);
+    fireEvent.click(screen.getByRole('button', { name: /empty plot 1/i }));
+    expect(screen.getByRole('status')).toHaveTextContent(/pick a seed first/i);
+  });
+});
+
 // ── T019: PlotCard countdown render tests (US3) ───────────────────────────────
 
 describe('PlotCard — exhaustion countdown (T019, US3)', () => {

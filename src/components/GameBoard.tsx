@@ -27,6 +27,44 @@ function getNetIncome(state: GameState): number {
   return state.lastDailyLog?.netChange ?? 0;
 }
 
+/** 017 FR-014 — guidance copy for a seedless plot tap. */
+function getSeedlessTapHint(seedInventory: GameState['seedInventory']): string {
+  const ownsSeeds = Object.values(seedInventory).some(n => n > 0);
+  return ownsSeeds
+    ? "Pick a seed first — tap 'Plant' on a seed you own."
+    : 'You need seeds — grab some in the shop.';
+}
+
+/** 017 FR-014 — react to a plot tap with no seed selected: surface a hint,
+ * and on mobile, pop the shop sheet open so the player can pick one. */
+function onSeedlessPlotTap({ seedInventory, isDesktop, showSeedHint, setIsShopOpen }: {
+  seedInventory: GameState['seedInventory'];
+  isDesktop: boolean;
+  showSeedHint: (message: string) => void;
+  setIsShopOpen: (open: boolean) => void;
+}): void {
+  showSeedHint(getSeedlessTapHint(seedInventory));
+  if (!isDesktop) setIsShopOpen(true);
+}
+
+/** 017 FR-014 — transient (auto-clearing) guidance message state. */
+function useSeedHint() {
+  const [seedHint, setSeedHint] = useState<string | null>(null);
+  const hintTimerRef = useRef<number | null>(null);
+
+  function showSeedHint(message: string) {
+    setSeedHint(message);
+    if (hintTimerRef.current !== null) window.clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = window.setTimeout(() => setSeedHint(null), 4000);
+  }
+
+  useEffect(() => () => {
+    if (hintTimerRef.current !== null) window.clearTimeout(hintTimerRef.current);
+  }, []);
+
+  return { seedHint, showSeedHint };
+}
+
 /**
  * FR-017: the run is unwinnable when nothing is growing, no seeds are owned,
  * and the player can't afford even the cheapest seed (radish) to plant one.
@@ -51,6 +89,20 @@ function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
     >
       ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
       {daysRemaining} day{suffix} remaining.
+    </p>
+  );
+}
+
+/** 017 FR-014 — transient hint shown after a seedless plot tap; hidden once a
+ * crop gets selected so it never lingers stale over the "Planting: X" banner. */
+function SeedHintBanner({ seedHint, selectedCrop }: { seedHint: string | null; selectedCrop: CropId | null }) {
+  if (!seedHint || selectedCrop) return null;
+  return (
+    <p
+      role="status"
+      className="font-pixel text-xs text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded"
+    >
+      🌱 {seedHint}
     </p>
   );
 }
@@ -186,6 +238,8 @@ export function GameBoard({
 
   const isUnwinnable = checkIsUnwinnable(state, canAdvance, getSeedPrice);
 
+  const { seedHint, showSeedHint } = useSeedHint();
+
   // T010 — When the parent re-renders with a new lastDailyLog after onNextDay(),
   // open the Day Summary modal with that log.
   useEffect(() => {
@@ -237,7 +291,10 @@ export function GameBoard({
   }
 
   function handlePlot(plotId: number) {
-    if (!selectedCrop) return;
+    if (!selectedCrop) {
+      onSeedlessPlotTap({ seedInventory: state.seedInventory, isDesktop, showSeedHint, setIsShopOpen });
+      return;
+    }
     onPlantSeed(plotId, selectedCrop);
     // Selection persists across plants; the effect below clears it when inventory empties.
   }
@@ -279,6 +336,7 @@ export function GameBoard({
               🌱 Planting: {selectedCrop} — click an empty plot
             </p>
           )}
+          <SeedHintBanner seedHint={seedHint} selectedCrop={selectedCrop} />
           <FarmGrid
             plots={state.plots}
             currentDay={state.currentDay}
