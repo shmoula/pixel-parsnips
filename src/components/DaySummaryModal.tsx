@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import type { DailyLogEntry } from '../engine/types';
-import { DailyLog } from './DailyLog';
+import { DailyLog, DISASTER_WEATHER_IDS } from './DailyLog';
 import { DisasterBanner } from './DisasterBanner';
 import { useDisasterReveal } from '../hooks/useDisasterReveal';
 
@@ -16,7 +16,10 @@ interface DaySummaryModalProps {
 export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySummaryModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const { showDisasterChrome, suppressDisasterStyling, animate } = useDisasterReveal(log, animateReveal);
-  const isQuietDay = log.harvests.length === 0 && log.totalHarvestIncome === 0;
+  const isQuietDay =
+    log.harvests.length === 0 &&
+    log.totalHarvestIncome === 0 &&
+    !DISASTER_WEATHER_IDS.has(log.weatherId);
 
   useEffect(() => {
     closeButtonRef.current?.focus();
