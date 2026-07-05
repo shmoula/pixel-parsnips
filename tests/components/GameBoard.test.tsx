@@ -483,7 +483,7 @@ describe('GameBoard — shop sheet open/close semantics (017 FR-004)', () => {
     render(<GameBoard {...makeGameBoardProps()} />);
     const shopBtn = screen.getByRole('button', { name: /open shop/i });
     fireEvent.click(shopBtn);
-    fireEvent.click(shopBtn); // second (ghost) tap must not close it
+    fireEvent.click(shopBtn); // second (ghost) tap must not close it (regression test for the old toggle-based race, FR-004)
     // The sheet wrapper is open when it lacks the translate-y-full class
     const sheet = screen.getByRole('complementary', { name: /shop/i }).parentElement as HTMLElement;
     expect(sheet.className).not.toContain('translate-y-full');

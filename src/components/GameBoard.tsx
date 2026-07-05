@@ -37,14 +37,14 @@ function getSeedlessTapHint(seedInventory: GameState['seedInventory']): string {
 
 /** 017 FR-014 — react to a plot tap with no seed selected: surface a hint,
  * and on mobile, pop the shop sheet open so the player can pick one. */
-function onSeedlessPlotTap({ seedInventory, isDesktop, showSeedHint, setIsShopOpen }: {
+function onSeedlessPlotTap({ seedInventory, isDesktop, showSeedHint, openShop }: {
   seedInventory: GameState['seedInventory'];
   isDesktop: boolean;
   showSeedHint: (message: string) => void;
-  setIsShopOpen: (open: boolean) => void;
+  openShop: () => void;
 }): void {
   showSeedHint(getSeedlessTapHint(seedInventory));
-  if (!isDesktop) setIsShopOpen(true);
+  if (!isDesktop) openShop();
 }
 
 /** 017 FR-014 — transient (auto-clearing) guidance message state. */
@@ -259,21 +259,21 @@ export function GameBoard({
     }
   }, [selectedCrop, state.seedInventory]);
 
+  // 017 FR-004 — the bar's shop button can only OPEN (the bar hides while the
+  // sheet is up); the backdrop CLOSES. A toggle here let double-fired events
+  // close the sheet right after opening, stranding the tutorial's buy step.
+  const openShop = () => setIsShopOpen(true);
+  const closeShop = () => setIsShopOpen(false);
+
   // When onboarding reaches the planting step, close the mobile shop sheet so the
   // farm grid it covers becomes visible and tappable — otherwise the "fill every
   // plot" highlight floats over the open sheet and the plots can't be reached.
   // No-op on desktop, where the shop is an always-open sidebar and isShopOpen stays false.
   useEffect(() => {
     if (onboarding.active && onboarding.step === 'plant') {
-      setIsShopOpen(false);
+      closeShop();
     }
   }, [onboarding.active, onboarding.step]);
-
-  // 017 FR-004 — the bar's shop button can only OPEN (the bar hides while the
-  // sheet is up); the backdrop CLOSES. A toggle here let double-fired events
-  // close the sheet right after opening, stranding the tutorial's buy step.
-  const openShop = () => setIsShopOpen(true);
-  const closeShop = () => setIsShopOpen(false);
 
   // T010 — Next Day handler: flag modal as awaited, then fire the engine callback
   function doAdvance() {
@@ -294,7 +294,7 @@ export function GameBoard({
 
   function handlePlot(plotId: number) {
     if (!selectedCrop) {
-      onSeedlessPlotTap({ seedInventory: state.seedInventory, isDesktop, showSeedHint, setIsShopOpen });
+      onSeedlessPlotTap({ seedInventory: state.seedInventory, isDesktop, showSeedHint, openShop });
       return;
     }
     onPlantSeed(plotId, selectedCrop);
