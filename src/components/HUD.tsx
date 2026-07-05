@@ -42,14 +42,11 @@ function getNextDayText(canAdvanceProductively: boolean): string {
   return canAdvanceProductively ? 'Next Day' : 'Plant seeds first';
 }
 
-function getBalanceTextClass(danger: DangerLevel, targetMet: boolean): string {
+function getBalanceTextClass(danger: DangerLevel): string {
   // Lighter than farm-red so the "critical" balance keeps a ≥4.5:1 contrast
   // ratio against the dark #261808 chip (WCAG AA / Lighthouse a11y).
   if (danger === 'critical') return 'text-[#EB6A5C]';
   if (danger === 'low') return 'text-yellow-300';
-  // Lighter than farm-grass so the "target met" balance keeps a ≥4.5:1
-  // contrast ratio against the dark #261808 chip (WCAG AA / Lighthouse a11y).
-  if (targetMet) return 'text-[#5FB54A]';
   return 'text-farm-gold';
 }
 
@@ -101,7 +98,7 @@ export function HUD({
 
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);
-  const balanceTextClass = getBalanceTextClass(dangerLevel, targetMet);
+  const balanceTextClass = getBalanceTextClass(dangerLevel);
 
   const nextDayLabel = getNextDayLabel(canAdvanceProductively);
   const nextDayText = getNextDayText(canAdvanceProductively);
@@ -137,18 +134,23 @@ export function HUD({
         </button>
         <div data-onboarding="balance-chip" className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
-          <span
-            className={`font-pixel text-sm ${balanceTextClass}`}
-            aria-label={`Coins: ${coinBalance}, season target: ${season.target}`}
-          >
-            <span className="sm:hidden">{coinBalance} / {season.target}</span>
-            <span className="hidden sm:inline">{coinBalance} / {season.target} target</span>
-            {showWarning && (
-              <span className="ml-1 text-farm-red">
-                  — {daysRemainingInSeason} {daysRemainingInSeason === 1 ? 'day' : 'days'} left
+          <div className="flex flex-col justify-center leading-tight">
+            <span
+              className={`font-pixel text-sm ${balanceTextClass}`}
+              aria-label={`Coins: ${coinBalance}. Season goal: ${season.target} coins by day ${seasonLen} of the season.`}
+            >
+              {coinBalance}
+            </span>
+            <span className="font-pixel text-[8px] text-farm-parchment/70 uppercase tracking-widest">
+              <span className="sm:hidden">Goal {season.target}·D{seasonLen}</span>
+              <span className="hidden sm:inline">Goal {season.target} by day {seasonLen}</span>
+              {showWarning && (
+                <span className="text-farm-red">
+                  {' '}— {daysRemainingInSeason} {daysRemainingInSeason === 1 ? 'day' : 'days'} left
                 </span>
-            )}
-          </span>
+              )}
+            </span>
+          </div>
         </div>
         {harvestStreak > 0 && (
           <div
