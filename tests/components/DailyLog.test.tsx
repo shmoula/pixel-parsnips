@@ -114,9 +114,9 @@ describe('DailyLog — disaster lines moved to DisasterBanner', () => {
     expect(screen.queryByText(/destroyed by pests/i)).toBeNull();
   });
 
-  it('still renders the exhaustion line', () => {
+  it('still renders the exhaustion callout', () => {
     render(<DailyLog log={makeLog({ exhaustedPlots: [3] })} />);
-    expect(screen.getByText(/Plot #4 became exhausted/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/plots exhausted/i)).toHaveTextContent('#4');
   });
 
   it('renders the weather badge neutrally when suppressDisasterStyling is set', () => {
@@ -147,5 +147,19 @@ describe('DailyLog — tax legibility (017 FR-006/FR-007)', () => {
   it('does not repeat the explainer after day 1', () => {
     render(<DailyLog log={makeLog({ day: 2, taxDeducted: 4 })} />);
     expect(screen.queryByText(/each night you pay/i)).toBeNull();
+  });
+});
+
+describe('DailyLog — exhaustion callout (017 FR-011)', () => {
+  it('renders exhausted plots as a distinct labelled callout, not plain rows', () => {
+    render(<DailyLog log={makeLog({ exhaustedPlots: [0, 1, 3] })} />);
+    const callout = screen.getByLabelText(/plots exhausted/i);
+    expect(callout).toHaveTextContent('3 plots need rest');
+    expect(callout).toHaveTextContent('#1, #2, #4');
+  });
+
+  it('uses singular phrasing for one plot', () => {
+    render(<DailyLog log={makeLog({ exhaustedPlots: [2] })} />);
+    expect(screen.getByLabelText(/plots exhausted/i)).toHaveTextContent('A plot needs rest');
   });
 });

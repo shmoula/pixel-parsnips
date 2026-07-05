@@ -1,5 +1,5 @@
 import type { DailyLogEntry } from '../engine/types';
-import { WEATHER_DEFINITIONS } from '../engine/constants';
+import { WEATHER_DEFINITIONS, EXHAUSTION_RECOVERY_DAYS } from '../engine/constants';
 import { announceText, activeText } from '../engine/market';
 
 interface DailyLogProps {
@@ -96,6 +96,27 @@ function MarketLines({ log }: { log: DailyLogEntry }) {
   );
 }
 
+function ExhaustionCallout({ log }: { log: DailyLogEntry }) {
+  if (log.exhaustedPlots.length === 0) return null;
+  return (
+    <div
+      role="note"
+      aria-label="Plots exhausted"
+      className="flex flex-col gap-0.5 px-2 py-1.5 rounded bg-farm-gold/10 border border-farm-gold/50"
+    >
+      <span className="font-pixel text-farm-gold">
+        🪨 {log.exhaustedPlots.length === 1
+          ? 'A plot needs rest'
+          : `${log.exhaustedPlots.length} plots need rest`}
+      </span>
+      <span className="text-farm-stone">
+        {log.exhaustedPlots.map(id => `#${id + 1}`).join(', ')} — back in{' '}
+        {EXHAUSTION_RECOVERY_DAYS} days, or use Fertilizer.
+      </span>
+    </div>
+  );
+}
+
 export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps) {
   const weather = WEATHER_DEFINITIONS[log.weatherId];
   return (
@@ -132,17 +153,7 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
         </div>
       )}
 
-      {/* Exhaustion events */}
-      {log.exhaustedPlots.length > 0 && (
-        <div className="flex flex-col gap-1">
-          {log.exhaustedPlots.map(plotId => (
-            <div key={plotId} className="flex items-center gap-1 text-farm-stone">
-              <span aria-hidden="true">🪨</span>
-              <span>Plot #{plotId + 1} became exhausted.</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <ExhaustionCallout log={log} />
 
       {/* Harvest streak bonus */}
       {log.streakBonus > 0 && (
