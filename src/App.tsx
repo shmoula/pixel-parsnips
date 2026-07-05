@@ -95,6 +95,7 @@ function App() {
         getNextUpgradeCost={engine.getNextUpgradeCost}
         onBuyPlot={engine.buyPlot}
         getNextPlotPrice={engine.getNextPlotPrice}
+        onRestart={restart}
       />
       {transitionVariant && (
         <SeasonTransitionModal

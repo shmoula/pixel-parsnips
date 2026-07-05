@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
@@ -65,7 +65,7 @@ describe('BankruptcyScreen', () => {
 
 // ── T047: GameBoard smoke tests + WCAG 2.1 AA gate ───────────────────────────
 
-function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null } = {}) {
+function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null; onRestart?: () => void } = {}) {
   return {
     state: initialGameState(),
     lastDailyLog: overrides.lastDailyLog ?? null,
@@ -81,6 +81,7 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null } =
     getNextUpgradeCost: () => 50 as number | null,
     onBuyPlot: vi.fn().mockReturnValue(false),
     getNextPlotPrice: () => null as number | null,
+    onRestart: overrides.onRestart ?? vi.fn(),
   };
 }
 
@@ -405,6 +406,68 @@ describe('GameBoard — empty-day guardrails (017 FR-015/FR-016)', () => {
     // day 21's higher lease, not day 20's own (unchanged) lease.
     fireEvent.click(screen.getAllByRole('button', { name: /skip day/i })[0]);
     expect(screen.getByRole('dialog', { name: /advance empty day/i })).toBeInTheDocument();
+  });
+});
+
+// ── Task 11: UnwinnableBanner — no seeds, none owned, nothing growing (FR-017) ──
+
+describe('GameBoard — unwinnable-run notice (017 FR-017)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    markOnboardingComplete();
+  });
+
+  it('warns when no seeds are affordable, none owned, and nothing grows', () => {
+    render(
+      <GameBoard {...makeGameBoardProps()} state={{ ...initialGameState(), coinBalance: 3 }} />
+    );
+    const alert = screen.getByRole('alert', { name: /run cannot recover/i });
+    expect(alert).toHaveTextContent(/can't afford seeds/i);
+    expect(within(alert).getByRole('button', { name: /start new run/i })).toBeInTheDocument();
+  });
+
+  it('does not fire while a crop is still growing', () => {
+    const growingState = {
+      ...initialGameState(),
+      coinBalance: 3,
+      plots: initialGameState().plots.map((p, i) =>
+        i === 0 ? { ...p, cropId: 'radish' as const, dayPlanted: 1, daysRemaining: 1 } : p
+      ),
+    };
+    render(<GameBoard {...makeGameBoardProps()} state={growingState} />);
+    expect(screen.queryByRole('alert', { name: /run cannot recover/i })).not.toBeInTheDocument();
+  });
+
+  it('does not fire while the player still owns a seed', () => {
+    const seededState = {
+      ...initialGameState(),
+      coinBalance: 3,
+      seedInventory: { ...initialGameState().seedInventory, radish: 1 },
+    };
+    render(<GameBoard {...makeGameBoardProps()} state={seededState} />);
+    expect(screen.queryByRole('alert', { name: /run cannot recover/i })).not.toBeInTheDocument();
+  });
+
+  it('does not fire when the balance can still afford the cheapest seed', () => {
+    render(
+      <GameBoard {...makeGameBoardProps()} state={{ ...initialGameState(), coinBalance: 100 }} />
+    );
+    expect(screen.queryByRole('alert', { name: /run cannot recover/i })).not.toBeInTheDocument();
+  });
+
+  it('requires a second tap to restart', () => {
+    const onRestart = vi.fn();
+    render(
+      <GameBoard
+        {...makeGameBoardProps({ onRestart })}
+        state={{ ...initialGameState(), coinBalance: 3 }}
+      />
+    );
+    const btn = screen.getByRole('button', { name: /start new run/i });
+    fireEvent.click(btn);
+    expect(onRestart).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /tap again to confirm/i }));
+    expect(onRestart).toHaveBeenCalledOnce();
   });
 });
 

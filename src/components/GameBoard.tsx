@@ -27,6 +27,19 @@ function getNetIncome(state: GameState): number {
   return state.lastDailyLog?.netChange ?? 0;
 }
 
+/**
+ * FR-017: the run is unwinnable when nothing is growing, no seeds are owned,
+ * and the player can't afford even the cheapest seed (radish) to plant one.
+ */
+function checkIsUnwinnable(
+  state: GameState,
+  canAdvance: boolean,
+  getSeedPrice: (cropId: CropId) => number
+): boolean {
+  const anySeedOwned = Object.values(state.seedInventory).some(n => n > 0);
+  return !canAdvance && !anySeedOwned && state.coinBalance < getSeedPrice('radish');
+}
+
 function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
   if (daysRemaining === 0) return null;
   const suffix = daysRemaining === 1 ? '' : 's';
@@ -39,6 +52,30 @@ function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
       ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
       {daysRemaining} day{suffix} remaining.
     </p>
+  );
+}
+
+function UnwinnableBanner({ isUnwinnable, onRestart }: { isUnwinnable: boolean; onRestart: () => void }) {
+  const [armed, setArmed] = useState(false);
+  if (!isUnwinnable) return null;
+  return (
+    <div
+      role="alert"
+      aria-label="Run cannot recover"
+      className="flex flex-wrap items-center justify-between gap-2 font-pixel text-xs text-farm-red bg-farm-red/20 border border-farm-red/70 px-3 py-2 rounded"
+    >
+      <span>
+        💸 Out of options — you can't afford seeds and nothing is growing. Skip days to the end,
+        or start over.
+      </span>
+      <button
+        type="button"
+        onClick={() => (armed ? onRestart() : setArmed(true))}
+        className="font-pixel text-xs px-3 py-1.5 min-h-[44px] md:min-h-0 rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-soil"
+      >
+        {armed ? 'Tap again to confirm' : 'Start new run'}
+      </button>
+    </div>
   );
 }
 
@@ -94,6 +131,8 @@ interface GameBoardProps {
   getNextUpgradeCost: () => number | null;
   onBuyPlot: () => boolean;
   getNextPlotPrice: () => number | null;
+  /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
+  onRestart: () => void;
 }
 
 export function GameBoard({
@@ -111,6 +150,7 @@ export function GameBoard({
   getNextUpgradeCost,
   onBuyPlot,
   getNextPlotPrice,
+  onRestart,
 }: GameBoardProps) {
   const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
 
@@ -143,6 +183,8 @@ export function GameBoard({
   // *tomorrow's* lease (not today's) since a season boundary can raise it.
   const nextDayLeaseCost = getSeasonForDay(state.currentDay + 1).leasePerDay;
   const emptyDayIsRuinous = state.coinBalance - leaseCost - taxEstimate < nextDayLeaseCost;
+
+  const isUnwinnable = checkIsUnwinnable(state, canAdvance, getSeedPrice);
 
   // T010 — When the parent re-renders with a new lastDailyLog after onNextDay(),
   // open the Day Summary modal with that log.
@@ -230,6 +272,7 @@ export function GameBoard({
       <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
+          <UnwinnableBanner isUnwinnable={isUnwinnable} onRestart={onRestart} />
           <FlashDroughtBanner daysRemaining={state.flashDroughtDaysRemaining} />
           {selectedCrop && (
             <p className="font-pixel text-xs text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded">
