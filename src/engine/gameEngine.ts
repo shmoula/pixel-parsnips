@@ -602,8 +602,8 @@ export function getNextPlotPrice(state: GameState, config: EconomyConfig = DEFAU
  * True when advancing a day can produce value: a crop is planted and growing on
  * a plot. A seed merely held in inventory does NOT count — an unplanted seed
  * grows nothing when the day advances, so advancing only burns lease + tax (the
- * empty-day bankruptcy trap) and the UI should warn ("Plant seeds first") until
- * something is actually planted.
+ * empty-day bankruptcy trap) and the UI labels the advance control "Skip day"
+ * (rather than the default "Next day") until something is actually planted.
  */
 export function canAdvanceProductively(state: GameState): boolean {
   return state.plots.some(p => p.cropId !== null);
