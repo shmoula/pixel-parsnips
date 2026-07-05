@@ -33,12 +33,18 @@ describe('BottomActionBar', () => {
 
   it('warns to plant first when advancing is unproductive', () => {
     render(<BottomActionBar {...base} canAdvanceProductively={false} />);
-    expect(screen.getByRole('button', { name: /plant seeds first/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /skip day/i })).toBeInTheDocument();
   });
 
   it('renders nothing when hidden', () => {
     const { container } = render(<BottomActionBar {...base} hidden={true} />);
     expect(container.firstChild).toBeNull();
     expect(screen.queryByRole('button', { name: /open shop/i })).not.toBeInTheDocument();
+  });
+
+  it('labels the advance control "Skip day" when nothing is planted (017 FR-018)', () => {
+    render(<BottomActionBar {...base} canAdvanceProductively={false} />);
+    expect(screen.getByRole('button', { name: /skip day — nothing planted/i })).toHaveTextContent(/skip day/i);
+    expect(screen.queryByText(/plant seeds first/i)).toBeNull();
   });
 });

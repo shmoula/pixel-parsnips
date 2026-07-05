@@ -162,7 +162,13 @@ describe('HUD — empty-day safeguard label', () => {
 
   it('warns to plant first when advancing is unproductive', () => {
     renderHUD({ canAdvanceProductively: false });
-    expect(screen.getByText(/plant seeds first/i)).toBeInTheDocument();
+    expect(screen.getByText(/skip day/i)).toBeInTheDocument();
+  });
+
+  it('labels the advance control "Skip day" when nothing is planted (017 FR-018)', () => {
+    renderHUD({ canAdvanceProductively: false });
+    expect(screen.getByRole('button', { name: /skip day — nothing planted/i })).toHaveTextContent(/skip day/i);
+    expect(screen.queryByText(/plant seeds first/i)).toBeNull();
   });
 
   it('marks the next-day and balance anchors', () => {

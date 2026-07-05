@@ -8,11 +8,12 @@ interface BottomActionBarProps {
 }
 
 function nextDayLabel(canAdvance: boolean): string {
-  return canAdvance ? 'Advance to next day' : 'Plant seeds first — nothing planted yet';
+  // Accessible name must contain the button's visible text (axe label-content-name-mismatch).
+  return canAdvance ? 'Advance to next day' : 'Skip day — nothing planted';
 }
 
 function nextDayText(canAdvance: boolean): string {
-  return canAdvance ? 'Next Day' : 'Plant seeds first';
+  return canAdvance ? 'Next Day' : 'Skip day';
 }
 
 /**

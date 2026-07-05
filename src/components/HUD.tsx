@@ -35,11 +35,11 @@ function getRepTitleClass(expanded: boolean): string {
 
 function getNextDayLabel(canAdvanceProductively: boolean): string {
   // Accessible name must contain the button's visible text (axe label-content-name-mismatch).
-  return canAdvanceProductively ? 'Advance to next day' : 'Plant seeds first — nothing planted yet';
+  return canAdvanceProductively ? 'Advance to next day' : 'Skip day — nothing planted';
 }
 
 function getNextDayText(canAdvanceProductively: boolean): string {
-  return canAdvanceProductively ? 'Next Day' : 'Plant seeds first';
+  return canAdvanceProductively ? 'Next Day' : 'Skip day';
 }
 
 function getBalanceTextClass(danger: DangerLevel): string {
