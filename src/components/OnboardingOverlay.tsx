@@ -10,6 +10,8 @@ interface Props {
   netIncome: number;
   /** True when the mobile shop bottom-sheet is open (covers anchors behind it). */
   isShopOpen?: boolean;
+  /** Seed-buying progress for the buy-radishes step: how many bought of how many needed. */
+  buyProgress?: { owned: number; needed: number } | null;
   onStart: () => void;
   onSkip: () => void;
   onDismissPayoff: () => void;
@@ -108,6 +110,61 @@ function useAnchorRect(selector: string | null): DOMRect | null {
   return rect;
 }
 
+/** 017 FR-005 — live seed-buying progress shown under the buy-radishes copy. */
+function BuyProgress({ step, buyProgress }: { step: OnboardingStep; buyProgress: Props['buyProgress'] }) {
+  if (step !== 'buy-radishes' || !buyProgress) return null;
+  return (
+    <p className="font-pixel text-[10px] text-farm-gold mt-1">
+      {buyProgress.owned} of {buyProgress.needed} bought
+    </p>
+  );
+}
+
+/** The highlight ring + copy bubble anchored to the current step's on-screen target. */
+function AnchoredBubble({
+  anchor,
+  rect,
+  step,
+  buyProgress,
+  ringPulse,
+}: {
+  anchor: { selector: string; copy: string };
+  rect: DOMRect | null;
+  step: OnboardingStep;
+  buyProgress: Props['buyProgress'];
+  ringPulse: string;
+}) {
+  return (
+    <>
+      {rect && (
+        <div
+          aria-hidden="true"
+          className={`absolute rounded-lg ring-2 ring-farm-gold ${ringPulse}`}
+          style={{
+            left: rect.left - 6,
+            top: rect.top - 6,
+            width: rect.width + 12,
+            height: rect.height + 12,
+          }}
+        />
+      )}
+      <div
+        role="status"
+        aria-live="polite"
+        className="pointer-events-auto absolute max-w-[220px] bg-farm-soil border border-farm-gold/50 rounded-lg px-3 py-2"
+        style={
+          rect
+            ? bubbleStyle(rect)
+            : { left: '50%', bottom: 24, transform: 'translateX(-50%)' }
+        }
+      >
+        <p className="font-pixel text-[10px] text-farm-parchment leading-relaxed">{anchor.copy}</p>
+        <BuyProgress step={step} buyProgress={buyProgress} />
+      </div>
+    </>
+  );
+}
+
 function SkipChip({ onSkip }: { onSkip: () => void }) {
   return (
     <button
@@ -124,7 +181,7 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
   );
 }
 
-export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen = false, onStart, onSkip, onDismissPayoff }: Props) {
+export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen = false, buyProgress = null, onStart, onSkip, onDismissPayoff }: Props) {
   const reduced = useReducedMotion();
   const anchor = activeAnchor(step, isShopOpen);
   const rect = useAnchorRect(anchor ? anchor.selector : null);
@@ -180,32 +237,7 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
       {/* Anchored bubble: open-shop / buy-radishes / plant / advance.
           activeAnchor() returns null while the shop sheet covers this anchor. */}
       {anchor && (
-        <>
-          {rect && (
-            <div
-              aria-hidden="true"
-              className={`absolute rounded-lg ring-2 ring-farm-gold ${ringPulse}`}
-              style={{
-                left: rect.left - 6,
-                top: rect.top - 6,
-                width: rect.width + 12,
-                height: rect.height + 12,
-              }}
-            />
-          )}
-          <div
-            role="status"
-            aria-live="polite"
-            className="pointer-events-auto absolute max-w-[220px] bg-farm-soil border border-farm-gold/50 rounded-lg px-3 py-2"
-            style={
-              rect
-                ? bubbleStyle(rect)
-                : { left: '50%', bottom: 24, transform: 'translateX(-50%)' }
-            }
-          >
-            <p className="font-pixel text-[10px] text-farm-parchment leading-relaxed">{anchor.copy}</p>
-          </div>
-        </>
+        <AnchoredBubble anchor={anchor} rect={rect} step={step} buyProgress={buyProgress} ringPulse={ringPulse} />
       )}
     </div>
   );

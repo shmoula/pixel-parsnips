@@ -328,3 +328,14 @@ describe('OnboardingOverlay — skip chip positioning (017 FR-003)', () => {
     expect(skip.className).toContain('md:bottom-3');
   });
 });
+
+describe('OnboardingOverlay — buy progress (017 FR-005)', () => {
+  it('shows buy progress during the buy-radishes step (017 FR-005)', () => {
+    render(
+      <OnboardingOverlay step="buy-radishes" harvestIncome={0} netIncome={0}
+        buyProgress={{ owned: 2, needed: 4 }}
+        onStart={() => {}} onSkip={() => {}} onDismissPayoff={() => {}} />,
+    );
+    expect(screen.getByText('2 of 4 bought')).toBeInTheDocument();
+  });
+});

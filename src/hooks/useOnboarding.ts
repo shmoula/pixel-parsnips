@@ -22,7 +22,7 @@ interface Opts {
 }
 
 /** Count of unlocked, plantable (empty / not pest / not exhausted) plots. */
-function emptyPlotCount(state: GameState): number {
+export function emptyPlotCount(state: GameState): number {
   return state.plots
     .slice(0, state.unlockedPlots)
     .filter(p => p.cropId === null && !p.pestDamaged && p.exhaustedSinceDay === null).length;

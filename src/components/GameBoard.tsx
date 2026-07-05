@@ -3,7 +3,7 @@ import type { GameState, CropId, DailyLogEntry, WeatherId } from '../engine/type
 import { canAdvanceProductively } from '../engine/gameEngine';
 import { TAX_RATE } from '../engine/constants';
 import { getSeasonForDay } from '../engine/seasons';
-import { useOnboarding } from '../hooks/useOnboarding';
+import { useOnboarding, emptyPlotCount } from '../hooks/useOnboarding';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { BottomActionBar } from './BottomActionBar';
 import { HUD } from './HUD';
@@ -25,6 +25,15 @@ function getHarvestIncome(state: GameState): number {
 /** Null-safe net coins change from the last daily log (after lease & tax). */
 function getNetIncome(state: GameState): number {
   return state.lastDailyLog?.netChange ?? 0;
+}
+
+/** 017 FR-005 — live seed-buying progress shown during the buy-radishes onboarding step. */
+function getBuyProgress(
+  state: GameState,
+  step: string,
+): { owned: number; needed: number } | null {
+  if (step !== 'buy-radishes') return null;
+  return { owned: state.seedInventory.radish, needed: Math.max(1, emptyPlotCount(state)) };
 }
 
 /** 017 FR-014 — guidance copy for a seedless plot tap. */
@@ -413,6 +422,7 @@ export function GameBoard({
           harvestIncome={getHarvestIncome(state)}
           netIncome={getNetIncome(state)}
           isShopOpen={isShopOpen}
+          buyProgress={getBuyProgress(state, onboarding.step)}
           onStart={onboarding.onStart}
           onSkip={onboarding.onSkip}
           onDismissPayoff={onboarding.onDismissPayoff}
