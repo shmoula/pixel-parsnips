@@ -250,8 +250,11 @@ describe('PlotCard — FR-014: consecutiveHarvests never rendered (T022)', () =>
   cases.forEach(({ label, plot }) => {
     it(`does not render consecutiveHarvests value for ${label}`, () => {
       render(<PlotCard plot={plot} currentDay={5} />);
-      // The raw consecutiveHarvests number must never appear as text
-      expect(document.body.textContent).not.toMatch(String(plot.consecutiveHarvests));
+      // The raw consecutiveHarvests number must never appear as text (word-boundary
+      // match so incidental digits inside unrelated numbers, e.g. a fertilizer
+      // price, don't produce a false positive)
+      const boundaryPattern = new RegExp(`\\b${plot.consecutiveHarvests}\\b`);
+      expect(document.body.textContent).not.toMatch(boundaryPattern);
     });
   });
 });
@@ -336,19 +339,19 @@ describe('PlotCard — exhaustion countdown (T019, US3)', () => {
   it('renders "3 days remaining" when exhausted this turn (N=3)', () => {
     // exhaustedSinceDay=5, currentDay=5 → 3 - (5-5) = 3
     render(<PlotCard plot={makeExhaustedPlot(0, 5)} currentDay={5} />);
-    expect(screen.getByText(/3d remaining/i)).toBeInTheDocument();
+    expect(screen.getByText(/resting · 3d/i)).toBeInTheDocument();
   });
 
   it('renders "2 days remaining" after 1 day has passed (N=2)', () => {
     // exhaustedSinceDay=5, currentDay=6 → 3 - (6-5) = 2
     render(<PlotCard plot={makeExhaustedPlot(0, 5)} currentDay={6} />);
-    expect(screen.getByText(/2d remaining/i)).toBeInTheDocument();
+    expect(screen.getByText(/resting · 2d/i)).toBeInTheDocument();
   });
 
   it('renders "1 day remaining" after 2 days have passed (N=1)', () => {
     // exhaustedSinceDay=5, currentDay=7 → 3 - (7-5) = 1
     render(<PlotCard plot={makeExhaustedPlot(0, 5)} currentDay={7} />);
-    expect(screen.getByText(/1d remaining/i)).toBeInTheDocument();
+    expect(screen.getByText(/ready tomorrow/i)).toBeInTheDocument();
   });
 
   it('does NOT render any countdown when plot is not exhausted', () => {
@@ -357,6 +360,6 @@ describe('PlotCard — exhaustion countdown (T019, US3)', () => {
       consecutiveHarvests: 0, exhaustedSinceDay: null,
     };
     render(<PlotCard plot={emptyPlot} currentDay={5} />);
-    expect(screen.queryByText(/remaining/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/resting|ready tomorrow/i)).not.toBeInTheDocument();
   });
 });

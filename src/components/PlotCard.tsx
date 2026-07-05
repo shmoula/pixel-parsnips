@@ -1,6 +1,8 @@
 import type { PlotState } from '../engine/types';
-import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS } from '../engine/constants';
+import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS, FERTILIZER_COST } from '../engine/constants';
 import { ProgressRing } from './ProgressRing';
+import { CropSprite } from './CropSprite';
+import type { SpriteStage } from './cropSprites';
 
 // T013 — crop-specific emojis for full/ready stages
 const CROP_EMOJI: Record<string, string> = {
@@ -43,6 +45,18 @@ const GROWTH_STAGE_EMOJI: Record<GrowthStage, string | null> = {
   full:   null, // falls through to crop-specific emoji
   ready:  null,
 };
+
+// 016 — map the engine's 4 growth stages 1:1 onto the 4 sprite stages.
+// A crop that doesn't supply a given frame degrades to the nearest earlier
+// sprite via getCropSpriteUrl, so this mapping stays exact.
+function toSpriteStage(stage: GrowthStage): SpriteStage {
+  switch (stage) {
+    case 'sprout': return 'seedling';
+    case 'small':  return 'sprout';
+    case 'full':   return 'mature';
+    case 'ready':  return 'ready';
+  }
+}
 
 interface PlotCardProps {
   plot: PlotState;
@@ -119,16 +133,42 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
   );
 }
 
-// T016 — ExhaustedPlot: cracked earth gradient, grayscale, red border
+// T016 + 017 FR-012/FR-013 — cracked earth; honest recovery guidance
+function ExhaustedPlotFertilizerAction({ readyTomorrow, daysUntilRecovery, plotId, onApplyFertilizer }: {
+  readyTomorrow: boolean;
+  daysUntilRecovery: number;
+  plotId: number;
+  onApplyFertilizer?: (plotId: number) => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label="Use Fertilizer on this plot"
+      onClick={() => onApplyFertilizer?.(plotId)}
+      className={
+        readyTomorrow
+          ? 'mt-1 font-pixel text-[10px] px-1.5 py-0.5 rounded border border-farm-stone/40 text-farm-stone hover:text-farm-parchment active:scale-95 transition-all cursor-pointer'
+          : 'mt-1 font-pixel text-xs px-1.5 py-0.5 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink active:scale-95 transition-all cursor-pointer'
+      }
+    >
+      {readyTomorrow ? '🌿 use anyway' : `🌿 skip ${daysUntilRecovery}d`}
+    </button>
+  );
+}
+
 function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertilizer }: {
   plot: PlotState;
   daysUntilRecovery: number;
   hasFertilizer: boolean;
   onApplyFertilizer?: (plotId: number) => void;
 }) {
+  const readyTomorrow = daysUntilRecovery <= 1;
+  const ariaState = readyTomorrow
+    ? 'ready tomorrow'
+    : `${daysUntilRecovery} days until recovery`;
   return (
     <div
-      aria-label={`Plot ${plot.id + 1}: Exhausted — ${daysUntilRecovery} day${daysUntilRecovery === 1 ? '' : 's'} until recovery`}
+      aria-label={`Plot ${plot.id + 1}: Resting — ${ariaState}`}
       className="
         flex flex-col items-center justify-center
         w-full aspect-square overflow-hidden rounded-lg border-2
@@ -143,27 +183,27 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
         filter: 'grayscale(0.4)',
       }}
     >
-      <span className="text-2xl">🪨</span>
-      <span className="text-xs font-pixel text-farm-stone/80 mt-0.5">
-        {daysUntilRecovery}d remaining
-      </span>
-      {hasFertilizer ? (
-        <button
-          type="button"
-          aria-label="Use Fertilizer on this plot"
-          onClick={() => onApplyFertilizer?.(plot.id)}
-          className="
-            mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
-            bg-farm-grass text-farm-parchment
-            hover:bg-farm-gold hover:text-farm-ink
-            active:scale-95 transition-all cursor-pointer
-          "
-        >
-          Use Fertilizer
-        </button>
+      <span className="text-xl">🪨</span>
+      {readyTomorrow ? (
+        <span className="text-xs font-pixel text-farm-parchment/80 mt-0.5 text-center">
+          Ready tomorrow
+        </span>
       ) : (
-        <span className="text-xs text-farm-stone/70 mt-0.5 text-center px-1">
-          Buy Fertilizer in the shop
+        <span className="text-xs font-pixel text-farm-stone/80 mt-0.5 text-center">
+          Resting · {daysUntilRecovery}d
+        </span>
+      )}
+      {hasFertilizer && (
+        <ExhaustedPlotFertilizerAction
+          readyTomorrow={readyTomorrow}
+          daysUntilRecovery={daysUntilRecovery}
+          plotId={plot.id}
+          onApplyFertilizer={onApplyFertilizer}
+        />
+      )}
+      {!hasFertilizer && !readyTomorrow && (
+        <span className="text-[10px] text-farm-stone/70 mt-0.5 text-center px-1">
+          🌿 {FERTILIZER_COST}🪙 skips the wait
         </span>
       )}
     </div>
@@ -199,7 +239,13 @@ function GrowingCropCard({ plot }: {
       ].join(' ')}
     >
       <ProgressRing progress={progress} size={52}>
-        <span className="text-2xl">{stageEmoji}</span>
+        <CropSprite
+          cropId={plot.cropId!}
+          stage={toSpriteStage(stage)}
+          fallback={stageEmoji}
+          size={48}
+          fallbackClass="text-2xl"
+        />
       </ProgressRing>
       <span className="text-xs font-pixel text-farm-parchment/80 mt-1">{label}</span>
       {isReady ? (
