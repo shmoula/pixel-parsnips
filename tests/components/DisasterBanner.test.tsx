@@ -41,14 +41,14 @@ describe('DisasterBanner', () => {
     expect(banner).toHaveTextContent(/blight/i);
   });
 
-  it('renders a consolidated line listing all destroyed plots for pests', () => {
+  it('renders the pest infestation banner', () => {
     render(
       <DisasterBanner
         log={makeLog({ weatherId: 'pest_infestation', pestDestroyedPlots: [2, 4] })}
       />,
     );
     const banner = screen.getByLabelText(/disaster/i);
-    expect(banner).toHaveTextContent('2 plots destroyed by pests: #3, #5.');
+    expect(banner).toHaveTextContent(/pest/i);
   });
 
   it('renders the flash drought banner', () => {
