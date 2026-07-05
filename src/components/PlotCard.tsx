@@ -1,8 +1,6 @@
 import type { PlotState } from '../engine/types';
 import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS, FERTILIZER_COST } from '../engine/constants';
 import { ProgressRing } from './ProgressRing';
-import { CropSprite } from './CropSprite';
-import type { SpriteStage } from './cropSprites';
 
 // T013 — crop-specific emojis for full/ready stages
 const CROP_EMOJI: Record<string, string> = {
@@ -45,18 +43,6 @@ const GROWTH_STAGE_EMOJI: Record<GrowthStage, string | null> = {
   full:   null, // falls through to crop-specific emoji
   ready:  null,
 };
-
-// 016 — map the engine's 4 growth stages 1:1 onto the 4 sprite stages.
-// A crop that doesn't supply a given frame degrades to the nearest earlier
-// sprite via getCropSpriteUrl, so this mapping stays exact.
-function toSpriteStage(stage: GrowthStage): SpriteStage {
-  switch (stage) {
-    case 'sprout': return 'seedling';
-    case 'small':  return 'sprout';
-    case 'full':   return 'mature';
-    case 'ready':  return 'ready';
-  }
-}
 
 interface PlotCardProps {
   plot: PlotState;
@@ -239,13 +225,7 @@ function GrowingCropCard({ plot }: {
       ].join(' ')}
     >
       <ProgressRing progress={progress} size={52}>
-        <CropSprite
-          cropId={plot.cropId!}
-          stage={toSpriteStage(stage)}
-          fallback={stageEmoji}
-          size={48}
-          fallbackClass="text-2xl"
-        />
+        <span className="text-2xl">{stageEmoji}</span>
       </ProgressRing>
       <span className="text-xs font-pixel text-farm-parchment/80 mt-1">{label}</span>
       {isReady ? (

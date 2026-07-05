@@ -148,7 +148,7 @@ describe('GameBoard — smoke tests (T047)', () => {
   it('"Next Day" button is rendered in both HUD and bottom bar, enabled initially', () => {
     render(<GameBoard {...makeGameBoardProps()} />);
     // Nothing planted → both copies show the empty-day safeguard label.
-    const buttons = screen.getAllByRole('button', { name: /plant seeds first/i });
+    const buttons = screen.getAllByRole('button', { name: /skip day/i });
     expect(buttons).toHaveLength(2);
     buttons.forEach(b => expect(b).not.toBeDisabled());
   });
@@ -157,14 +157,14 @@ describe('GameBoard — smoke tests (T047)', () => {
     render(<GameBoard {...makeGameBoardProps()} />);
     // Bar present initially: its Shop control + its Next Day copy (alongside the HUD copy).
     expect(screen.getByRole('button', { name: /open shop/i })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /plant seeds first/i })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /skip day/i })).toHaveLength(2);
 
     // Open the mobile shop bottom sheet via the bar's Shop button.
     fireEvent.click(screen.getByRole('button', { name: /open shop/i }));
 
     // Bar unmounts so it can't overlay the sheet; only the HUD's (DOM-only) Next Day copy remains.
     expect(screen.queryByRole('button', { name: /open shop/i })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /plant seeds first/i })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /skip day/i })).toHaveLength(1);
   });
 
   it('closes the mobile shop sheet when onboarding advances to the plant step', () => {
