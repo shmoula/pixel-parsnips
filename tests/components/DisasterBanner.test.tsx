@@ -41,15 +41,14 @@ describe('DisasterBanner', () => {
     expect(banner).toHaveTextContent(/blight/i);
   });
 
-  it('renders one line per destroyed plot for pests', () => {
+  it('renders a consolidated line listing all destroyed plots for pests', () => {
     render(
       <DisasterBanner
         log={makeLog({ weatherId: 'pest_infestation', pestDestroyedPlots: [2, 4] })}
       />,
     );
     const banner = screen.getByLabelText(/disaster/i);
-    expect(banner).toHaveTextContent('Plot #3 destroyed by pests.');
-    expect(banner).toHaveTextContent('Plot #5 destroyed by pests.');
+    expect(banner).toHaveTextContent('2 plots destroyed by pests: #3, #5.');
   });
 
   it('renders the flash drought banner', () => {
@@ -84,5 +83,44 @@ describe('DisasterBanner', () => {
 
     rerender(<DisasterBanner log={makeLog({ weatherId: 'blight' })} />);
     expect(screen.getByLabelText(/disaster/i)).not.toHaveClass('disaster-banner-anim');
+  });
+});
+
+describe('DisasterBanner — accurate damage accounting (017 FR-019/FR-020)', () => {
+  it('lists all destroyed plots when pests destroy several', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({ weatherId: 'pest_infestation', pestDestroyedPlots: [0, 2, 3] })}
+      />,
+    );
+    const banner = screen.getByRole('alert');
+    expect(banner).toHaveTextContent('3 plots destroyed by pests: #1, #3, #4.');
+  });
+
+  it('keeps the single-plot phrasing for one destroyed plot', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({ weatherId: 'pest_infestation', pestDestroyedPlots: [1] })}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Plot #2 destroyed by pests.');
+  });
+
+  it('does not overstate a pest event that destroyed nothing', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({ weatherId: 'pest_infestation', pestDestroyedPlots: [] })}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The pests found nothing to eat — no crops were growing.',
+    );
+  });
+
+  it('notes that blight cost nothing when no harvests were due', () => {
+    render(<DisasterBanner log={makeLog({ weatherId: 'blight', harvests: [] })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Nothing was due for harvest — no coins were lost.',
+    );
   });
 });

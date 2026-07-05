@@ -24,9 +24,15 @@ const DISASTER_TITLE: Record<string, string> = {
 function bodyLines(log: DailyLogEntry): string[] {
   switch (log.weatherId) {
     case 'blight':
-      return [WEATHER_DEFINITIONS.blight.description];
-    case 'pest_infestation':
-      return log.pestDestroyedPlots.map(id => `Plot #${id + 1} destroyed by pests.`);
+      return log.harvests.length === 0
+        ? [WEATHER_DEFINITIONS.blight.description, 'Nothing was due for harvest — no coins were lost.']
+        : [WEATHER_DEFINITIONS.blight.description];
+    case 'pest_infestation': {
+      const plots = log.pestDestroyedPlots;
+      if (plots.length === 0) return ['The pests found nothing to eat — no crops were growing.'];
+      if (plots.length === 1) return [`Plot #${plots[0] + 1} destroyed by pests.`];
+      return [`${plots.length} plots destroyed by pests: ${plots.map(id => `#${id + 1}`).join(', ')}.`];
+    }
     case 'flash_drought':
       return ['Crops planted in the next 2 days grow at half speed.'];
     default:
