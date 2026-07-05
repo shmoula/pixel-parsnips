@@ -131,3 +131,21 @@ describe('DailyLog — disaster lines moved to DisasterBanner', () => {
     expect(badge.className).toMatch(/farm-red/);
   });
 });
+
+describe('DailyLog — tax legibility (017 FR-006/FR-007)', () => {
+  it('states the tax basis so the amount is recomputable', () => {
+    // basis = closingBalance + taxDeducted = 81 + 4 = 85
+    render(<DailyLog log={makeLog({ taxRate: 0.06, taxDeducted: 4, closingBalance: 81 })} />);
+    expect(screen.getByText(/tax \(6% of 85🪙 savings\)/i)).toBeInTheDocument();
+  });
+
+  it('shows the one-time tax explainer on day 1', () => {
+    render(<DailyLog log={makeLog({ day: 1, taxDeducted: 4 })} />);
+    expect(screen.getByText(/each night you pay/i)).toBeInTheDocument();
+  });
+
+  it('does not repeat the explainer after day 1', () => {
+    render(<DailyLog log={makeLog({ day: 2, taxDeducted: 4 })} />);
+    expect(screen.queryByText(/each night you pay/i)).toBeNull();
+  });
+});

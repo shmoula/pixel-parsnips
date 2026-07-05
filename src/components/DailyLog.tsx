@@ -41,9 +41,17 @@ function LogAccountingRows({ log }: { log: DailyLogEntry }) {
 
       {log.taxDeducted > 0 && (
         <div className="flex justify-between text-farm-stone">
-          <span>Tax ({Math.round(log.taxRate * 100)}%)</span>
+          <span>
+            Tax ({Math.round(log.taxRate * 100)}% of {log.closingBalance + log.taxDeducted}🪙 savings)
+          </span>
           <span className="text-farm-red">−{log.taxDeducted}🪙</span>
         </div>
+      )}
+      {log.taxDeducted > 0 && log.day === 1 && (
+        <p className="text-[10px] leading-snug text-farm-stone/80">
+          Each night you pay {Math.round(log.taxRate * 100)}% of the coins you hold (after lease)
+          as tax — earn faster than the kingdom collects.
+        </p>
       )}
 
       <div className="flex justify-between font-pixel text-farm-parchment border-t border-farm-stone/30 pt-1 mt-1">
