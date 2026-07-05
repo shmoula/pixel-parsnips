@@ -316,3 +316,15 @@ describe('OnboardingOverlay — live anchor tracking (017 FR-001/FR-002)', () =>
     document.body.removeChild(el);
   });
 });
+
+describe('OnboardingOverlay — skip chip positioning (017 FR-003)', () => {
+  it('positions the skip chip above the mobile bottom bar (017 FR-003)', () => {
+    render(
+      <OnboardingOverlay step="welcome" harvestIncome={0} netIncome={0}
+        onStart={() => {}} onSkip={() => {}} onDismissPayoff={() => {}} />,
+    );
+    const skip = screen.getByRole('button', { name: /skip tutorial/i });
+    expect(skip.className).toContain('bottom-20');
+    expect(skip.className).toContain('md:bottom-3');
+  });
+});

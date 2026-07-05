@@ -114,7 +114,7 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
       type="button"
       onClick={onSkip}
       aria-label="Skip tutorial"
-      className="fixed bottom-3 right-3 z-[60] font-pixel text-[10px] px-3 py-1.5 rounded
+      className="fixed bottom-20 right-3 md:bottom-3 z-[60] font-pixel text-[10px] px-3 py-1.5 rounded
                  pointer-events-auto
                  bg-farm-ink/90 text-farm-parchment border border-farm-stone/40
                  hover:bg-farm-ink"
