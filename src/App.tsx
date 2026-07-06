@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { useGameEngine } from './engine/useGameEngine';
 import { GameBoard } from './components/GameBoard';
 import { BankruptcyScreen } from './components/BankruptcyScreen';
 import { SeasonTransitionModal } from './components/SeasonTransitionModal';
 import { requestOnboardingReplay } from './engine/onboarding';
 import type { PersonalBests } from './engine/records';
+import { initAnalytics } from './analytics/track';
 
 function GrainFilter() {
   return (
@@ -23,6 +25,10 @@ function GrainFilter() {
 }
 
 function App() {
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
   const engine = useGameEngine();
   const { state, restart, continueSeason, endRunVictory, endOfRunRecap } = engine;
 
