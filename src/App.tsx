@@ -7,6 +7,7 @@ import { requestOnboardingReplay } from './engine/onboarding';
 import type { PersonalBests } from './engine/records';
 import { initAnalytics } from './analytics/track';
 import { useAnalyticsEvents } from './analytics/useAnalyticsEvents';
+import { AnalyticsOptOutToggle } from './components/AnalyticsOptOutToggle';
 
 function GrainFilter() {
   return (
@@ -105,6 +106,7 @@ function App() {
           onRestart={restart}
         />
       )}
+      <AnalyticsOptOutToggle />
     </>
   );
 }
