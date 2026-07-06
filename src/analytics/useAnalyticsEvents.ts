@@ -39,5 +39,21 @@ export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): v
         });
       }
     }
+
+    // season_2_reached milestone — first time the derived season number reaches 2.
+    const prevSeason = getSeasonForDay(prev.currentDay).number;
+    const currSeason = getSeasonForDay(state.currentDay).number;
+    if (
+      prevSeason < 2 &&
+      currSeason >= 2 &&
+      !firedMilestonesRef.current.has('season_2_reached')
+    ) {
+      firedMilestonesRef.current.add('season_2_reached');
+      track('milestone_reached', {
+        milestone: 'season_2_reached',
+        day: state.currentDay,
+        season_number: currSeason,
+      });
+    }
   }, [state]);
 }

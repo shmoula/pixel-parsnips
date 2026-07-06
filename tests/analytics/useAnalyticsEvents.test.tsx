@@ -88,3 +88,23 @@ describe('useAnalyticsEvents plot_unlocked + first-plot milestone', () => {
     expect(milestoneCall![1]).toMatchObject({ milestone: 'first_plot_unlocked', day: 4 });
   });
 });
+
+describe('useAnalyticsEvents season_2 milestone', () => {
+  it('fires season_2_reached once when the derived season first hits 2', () => {
+    // Season 1 is days 1-20; day 21 is season 2 (see engine/seasons SEASON_TABLE).
+    const s1 = { ...initialGameState(), currentDay: 18 } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: s1 },
+    });
+    track.mockClear();
+
+    rerender({ state: { ...s1, currentDay: 21 } });
+    rerender({ state: { ...s1, currentDay: 22 } });
+
+    const calls = track.mock.calls.filter(
+      ([n, p]) => n === 'milestone_reached' && p.milestone === 'season_2_reached',
+    );
+    expect(calls).toHaveLength(1);
+    expect(calls[0][1]).toMatchObject({ season_number: 2 });
+  });
+});
