@@ -19,7 +19,7 @@ export function AnalyticsOptOutToggle() {
       type="button"
       onClick={toggle}
       aria-pressed={!optedOut}
-      className="fixed bottom-2 left-2 z-40 rounded bg-black/40 px-2 py-1 text-xs text-white/80 hover:text-white"
+      className="fixed bottom-2 left-2 z-40 rounded bg-black/80 px-2 py-1 text-xs text-white hover:bg-black"
       title="Toggle anonymous analytics. No personal data is ever collected."
     >
       Analytics: {optedOut ? 'off' : 'on'}
