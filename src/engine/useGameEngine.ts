@@ -28,6 +28,8 @@ import { recordRunEnd, type PersonalBests } from './records';
 import { deriveMedal, type Medal } from './medals';
 import { getSeasonForDay } from './seasons';
 import { EMPTY_MARKET } from './market';
+import { trackPlayStartedOnce } from '../analytics/track';
+import { loadOnboarding } from './onboarding';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 
@@ -242,6 +244,18 @@ export function useGameEngine(): GameEngineHook {
     stateRef.current = state;
   });
 
+  const hasSignaledPlayStartedRef = useRef(false);
+  const signalPlayStarted = useCallback((action: string) => {
+    if (hasSignaledPlayStartedRef.current) return;
+    hasSignaledPlayStartedRef.current = true;
+    const s = stateRef.current;
+    trackPlayStartedOnce({
+      start_action: action,
+      day: s.currentDay,
+      onboarding_active: !loadOnboarding().completed && s.currentDay <= 1,
+    });
+  }, []);
+
   useEffect(() => {
     if (!hasHydratedRef.current) {
       hasHydratedRef.current = true;
@@ -279,59 +293,67 @@ export function useGameEngine(): GameEngineHook {
   }, [state.phase, state.endlessMode, state.currentDay, state.peakBalance, state.disastersSurvived]);
 
   const nextDay = useCallback((weatherOverride?: WeatherId) => {
+    signalPlayStarted('next_day');
     setState(prev => {
       return processTurn(prev, weatherOverride).state;
     });
-  }, []);
+  }, [signalPlayStarted]);
 
   const plant = useCallback((plotId: number, cropId: CropId): boolean => {
     const result = plantSeed(stateRef.current, plotId, cropId);
     if (!result.ok) return false;
+    signalPlayStarted('plant');
     setState(result.state);
     return true;
-  }, []);
+  }, [signalPlayStarted]);
 
   const buySeed = useCallback((cropId: CropId, quantity: number): boolean => {
     const result = engineBuySeed(stateRef.current, cropId, quantity);
     if (!result.ok) return false;
+    signalPlayStarted('buy_seed');
     setState(result.state);
     return true;
-  }, []);
+  }, [signalPlayStarted]);
 
   const buyUpgrade = useCallback((): boolean => {
     const result = engineBuyUpgrade(stateRef.current);
     if (!result.ok) return false;
+    signalPlayStarted('buy_upgrade');
     setState(result.state);
     return true;
-  }, []);
+  }, [signalPlayStarted]);
 
   const buyFertilizer = useCallback((quantity: number): boolean => {
     const result = engineBuyFertilizer(stateRef.current, quantity);
     if (!result.ok) return false;
+    signalPlayStarted('buy_fertilizer');
     setState(result.state);
     return true;
-  }, []);
+  }, [signalPlayStarted]);
 
   const applyFertilizer = useCallback((plotId: number): boolean => {
     const result = engineApplyFertilizer(stateRef.current, plotId);
     if (!result.ok) return false;
+    signalPlayStarted('apply_fertilizer');
     setState(result.state);
     return true;
-  }, []);
+  }, [signalPlayStarted]);
 
   const clearPestDamage = useCallback((plotId: number): boolean => {
     const result = engineClearPestDamage(stateRef.current, plotId);
     if (!result.ok) return false;
+    signalPlayStarted('clear_pest');
     setState(result.state);
     return true;
-  }, []);
+  }, [signalPlayStarted]);
 
   const buyPlot = useCallback((): boolean => {
     const result = engineBuyPlot(stateRef.current);
     if (!result.ok) return false;
+    signalPlayStarted('buy_plot');
     setState(result.state);
     return true;
-  }, []);
+  }, [signalPlayStarted]);
 
   const getNextPlotPrice = useCallback((): number | null => {
     return engineGetNextPlotPrice(state);
