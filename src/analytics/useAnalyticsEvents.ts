@@ -2,14 +2,16 @@ import { useEffect, useRef } from 'react';
 import type { GameState } from '../engine/types';
 import { getSeasonForDay } from '../engine/seasons';
 import { getNextPlotPrice } from '../engine/gameEngine';
+import { deriveMedal } from '../engine/medals';
 import { track } from './track';
-import { buildDayCompletedProps } from './events';
+import { buildDayCompletedProps, buildRunEndedProps, runOutcomeForPhase } from './events';
 import type { SeasonOutcome } from './events';
 
 /** Fires all state-derived analytics events by diffing engine state across renders. */
 export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): void {
   const prevRef = useRef<GameState | null>(null);
   const firedMilestonesRef = useRef<Set<string>>(new Set());
+  const runEndedFiredRef = useRef(false);
 
   useEffect(() => {
     const prev = prevRef.current;
@@ -66,6 +68,27 @@ export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): v
         coin_balance: state.coinBalance,
         days_played: state.currentDay,
       });
+    }
+
+    // New-run reset — a fresh initialGameState (day 1, playing) starts a new run.
+    if (state.phase === 'playing' && state.currentDay === 1 && prev.currentDay !== 1) {
+      firedMilestonesRef.current.clear();
+      runEndedFiredRef.current = false;
+    }
+
+    // run_ended — first transition into a terminal phase this run.
+    const outcome = runOutcomeForPhase(state.phase);
+    const isEndlessWin = state.phase === 'season_4_won' && state.endlessMode;
+    if (
+      outcome !== null &&
+      !isEndlessWin &&
+      state.phase !== prev.phase &&
+      !runEndedFiredRef.current
+    ) {
+      runEndedFiredRef.current = true;
+      const seasonReached = getSeasonForDay(state.currentDay).number;
+      const won = outcome === 'won';
+      track('run_ended', buildRunEndedProps(state, outcome, seasonReached, deriveMedal(seasonReached, won)));
     }
   }, [state]);
 }

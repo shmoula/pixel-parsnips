@@ -124,3 +124,50 @@ describe('useAnalyticsEvents season_completed', () => {
     expect(call![1]).toMatchObject({ outcome: 'season_passed', days_played: 7 });
   });
 });
+
+describe('useAnalyticsEvents run_ended', () => {
+  function playingOnDay(day: number): GameState {
+    return { ...initialGameState(), currentDay: day, phase: 'playing' } as GameState;
+  }
+
+  it('fires once on bankruptcy', () => {
+    const s = playingOnDay(12);
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: s },
+    });
+    track.mockClear();
+    rerender({ state: { ...s, phase: 'bankrupt' } });
+    rerender({ state: { ...s, phase: 'bankrupt', coinBalance: -5 } });
+    const calls = track.mock.calls.filter(([n]) => n === 'run_ended');
+    expect(calls).toHaveLength(1);
+    expect(calls[0][1]).toMatchObject({ outcome: 'bankrupt', days_played: 12 });
+  });
+
+  it('fires on season_failed (the gap the recordRunEnd effect misses)', () => {
+    const s = playingOnDay(20);
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: s },
+    });
+    track.mockClear();
+    rerender({ state: { ...s, phase: 'season_failed' } });
+    const call = track.mock.calls.find(([n]) => n === 'run_ended');
+    expect(call).toBeTruthy();
+    expect(call![1]).toMatchObject({ outcome: 'season_failed' });
+  });
+
+  it('resets per-run guards when a fresh run begins', () => {
+    const bankrupt = { ...initialGameState(), currentDay: 12, phase: 'bankrupt' } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: bankrupt },
+    });
+    track.mockClear();
+    // restart() produces a fresh initialGameState (day 1, playing).
+    rerender({ state: initialGameState() as GameState });
+    // A second bankruptcy in the new run must fire run_ended again.
+    const secondRun = { ...initialGameState(), currentDay: 9, phase: 'bankrupt' } as GameState;
+    rerender({ state: secondRun });
+    const calls = track.mock.calls.filter(([n]) => n === 'run_ended');
+    expect(calls).toHaveLength(1);
+    expect(calls[0][1]).toMatchObject({ days_played: 9 });
+  });
+});
