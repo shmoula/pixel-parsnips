@@ -4,6 +4,7 @@ import { getSeasonForDay } from '../engine/seasons';
 import { getNextPlotPrice } from '../engine/gameEngine';
 import { track } from './track';
 import { buildDayCompletedProps } from './events';
+import type { SeasonOutcome } from './events';
 
 /** Fires all state-derived analytics events by diffing engine state across renders. */
 export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): void {
@@ -53,6 +54,17 @@ export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): v
         milestone: 'season_2_reached',
         day: state.currentDay,
         season_number: currSeason,
+      });
+    }
+
+    // season_completed — on entering any season-resolution phase.
+    const seasonPhases: SeasonOutcome[] = ['season_passed', 'season_failed', 'season_4_won'];
+    if (state.phase !== prev.phase && seasonPhases.includes(state.phase as SeasonOutcome)) {
+      track('season_completed', {
+        season_number: getSeasonForDay(state.currentDay).number,
+        outcome: state.phase as SeasonOutcome,
+        coin_balance: state.coinBalance,
+        days_played: state.currentDay,
       });
     }
   }, [state]);

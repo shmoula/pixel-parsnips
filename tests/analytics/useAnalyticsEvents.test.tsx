@@ -108,3 +108,19 @@ describe('useAnalyticsEvents season_2 milestone', () => {
     expect(calls[0][1]).toMatchObject({ season_number: 2 });
   });
 });
+
+describe('useAnalyticsEvents season_completed', () => {
+  it('fires on entering a season-resolution phase', () => {
+    const playing = { ...initialGameState(), currentDay: 7, phase: 'playing' } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: playing },
+    });
+    track.mockClear();
+
+    rerender({ state: { ...playing, phase: 'season_passed' } });
+
+    const call = track.mock.calls.find(([n]) => n === 'season_completed');
+    expect(call).toBeTruthy();
+    expect(call![1]).toMatchObject({ outcome: 'season_passed', days_played: 7 });
+  });
+});
