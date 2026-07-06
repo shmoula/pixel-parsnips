@@ -1,22 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { capture, init, optOutCapturing } = vi.hoisted(() => ({
+const { capture, init, optOutCapturing, optInCapturing } = vi.hoisted(() => ({
   capture: vi.fn(),
   init: vi.fn(),
   optOutCapturing: vi.fn(),
+  optInCapturing: vi.fn(),
 }));
 
 vi.mock('posthog-js', () => ({
-  default: { init, capture, opt_out_capturing: optOutCapturing },
+  default: {
+    init,
+    capture,
+    opt_out_capturing: optOutCapturing,
+    opt_in_capturing: optInCapturing,
+  },
 }));
 
-import { __resetAnalyticsForTests, initAnalytics, track } from '../../src/analytics/track';
+import { optIn, optOut } from '../../src/analytics/consent';
+import { __resetAnalyticsForTests, initAnalytics, setAnalyticsOptOut, track } from '../../src/analytics/track';
 
 beforeEach(() => {
   localStorage.clear();
   capture.mockClear();
   init.mockClear();
   optOutCapturing.mockClear();
+  optInCapturing.mockClear();
   __resetAnalyticsForTests();
   Object.defineProperty(window.navigator, 'doNotTrack', { value: null, configurable: true });
 });
@@ -69,5 +77,29 @@ describe('initAnalytics', () => {
     expect(payload.anonymous_player_id).toBeTruthy();
     expect(payload.session_id).toBeTruthy();
     expect(payload.device_type).toBe('desktop');
+  });
+});
+
+describe('setAnalyticsOptOut', () => {
+  it('suppresses capture on opt-out and restores live capture on opt-in', () => {
+    vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
+    initAnalytics();
+    capture.mockClear();
+
+    // Opt out: mirrors the real toggle, which calls optOut() before setAnalyticsOptOut(true).
+    optOut();
+    setAnalyticsOptOut(true);
+    expect(optOutCapturing).toHaveBeenCalledTimes(1);
+
+    track('milestone_reached', { milestone: 'first_plot_unlocked', day: 5, season_number: 1 });
+    expect(capture).not.toHaveBeenCalled();
+
+    // Opt back in: mirrors the real toggle, which calls optIn() before setAnalyticsOptOut(false).
+    optIn();
+    setAnalyticsOptOut(false);
+    expect(optInCapturing).toHaveBeenCalledTimes(1);
+
+    track('milestone_reached', { milestone: 'first_plot_unlocked', day: 5, season_number: 1 });
+    expect(capture).toHaveBeenCalledTimes(1);
   });
 });

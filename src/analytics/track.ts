@@ -78,8 +78,12 @@ export function setAnalyticsOptOut(optedOut: boolean): void {
     if (initialized) posthog.opt_out_capturing();
   } else {
     // Re-enable within the session if we had already initialized with a key.
-    if (initialized && globals) enabled = true;
-    else initAnalytics();
+    if (initialized && globals) {
+      enabled = true;
+      posthog.opt_in_capturing();
+    } else {
+      initAnalytics();
+    }
   }
 }
 
