@@ -61,3 +61,30 @@ describe('useAnalyticsEvents day_completed', () => {
     expect(track).not.toHaveBeenCalledWith('day_completed', expect.anything());
   });
 });
+
+describe('useAnalyticsEvents plot_unlocked + first-plot milestone', () => {
+  it('fires plot_unlocked with the paid price and the first-plot milestone once', () => {
+    const base = { ...initialGameState(), unlockedPlots: 0, currentDay: 4 } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    track.mockClear();
+
+    const after: GameState = { ...base, unlockedPlots: 1 };
+    rerender({ state: after });
+
+    const plotCall = track.mock.calls.find(([n]) => n === 'plot_unlocked');
+    expect(plotCall).toBeTruthy();
+    expect(plotCall![1]).toMatchObject({
+      unlocked_plots_after: 1,
+      coin_balance_after: after.coinBalance,
+    });
+    expect(typeof plotCall![1].price).toBe('number');
+
+    const milestoneCall = track.mock.calls.find(
+      ([n, p]) => n === 'milestone_reached' && p.milestone === 'first_plot_unlocked',
+    );
+    expect(milestoneCall).toBeTruthy();
+    expect(milestoneCall![1]).toMatchObject({ milestone: 'first_plot_unlocked', day: 4 });
+  });
+});
