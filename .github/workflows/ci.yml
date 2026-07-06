@@ -10,6 +10,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege: jobs only read the checkout, never write to the repo.
+permissions:
+  contents: read
+
 jobs:
   quality:
     name: Quality Gates
@@ -51,9 +55,14 @@ jobs:
       - name: Bundle size gate
         run: |
           BUNDLE=0
-          for f in $(grep -oE 'assets/[^"]+\.js' dist/index.html | sort -u); do
+          INITIAL_JS=$(grep -oE 'assets/[^"]+\.js' dist/index.html | sort -u || true)
+          if [ -z "$INITIAL_JS" ]; then
+            echo "❌ No initial JS assets found in dist/index.html"
+            exit 1
+          fi
+          while IFS= read -r f; do
             BUNDLE=$((BUNDLE + $(wc -c < "dist/$f")))
-          done
+          done <<< "$INITIAL_JS"
           echo "Initial JS payload: ${BUNDLE} bytes"
           if [ "$BUNDLE" -gt 262144 ]; then
             echo "❌ Initial bundle ${BUNDLE}B exceeds 256 KB limit"

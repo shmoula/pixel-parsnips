@@ -101,4 +101,23 @@ describe('setAnalyticsOptOut', () => {
     track('milestone_reached', { milestone: 'first_plot_unlocked', day: 5, season_number: 1 });
     expect(capture).toHaveBeenCalledTimes(1);
   });
+
+  it('initializes on opt-in when the player was opted out at boot', async () => {
+    vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
+
+    // Boot while opted out: init must no-op without latching (posthog untouched).
+    optOut();
+    await initAnalytics();
+    expect(init).not.toHaveBeenCalled();
+
+    // Opt back in mid-session: this must actually boot posthog, not stay dead.
+    optIn();
+    setAnalyticsOptOut(false);
+    await initAnalytics(); // awaits the same in-flight init kicked off above
+    expect(init).toHaveBeenCalledTimes(1);
+
+    track('milestone_reached', { milestone: 'first_plot_unlocked', day: 5, season_number: 1 });
+    const captured = capture.mock.calls.filter(([name]) => name === 'milestone_reached');
+    expect(captured).toHaveLength(1);
+  });
 });

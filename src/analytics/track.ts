@@ -18,42 +18,66 @@ import {
 let initialized = false;
 let enabled = false;
 let playStartedFired = false;
+let pageLoadedFired = false;
 let globals: GlobalProps | null = null;
 let appVersion = 'dev';
 // Resolved lazily so posthog-js is code-split out of the initial bundle.
 let ph: PostHog | null = null;
+// Shared in-flight init so concurrent callers await one real setup.
+let initInFlight: Promise<void> | null = null;
 
-/** Initialize analytics at most once. No key or denied consent -> permanent no-op. */
-export async function initAnalytics(): Promise<void> {
-  if (initialized) return;
-  initialized = true;
+/**
+ * Initialize analytics at most once per successful attempt.
+ *
+ * The `initialized` guard is only latched after posthog actually boots, so a
+ * boot-time no-op (no key, DNT, or opted out) leaves the door open for a later
+ * opt-in to retry. Concurrent callers share one in-flight promise and resolve
+ * only once globals/enabled are ready, so a following `track(...)` won't no-op.
+ */
+export function initAnalytics(): Promise<void> {
+  if (initialized) return Promise.resolve();
+  if (initInFlight) return initInFlight;
 
   const cfg = getAnalyticsConfig();
-  if (!cfg.key || !isTrackingAllowed()) return;
+  if (!cfg.key || !isTrackingAllowed()) return Promise.resolve();
+  const key = cfg.key;
 
-  const { id, isReturning } = getOrCreatePlayerId();
-  const { default: posthog } = await import('posthog-js');
-  ph = posthog;
-  ph.init(cfg.key, {
-    api_host: cfg.host,
-    persistence: 'localStorage',
-    autocapture: false,
-    capture_pageview: false,
-    capture_heatmaps: false,
-    disable_session_recording: true,
-    respect_dnt: true,
-    bootstrap: { distinctID: id },
-  });
+  initInFlight = (async () => {
+    try {
+      const { id, isReturning } = getOrCreatePlayerId();
+      const { default: posthog } = await import('posthog-js');
+      ph = posthog;
+      ph.init(key, {
+        api_host: cfg.host,
+        persistence: 'localStorage',
+        autocapture: false,
+        capture_pageview: false,
+        capture_heatmaps: false,
+        disable_session_recording: true,
+        respect_dnt: true,
+        bootstrap: { distinctID: id },
+      });
 
-  appVersion = cfg.appVersion;
-  globals = buildGlobalProps(id);
-  enabled = true;
+      appVersion = cfg.appVersion;
+      globals = buildGlobalProps(id);
+      enabled = true;
+      initialized = true;
 
-  track('page_loaded', {
-    is_returning_player: isReturning,
-    has_saved_run: hasSavedRun(),
-    ...parseUtms(typeof window !== 'undefined' ? window.location.search : ''),
-  });
+      // Once per session, even when init is re-run via a mid-session opt-in.
+      if (!pageLoadedFired) {
+        pageLoadedFired = true;
+        track('page_loaded', {
+          is_returning_player: isReturning,
+          has_saved_run: hasSavedRun(),
+          ...parseUtms(typeof window !== 'undefined' ? window.location.search : ''),
+        });
+      }
+    } finally {
+      initInFlight = null;
+    }
+  })();
+
+  return initInFlight;
 }
 
 /** Fire-and-forget capture. No-ops unless initialized and consent still allows. */
@@ -96,7 +120,9 @@ export function __resetAnalyticsForTests(): void {
   initialized = false;
   enabled = false;
   playStartedFired = false;
+  pageLoadedFired = false;
   globals = null;
   appVersion = 'dev';
   ph = null;
+  initInFlight = null;
 }

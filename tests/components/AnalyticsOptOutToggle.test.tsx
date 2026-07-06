@@ -11,6 +11,7 @@ import { ANALYTICS_OPT_OUT_KEY } from '../../src/analytics/consent';
 beforeEach(() => {
   localStorage.clear();
   setAnalyticsOptOut.mockClear();
+  Object.defineProperty(window.navigator, 'doNotTrack', { value: null, configurable: true });
 });
 
 describe('AnalyticsOptOutToggle', () => {
@@ -36,6 +37,20 @@ describe('AnalyticsOptOutToggle', () => {
 
     expect(localStorage.getItem(ANALYTICS_OPT_OUT_KEY)).toBeNull();
     expect(setAnalyticsOptOut).toHaveBeenCalledWith(false);
+  });
+
+  it('shows off and is disabled/inert when Do-Not-Track is set', async () => {
+    Object.defineProperty(window.navigator, 'doNotTrack', { value: '1', configurable: true });
+    render(<AnalyticsOptOutToggle />);
+    const btn = screen.getByRole('button', { name: /analytics/i });
+    expect(btn).toHaveTextContent(/off/i);
+    expect(btn).toBeDisabled();
+
+    await userEvent.click(btn);
+
+    // DNT hard-disables tracking: the click must not mutate consent or notify.
+    expect(localStorage.getItem(ANALYTICS_OPT_OUT_KEY)).toBeNull();
+    expect(setAnalyticsOptOut).not.toHaveBeenCalled();
   });
 
   it('has no accessibility violations', async () => {

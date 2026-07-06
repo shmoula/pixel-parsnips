@@ -65,6 +65,7 @@ function App() {
           onRestart={restart}
           onReplayTutorial={() => { requestOnboardingReplay(); restart(); }}
         />
+        <AnalyticsOptOutToggle />
       </>
     );
   }
