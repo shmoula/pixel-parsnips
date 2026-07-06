@@ -10,6 +10,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege: jobs only read the checkout, never write to the repo.
+permissions:
+  contents: read
+
 jobs:
   quality:
     name: Quality Gates
@@ -45,15 +49,26 @@ jobs:
         run: npm run build
 
       # ── Bundle size gate (<256 KB) ─────────────────────────────────────────
+      # Measures the *initial* JS payload only — the entry chunk plus any chunks
+      # index.html preloads. Lazy async chunks (e.g. posthog-js, imported only
+      # after analytics consent) are off the critical path and excluded.
       - name: Bundle size gate
         run: |
-          BUNDLE=$(find dist/assets -name '*.js' | xargs wc -c | tail -1 | awk '{print $1}')
-          echo "Bundle size: ${BUNDLE} bytes"
-          if [ "$BUNDLE" -gt 262144 ]; then
-            echo "❌ Bundle size ${BUNDLE}B exceeds 256 KB limit"
+          BUNDLE=0
+          INITIAL_JS=$(grep -oE 'assets/[^"]+\.js' dist/index.html | sort -u || true)
+          if [ -z "$INITIAL_JS" ]; then
+            echo "❌ No initial JS assets found in dist/index.html"
             exit 1
           fi
-          echo "✅ Bundle size ${BUNDLE}B is within limit"
+          while IFS= read -r f; do
+            BUNDLE=$((BUNDLE + $(wc -c < "dist/$f")))
+          done <<< "$INITIAL_JS"
+          echo "Initial JS payload: ${BUNDLE} bytes"
+          if [ "$BUNDLE" -gt 262144 ]; then
+            echo "❌ Initial bundle ${BUNDLE}B exceeds 256 KB limit"
+            exit 1
+          fi
+          echo "✅ Initial bundle ${BUNDLE}B is within limit"
 
   lighthouse:
     name: Lighthouse CI
