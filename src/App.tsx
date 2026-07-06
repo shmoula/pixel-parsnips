@@ -6,6 +6,7 @@ import { SeasonTransitionModal } from './components/SeasonTransitionModal';
 import { requestOnboardingReplay } from './engine/onboarding';
 import type { PersonalBests } from './engine/records';
 import { initAnalytics } from './analytics/track';
+import { useAnalyticsEvents } from './analytics/useAnalyticsEvents';
 
 function GrainFilter() {
   return (
@@ -30,6 +31,7 @@ function App() {
   }, []);
 
   const engine = useGameEngine();
+  useAnalyticsEvents(engine.state, engine.endOfRunRecap);
   const { state, restart, continueSeason, endRunVictory, endOfRunRecap } = engine;
 
   // Bankruptcy — terminal run-end (existing behavior)

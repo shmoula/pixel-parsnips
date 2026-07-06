@@ -10,14 +10,17 @@ vi.mock('../src/analytics/track', () => ({
   trackPlayStartedOnce: vi.fn(),
   setAnalyticsOptOut: vi.fn(),
 }));
-// useAnalyticsEvents is added in Phase B; stub it so App renders in isolation here.
-vi.mock('../src/analytics/useAnalyticsEvents', () => ({ useAnalyticsEvents: vi.fn() }));
+const { useAnalyticsEvents } = vi.hoisted(() => ({
+  useAnalyticsEvents: vi.fn(),
+}));
+vi.mock('../src/analytics/useAnalyticsEvents', () => ({ useAnalyticsEvents }));
 
 import App from '../src/App';
 
 beforeEach(() => {
   localStorage.clear();
   initAnalytics.mockClear();
+  useAnalyticsEvents.mockClear();
 });
 afterEach(cleanup);
 
@@ -25,5 +28,13 @@ describe('App analytics bootstrap', () => {
   it('calls initAnalytics on mount', () => {
     render(<App />);
     expect(initAnalytics).toHaveBeenCalledTimes(1);
+  });
+
+  it('mounts useAnalyticsEvents with the engine state', () => {
+    render(<App />);
+    expect(useAnalyticsEvents).toHaveBeenCalled();
+    const [stateArg] = useAnalyticsEvents.mock.calls[0];
+    expect(stateArg).toHaveProperty('phase');
+    expect(stateArg).toHaveProperty('plots');
   });
 });
