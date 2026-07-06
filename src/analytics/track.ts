@@ -1,4 +1,4 @@
-import posthog from 'posthog-js';
+import type { PostHog } from 'posthog-js';
 import { getAnalyticsConfig } from './config';
 import { isTrackingAllowed } from './consent';
 import {
@@ -20,9 +20,11 @@ let enabled = false;
 let playStartedFired = false;
 let globals: GlobalProps | null = null;
 let appVersion = 'dev';
+// Resolved lazily so posthog-js is code-split out of the initial bundle.
+let ph: PostHog | null = null;
 
 /** Initialize analytics at most once. No key or denied consent -> permanent no-op. */
-export function initAnalytics(): void {
+export async function initAnalytics(): Promise<void> {
   if (initialized) return;
   initialized = true;
 
@@ -30,7 +32,9 @@ export function initAnalytics(): void {
   if (!cfg.key || !isTrackingAllowed()) return;
 
   const { id, isReturning } = getOrCreatePlayerId();
-  posthog.init(cfg.key, {
+  const { default: posthog } = await import('posthog-js');
+  ph = posthog;
+  ph.init(cfg.key, {
     api_host: cfg.host,
     persistence: 'localStorage',
     autocapture: false,
@@ -54,8 +58,8 @@ export function initAnalytics(): void {
 
 /** Fire-and-forget capture. No-ops unless initialized and consent still allows. */
 export function track<N extends AnalyticsEventName>(name: N, props: EventPropsMap[N]): void {
-  if (!enabled || !globals || !isTrackingAllowed()) return;
-  posthog.capture(name, {
+  if (!enabled || !ph || !globals || !isTrackingAllowed()) return;
+  ph.capture(name, {
     ...props,
     ...globals,
     app_version: appVersion,
@@ -75,14 +79,14 @@ export function trackPlayStartedOnce(props: EventPropsMap['play_started']): void
 export function setAnalyticsOptOut(optedOut: boolean): void {
   if (optedOut) {
     enabled = false;
-    if (initialized) posthog.opt_out_capturing();
+    if (ph) ph.opt_out_capturing();
   } else {
     // Re-enable within the session if we had already initialized with a key.
-    if (initialized && globals) {
+    if (ph && globals) {
       enabled = true;
-      posthog.opt_in_capturing();
+      ph.opt_in_capturing();
     } else {
-      initAnalytics();
+      void initAnalytics();
     }
   }
 }
@@ -94,4 +98,5 @@ export function __resetAnalyticsForTests(): void {
   playStartedFired = false;
   globals = null;
   appVersion = 'dev';
+  ph = null;
 }

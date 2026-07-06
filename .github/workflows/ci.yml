@@ -45,15 +45,21 @@ jobs:
         run: npm run build
 
       # ── Bundle size gate (<256 KB) ─────────────────────────────────────────
+      # Measures the *initial* JS payload only — the entry chunk plus any chunks
+      # index.html preloads. Lazy async chunks (e.g. posthog-js, imported only
+      # after analytics consent) are off the critical path and excluded.
       - name: Bundle size gate
         run: |
-          BUNDLE=$(find dist/assets -name '*.js' | xargs wc -c | tail -1 | awk '{print $1}')
-          echo "Bundle size: ${BUNDLE} bytes"
+          BUNDLE=0
+          for f in $(grep -oE 'assets/[^"]+\.js' dist/index.html | sort -u); do
+            BUNDLE=$((BUNDLE + $(wc -c < "dist/$f")))
+          done
+          echo "Initial JS payload: ${BUNDLE} bytes"
           if [ "$BUNDLE" -gt 262144 ]; then
-            echo "❌ Bundle size ${BUNDLE}B exceeds 256 KB limit"
+            echo "❌ Initial bundle ${BUNDLE}B exceeds 256 KB limit"
             exit 1
           fi
-          echo "✅ Bundle size ${BUNDLE}B is within limit"
+          echo "✅ Initial bundle ${BUNDLE}B is within limit"
 
   lighthouse:
     name: Lighthouse CI

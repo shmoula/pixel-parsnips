@@ -33,34 +33,33 @@ afterEach(() => {
 });
 
 describe('initAnalytics', () => {
-  it('no-ops when no key is configured (never touches posthog)', () => {
+  it('no-ops when no key is configured (never touches posthog)', async () => {
     vi.stubEnv('VITE_POSTHOG_KEY', '');
-    initAnalytics();
+    await initAnalytics();
     track('milestone_reached', { milestone: 'season_2_reached', day: 8, season_number: 2 });
     expect(init).not.toHaveBeenCalled();
     expect(capture).not.toHaveBeenCalled();
   });
 
-  it('no-ops when Do-Not-Track is set even with a key', () => {
+  it('no-ops when Do-Not-Track is set even with a key', async () => {
     vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
     Object.defineProperty(window.navigator, 'doNotTrack', { value: '1', configurable: true });
-    initAnalytics();
+    await initAnalytics();
     expect(init).not.toHaveBeenCalled();
   });
 
-  it('initializes once and fires page_loaded exactly once (StrictMode-safe)', () => {
+  it('initializes once and fires page_loaded exactly once (StrictMode-safe)', async () => {
     vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
-    initAnalytics();
-    initAnalytics(); // simulate React 18 StrictMode double-invoke
+    await Promise.all([initAnalytics(), initAnalytics()]); // simulate React 18 StrictMode double-invoke
     expect(init).toHaveBeenCalledTimes(1);
     const pageLoads = capture.mock.calls.filter(([name]) => name === 'page_loaded');
     expect(pageLoads).toHaveLength(1);
   });
 
-  it('merges global props and version metadata into every capture', () => {
+  it('merges global props and version metadata into every capture', async () => {
     vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
     vi.stubEnv('VITE_APP_VERSION', '9.9.9');
-    initAnalytics();
+    await initAnalytics();
     capture.mockClear();
     track('milestone_reached', { milestone: 'first_plot_unlocked', day: 5, season_number: 1 });
     expect(capture).toHaveBeenCalledTimes(1);
@@ -81,9 +80,9 @@ describe('initAnalytics', () => {
 });
 
 describe('setAnalyticsOptOut', () => {
-  it('suppresses capture on opt-out and restores live capture on opt-in', () => {
+  it('suppresses capture on opt-out and restores live capture on opt-in', async () => {
     vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
-    initAnalytics();
+    await initAnalytics();
     capture.mockClear();
 
     // Opt out: mirrors the real toggle, which calls optOut() before setAnalyticsOptOut(true).
