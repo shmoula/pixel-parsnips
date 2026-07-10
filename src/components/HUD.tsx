@@ -123,13 +123,13 @@ export function HUD({
           onClick={() => setSeasonExpanded(v => !v)}
           className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"
         >
+          <span className="font-pixel text-sm text-farm-gold">
+            <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
+            <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
+          </span>
           <span className="font-pixel text-[8px] text-farm-parchment/70 uppercase tracking-widest">
             <span className="sm:hidden">{seasonMobileLabel}</span>
             <span className="hidden sm:inline">Season {season.number} · {season.name}</span>
-          </span>
-          <span className="font-pixel text-[10px] text-farm-gold">
-            <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
-            <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
           </span>
         </button>
         <div data-onboarding="balance-chip" className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
