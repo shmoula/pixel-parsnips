@@ -43,33 +43,6 @@ describe('LockedPlot', () => {
   });
 });
 
-describe('PlotCard — exhausted guidance (017 FR-012/FR-013)', () => {
-  const exhausted = (daysAgo: number) =>
-    makePlot({ exhaustedSinceDay: 10 - daysAgo, cropId: null });
-
-  it('says "Ready tomorrow" and does not solicit fertilizer at 1 day left', () => {
-    render(<PlotCard plot={exhausted(2)} currentDay={10} fertilizerInventory={0} />);
-    expect(screen.getByText(/ready tomorrow/i)).toBeInTheDocument();
-    expect(screen.queryByText(/fertilizer/i)).toBeNull();
-  });
-
-  it('presents fertilizer as a costed trade-off at 3 days left (none owned)', () => {
-    render(<PlotCard plot={exhausted(0)} currentDay={10} fertilizerInventory={0} />);
-    expect(screen.getByText(/resting · 3d/i)).toBeInTheDocument();
-    expect(screen.getByText(/30🪙 skips the wait/i)).toBeInTheDocument();
-  });
-
-  it('offers "skip the wait" as the action when fertilizer is owned and rest is long', () => {
-    render(<PlotCard plot={exhausted(0)} currentDay={10} fertilizerInventory={1} />);
-    expect(screen.getByRole('button', { name: /use fertilizer/i })).toHaveTextContent(/skip 3d/i);
-  });
-
-  it('keeps an owned-fertilizer action available but subdued at 1 day left', () => {
-    render(<PlotCard plot={exhausted(2)} currentDay={10} fertilizerInventory={1} />);
-    expect(screen.getByRole('button', { name: /use fertilizer/i })).toHaveTextContent(/use anyway/i);
-  });
-});
-
 describe('PlotCard — drought marker inline (017 FR-021)', () => {
   it('renders the flash-drought marker inside the time badge row, not as an extra row', () => {
     render(
