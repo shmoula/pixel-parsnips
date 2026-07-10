@@ -41,7 +41,7 @@ function NewBestBadge() {
   return (
     <span
       aria-label="new personal best"
-      className="ml-2 font-pixel text-[9px] text-farm-gold"
+      className="ml-2 font-pixel text-caption text-farm-gold"
     >
       🏆 New Best!
     </span>
@@ -57,11 +57,11 @@ interface StatRowProps {
 function StatRow({ label, value, isNewBest }: StatRowProps) {
   return (
     <div className="flex justify-between items-center px-4 py-2 bg-farm-ink rounded">
-      <span className="font-pixel text-xs text-farm-stone">
+      <span className="font-pixel text-body text-farm-stone">
         {label}
         {isNewBest && <NewBestBadge />}
       </span>
-      <span className="font-pixel text-sm text-farm-gold">{value}</span>
+      <span className="font-pixel text-title text-farm-gold">{value}</span>
     </div>
   );
 }
@@ -95,7 +95,7 @@ export function BankruptcyScreen({
     >
       <div className="text-4xl">💸</div>
 
-      <h1 className="font-pixel text-xl text-farm-red text-center leading-relaxed">
+      <h1 className="font-pixel text-title text-farm-red text-center leading-relaxed">
         Bankrupt!
       </h1>
 
@@ -133,15 +133,15 @@ export function BankruptcyScreen({
         aria-label="Personal records across all runs"
         className="flex flex-col gap-2 w-full max-w-xs px-4 py-3 bg-farm-ink rounded border border-farm-stone/30"
       >
-        <span className="font-pixel text-[9px] text-farm-stone uppercase tracking-widest">
+        <span className="font-pixel text-caption text-farm-stone uppercase tracking-widest">
           Personal Records
         </span>
         {isFirstRun ? (
-          <p className="font-pixel text-[10px] text-farm-parchment leading-relaxed">
+          <p className="font-pixel text-caption text-farm-parchment leading-relaxed">
             This was your first run — your records start now.
           </p>
         ) : null}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-pixel text-[10px] text-farm-parchment">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-pixel text-caption text-farm-parchment">
           <span>Best days:</span><span className="text-right">{records.bestDaysSurvived}</span>
           <span>Best peak:</span><span className="text-right">{records.bestPeakBalance}🪙</span>
           <span>Best season:</span><span className="text-right">{records.bestSeasonReached || '—'}</span>
@@ -151,8 +151,8 @@ export function BankruptcyScreen({
       </section>
 
       <div className="flex flex-col gap-2 w-full max-w-xs px-4 py-3 bg-farm-ink rounded border border-farm-stone/30">
-        <span className="font-pixel text-[9px] text-farm-stone uppercase tracking-widest">Insight</span>
-        <p className="font-pixel text-xs text-farm-parchment leading-relaxed">{insight}</p>
+        <span className="font-pixel text-caption text-farm-stone uppercase tracking-widest">Insight</span>
+        <p className="font-pixel text-body text-farm-parchment leading-relaxed">{insight}</p>
       </div>
 
       <div className="flex flex-col gap-2 w-full max-w-xs mt-2">
@@ -161,7 +161,7 @@ export function BankruptcyScreen({
           aria-label="Restart game"
           onClick={onRestart}
           className="
-            px-8 py-3 rounded-lg font-pixel text-sm
+            px-8 py-3 rounded-lg font-pixel text-body
             bg-farm-grass text-farm-parchment
             hover:bg-farm-gold hover:text-farm-ink
             transition-colors
@@ -174,7 +174,7 @@ export function BankruptcyScreen({
           aria-label="Replay tutorial"
           onClick={onReplayTutorial}
           className="
-            px-8 py-2 rounded-lg font-pixel text-[10px]
+            px-8 py-2 rounded-lg font-pixel text-caption
             bg-farm-ink text-farm-parchment border border-farm-stone/40
             hover:bg-farm-soil transition-colors
           "

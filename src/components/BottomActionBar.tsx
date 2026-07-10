@@ -44,7 +44,7 @@ export function BottomActionBar({
         aria-label="Open shop"
         onClick={onOpenShop}
         className="
-          flex-1 min-h-[44px] font-pixel text-[10px] rounded uppercase tracking-widest
+          flex-1 min-h-[44px] font-pixel text-caption rounded uppercase tracking-widest
           bg-farm-gold text-farm-ink ring-1 ring-farm-gold/50
           hover:brightness-110 active:scale-95 transition-all
         "
@@ -58,7 +58,7 @@ export function BottomActionBar({
         onClick={onNextDay}
         disabled={isProcessing}
         className="
-          flex-[1.4] min-h-[44px] font-pixel text-[11px] rounded uppercase tracking-widest
+          flex-[1.4] min-h-[44px] font-pixel text-body rounded uppercase tracking-widest
           bg-farm-grass text-farm-parchment
           hover:bg-farm-gold hover:text-farm-ink
           active:enabled:scale-95 disabled:opacity-50 transition-all

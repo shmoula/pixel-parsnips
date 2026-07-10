@@ -48,7 +48,7 @@ function LogAccountingRows({ log }: { log: DailyLogEntry }) {
         </div>
       )}
       {log.taxDeducted > 0 && log.day === 1 && (
-        <p className="text-[10px] leading-snug text-farm-stone/80">
+        <p className="text-caption leading-snug text-farm-stone/80">
           Each night you pay {Math.round(log.taxRate * 100)}% of the coins you hold (after lease)
           as tax — earn faster than the kingdom collects.
         </p>
@@ -122,9 +122,9 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
   return (
     <section
       aria-label="Daily summary"
-      className="flex flex-col gap-2 p-3 bg-farm-soil rounded-lg text-xs"
+      className="flex flex-col gap-2 p-3 bg-farm-soil rounded-lg text-body"
     >
-      <h2 className="font-pixel text-xs text-farm-gold">Day {log.day} Summary</h2>
+      <h2 className="font-pixel text-body text-farm-gold">Day {log.day} Summary</h2>
 
       {/* Weather badge — disaster events get red/amber styling */}
       <div

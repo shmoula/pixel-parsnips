@@ -30,7 +30,7 @@ function getSeasonMobileLabel(expanded: boolean, number: number, name: string, s
 }
 
 function getRepTitleClass(expanded: boolean): string {
-  return `font-pixel text-[10px] text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
+  return `font-pixel text-caption text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
 }
 
 function getNextDayLabel(canAdvanceProductively: boolean): string {
@@ -123,11 +123,11 @@ export function HUD({
           onClick={() => setSeasonExpanded(v => !v)}
           className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"
         >
-          <span className="font-pixel text-sm text-farm-gold">
+          <span className="font-pixel text-title text-farm-gold">
             <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
             <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
           </span>
-          <span className="font-pixel text-[8px] text-farm-parchment/70 uppercase tracking-widest">
+          <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
             <span className="sm:hidden">{seasonMobileLabel}</span>
             <span className="hidden sm:inline">Season {season.number} · {season.name}</span>
           </span>
@@ -136,12 +136,12 @@ export function HUD({
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
           <div className="flex flex-col justify-center leading-tight">
             <span
-              className={`font-pixel text-sm ${balanceTextClass}`}
+              className={`font-pixel text-title ${balanceTextClass}`}
               aria-label={`Coins: ${coinBalance}. Season goal: ${season.target} coins by day ${seasonLen} of the season.`}
             >
               {coinBalance}
             </span>
-            <span className="font-pixel text-[8px] text-farm-parchment/70 uppercase tracking-widest">
+            <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
               <span className="sm:hidden">Goal {season.target}·D{seasonLen}</span>
               <span className="hidden sm:inline">Goal {season.target} by day {seasonLen}</span>
               {showWarning && (
@@ -159,7 +159,7 @@ export function HUD({
             className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
           >
             <span className="text-base leading-none" aria-hidden="true">🔥</span>
-            <span className="font-pixel text-[10px] text-farm-gold">×{harvestStreak}</span>
+            <span className="font-pixel text-caption text-farm-gold">×{harvestStreak}</span>
           </div>
         )}
         <button
@@ -179,7 +179,7 @@ export function HUD({
 
       {/* Centre-right: Lease + Tax — hidden on small screens */}
       <div className="hidden sm:flex items-center gap-3 ml-auto">
-        <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
+        <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
           Lease {season.leasePerDay}🪙/day
           {showLeasePreview && nextSeasonLease !== null && (
             <span className="ml-1 text-farm-gold/70">
@@ -187,7 +187,7 @@ export function HUD({
             </span>
           )}
         </span>
-        <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
+        <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
           Tax {TAX_RATE * 100}%
         </span>
       </div>
@@ -200,7 +200,7 @@ export function HUD({
           onClick={onLastTurn}
           disabled={!hasLastTurn}
           className="
-            font-pixel text-[9px] px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
+            font-pixel text-caption px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
             bg-[#261808] text-farm-stone/60 border border-[#5C3D1E]/50
             hover:enabled:bg-[#3A2510] hover:enabled:text-farm-parchment/80 hover:enabled:border-[#5C3D1E]
             active:enabled:scale-95 transition-all
@@ -217,7 +217,7 @@ export function HUD({
           disabled={isProcessing}
           className="
             hidden md:inline-flex
-            font-pixel text-[10px] px-4 py-1.5 rounded uppercase tracking-widest
+            font-pixel text-caption px-4 py-1.5 rounded uppercase tracking-widest
             bg-farm-grass text-farm-parchment
             hover:bg-farm-gold hover:text-farm-ink
             active:enabled:scale-95 disabled:opacity-50 transition-all

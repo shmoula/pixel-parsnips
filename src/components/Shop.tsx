@@ -55,11 +55,11 @@ export function Shop({
         ].join(', '),
       }}
     >
-      <h2 className="font-pixel text-xs text-farm-gold">Shop</h2>
+      <h2 className="font-pixel text-body text-farm-gold">Shop</h2>
 
       {/* Seeds section */}
       <section aria-label="Seeds">
-        <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Seeds</p>
+        <p className="font-pixel text-caption text-farm-gold/60 tracking-widest uppercase mb-2">Seeds</p>
         <div className="flex flex-col gap-2">
           {CROP_IDS.map(cropId => {
             const price = getSeedPrice(cropId);
@@ -88,19 +88,19 @@ export function Shop({
 
       {/* Fertilizer section */}
       <section aria-label="Fertilizer">
-        <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Supplies</p>
+        <p className="font-pixel text-caption text-farm-gold/60 tracking-widest uppercase mb-2">Supplies</p>
         <div className="flex flex-col gap-2">
           <div className="bg-[#261808] rounded-lg p-3 flex flex-col gap-1 border border-[#5C3D1E]/60">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🌿</span>
                 <div>
-                  <p className="font-pixel text-xs text-farm-parchment/90">Fertilizer</p>
-                  <p className="text-xs text-farm-stone">Restores an exhausted plot instantly</p>
+                  <p className="font-pixel text-body text-farm-parchment/90">Fertilizer</p>
+                  <p className="text-body text-farm-stone">Restores an exhausted plot instantly</p>
                 </div>
               </div>
               {fertilizerInventory > 0 && (
-                <span className="bg-farm-grass text-farm-ink font-pixel text-xs px-1.5 py-0.5 rounded">
+                <span className="bg-farm-grass text-farm-ink font-pixel text-body px-1.5 py-0.5 rounded">
                   ×{fertilizerInventory}
                 </span>
               )}
@@ -112,7 +112,7 @@ export function Shop({
               disabled={coinBalance < FERTILIZER_COST}
               onClick={onBuyFertilizer}
               className="
-                w-full font-pixel text-xs py-1.5 min-h-[44px] md:min-h-0 rounded
+                w-full font-pixel text-body py-1.5 min-h-[44px] md:min-h-0 rounded
                 bg-farm-gold text-farm-ink
                 hover:enabled:bg-farm-grass hover:enabled:text-farm-parchment
                 active:enabled:scale-95 transition-all
@@ -128,7 +128,7 @@ export function Shop({
       {/* T020b — Active Buffs tray: only shown when at least one tool is owned */}
       {ownedTiers.length > 0 && (
         <section aria-label="Active Buffs">
-          <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Active Buffs</p>
+          <p className="font-pixel text-caption text-farm-gold/60 tracking-widest uppercase mb-2">Active Buffs</p>
           <div className="flex flex-col gap-1">
             {ownedTiers.map(def => (
               <UpgradeCard
@@ -147,7 +147,7 @@ export function Shop({
       {/* T020c — Tools section: next purchasable + future locked only (no owned tiers) */}
       {(nextTier !== undefined || futureTiers.length > 0) && (
         <section aria-label="Tool upgrades">
-          <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Tools</p>
+          <p className="font-pixel text-caption text-farm-gold/60 tracking-widest uppercase mb-2">Tools</p>
           <div className="flex flex-col gap-2">
             {nextTier && (
               <UpgradeCard

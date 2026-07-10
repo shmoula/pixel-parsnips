@@ -67,7 +67,7 @@ export function DisasterBanner({ log, animate = false }: DisasterBannerProps) {
       >
         {icon}
       </span>
-      <div className="flex flex-col gap-0.5 text-xs text-farm-parchment">
+      <div className="flex flex-col gap-0.5 text-body text-farm-parchment">
         <span className="font-pixel tracking-widest text-farm-red">{title}</span>
         {lines.map((line, i) => (
           <span key={i}>{line}</span>

@@ -76,7 +76,7 @@ function CropStats({
 
   return (
     <>
-      <div className="text-xs text-farm-stone/80">
+      <div className="text-body text-farm-stone/80">
         <span>{crop.growthDays}d grow</span>
         <span className="mx-1">·</span>
         {adjustedYield !== null ? (
@@ -90,7 +90,7 @@ function CropStats({
       </div>
 
       {/* T018b — estimated net profit display */}
-      <p className="text-xs text-farm-grass font-pixel">
+      <p className="text-body text-farm-grass font-pixel">
         {adjustedProfit !== null ? (
           <span>
             Est. profit:{' '}
@@ -135,7 +135,7 @@ export function SeedCard({
       <div className="flex items-center justify-between">
         <span className="text-lg">{CROP_EMOJI[cropId]}</span>
         {seedCount > 0 && (
-          <span className="text-xs font-pixel bg-farm-grass text-farm-parchment px-1.5 py-0.5 rounded">
+          <span className="text-body font-pixel bg-farm-grass text-farm-parchment px-1.5 py-0.5 rounded">
             ×{seedCount}
           </span>
         )}
@@ -143,7 +143,7 @@ export function SeedCard({
           <span
             aria-label={`Market ${marketEvent!.kind}`}
             className={[
-              'text-xs font-pixel px-1.5 py-0.5 rounded',
+              'text-body font-pixel px-1.5 py-0.5 rounded',
               marketEvent!.kind === 'shortage'
                 ? 'bg-farm-grass/30 text-farm-grass'
                 : 'bg-farm-red/30 text-farm-red',
@@ -154,7 +154,7 @@ export function SeedCard({
         )}
       </div>
 
-      <p className="font-pixel text-xs text-farm-parchment/90">{crop.name}</p>
+      <p className="font-pixel text-body text-farm-parchment/90">{crop.name}</p>
 
       <CropStats crop={crop} price={price} marketEvent={marketEvent} />
 
@@ -165,7 +165,7 @@ export function SeedCard({
         disabled={disabled}
         onClick={() => onBuy(cropId)}
         className="
-          mt-1 w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs
+          mt-1 w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-body
           bg-farm-gold text-farm-ink
           hover:bg-farm-grass hover:text-farm-parchment
           active:scale-95 active:brightness-90
@@ -184,7 +184,7 @@ export function SeedCard({
           disabled={interactionDisabled === true}
           onClick={() => onSelect(cropId)}
           className={`
-            w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs transition-colors
+            w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-body transition-colors
             ${isSelected
               ? 'bg-farm-grass text-farm-parchment'
               : 'bg-farm-sky text-farm-ink hover:bg-farm-grass hover:text-farm-parchment'}

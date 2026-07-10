@@ -72,7 +72,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
         className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-gold/60 bg-[#160F07] p-1 select-none hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <span className="text-2xl opacity-70">🔒</span>
-        <span className="font-pixel text-[9px] leading-none text-farm-gold text-center">Buy plot · {plotPrice}🪙</span>
+        <span className="font-pixel text-caption leading-none text-farm-gold text-center">Buy plot · {plotPrice}🪙</span>
       </button>
     );
   }
@@ -82,7 +82,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
       className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-[#3D2510]/80 bg-[#160F07] opacity-80 select-none p-1"
     >
       <span className="text-2xl opacity-60">🔒</span>
-      <span className="font-pixel text-[9px] text-farm-stone">Locked</span>
+      <span className="font-pixel text-caption text-farm-stone">Locked</span>
     </div>
   );
 }
@@ -102,13 +102,13 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
       "
     >
       <span className="text-2xl">🐛</span>
-      <span className="text-xs font-pixel text-farm-red/90 mt-1">Pest Damage</span>
+      <span className="text-body font-pixel text-farm-red/90 mt-1">Pest Damage</span>
       <button
         type="button"
         aria-label="Clear Plot — remove pest damage"
         onClick={() => onClearPestDamage?.(plot.id)}
         className="
-          mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
+          mt-1 font-pixel text-body px-1.5 py-0.5 rounded
           bg-farm-red text-farm-parchment
           hover:bg-[#d94040] active:scale-95 transition-all cursor-pointer
         "
@@ -144,7 +144,7 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
       }}
     >
       <span className="text-2xl">🪨</span>
-      <span className="text-xs font-pixel text-farm-stone/80 mt-0.5">
+      <span className="text-body font-pixel text-farm-stone/80 mt-0.5">
         {daysUntilRecovery}d remaining
       </span>
       {hasFertilizer ? (
@@ -153,7 +153,7 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
           aria-label="Use Fertilizer on this plot"
           onClick={() => onApplyFertilizer?.(plot.id)}
           className="
-            mt-1 font-pixel text-xs px-1.5 py-0.5 rounded
+            mt-1 font-pixel text-body px-1.5 py-0.5 rounded
             bg-farm-grass text-farm-parchment
             hover:bg-farm-gold hover:text-farm-ink
             active:scale-95 transition-all cursor-pointer
@@ -162,7 +162,7 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
           Use Fertilizer
         </button>
       ) : (
-        <span className="text-xs text-farm-stone/70 mt-0.5 text-center px-1">
+        <span className="text-body text-farm-stone/70 mt-0.5 text-center px-1">
           Buy Fertilizer in the shop
         </span>
       )}
@@ -201,13 +201,13 @@ function GrowingCropCard({ plot }: {
       <ProgressRing progress={progress} size={52}>
         <span className="text-2xl">{stageEmoji}</span>
       </ProgressRing>
-      <span className="text-xs font-pixel text-farm-parchment/80 mt-1">{label}</span>
+      <span className="text-body font-pixel text-farm-parchment/80 mt-1">{label}</span>
       {isReady ? (
-        <span className="mt-1 font-pixel text-[9px] px-2 py-0.5 rounded bg-farm-grass text-farm-parchment">
+        <span className="mt-1 font-pixel text-caption px-2 py-0.5 rounded bg-farm-grass text-farm-parchment">
           HARVEST
         </span>
       ) : (
-        <span className="mt-1 font-pixel text-[9px] px-2 py-0.5 rounded bg-farm-gold/20 border border-farm-gold/50 text-farm-gold">
+        <span className="mt-1 font-pixel text-caption px-2 py-0.5 rounded bg-farm-gold/20 border border-farm-gold/50 text-farm-gold">
           {daysRemaining}d left
           {plot.droughtPenalised && (
             <span
@@ -275,7 +275,7 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked
         background: 'repeating-linear-gradient(180deg, #2A1A0E 0px, #2A1A0E 5px, #221408 5px, #221408 7px)',
       }}
     >
-      <span className="text-xs font-pixel text-farm-gold">
+      <span className="text-body font-pixel text-farm-gold">
         🌱 Plant
       </span>
     </button>

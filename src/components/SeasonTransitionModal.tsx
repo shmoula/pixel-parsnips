@@ -110,16 +110,16 @@ function PassedVariant({
 }) {
   return (
     <>
-      <h2 className="font-pixel text-lg text-farm-gold text-center">
+      <h2 className="font-pixel text-title text-farm-gold text-center">
         Season {justCompleted.number} — Complete
       </h2>
-      <p className="font-pixel text-xs text-center leading-relaxed">
+      <p className="font-pixel text-body text-center leading-relaxed">
         {justCompleted.name} survived.
       </p>
-      <div className="bg-farm-ink rounded p-3 font-pixel text-xs">
+      <div className="bg-farm-ink rounded p-3 font-pixel text-body">
         Final balance: {coinBalance} / {justCompleted.target} target ✓
       </div>
-      <div className="bg-farm-ink/50 rounded p-3 font-pixel text-[11px] flex flex-col gap-1">
+      <div className="bg-farm-ink/50 rounded p-3 font-pixel text-body flex flex-col gap-1">
         <div className="text-farm-stone/80">
           Next: {nextSeason.name} (Days {nextSeason.startDay}–{nextSeason.endDay})
         </div>
@@ -132,7 +132,7 @@ function PassedVariant({
         type="button"
         onClick={onContinue}
         className="
-          mt-2 px-6 py-3 rounded font-pixel text-sm
+          mt-2 px-6 py-3 rounded font-pixel text-body
           bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink
           transition-colors
         "
@@ -164,15 +164,15 @@ function FailedVariant({
 
   return (
     <>
-      <h2 className="font-pixel text-lg text-farm-red text-center">Season Failed</h2>
-      <p className="font-pixel text-xs text-center leading-relaxed">
+      <h2 className="font-pixel text-title text-farm-red text-center">Season Failed</h2>
+      <p className="font-pixel text-body text-center leading-relaxed">
         {justCompleted.name} target not met.
       </p>
-      <div className="bg-farm-ink rounded p-3 font-pixel text-xs flex flex-col gap-2">
+      <div className="bg-farm-ink rounded p-3 font-pixel text-body flex flex-col gap-2">
         <div>Final balance: {coinBalance} / {justCompleted.target} target</div>
         {showCoinsShortHint && <div className="text-farm-stone/80">You were {gap} coins short.</div>}
       </div>
-      <div className="bg-farm-ink/50 rounded p-3 font-pixel text-[11px] flex flex-col gap-1">
+      <div className="bg-farm-ink/50 rounded p-3 font-pixel text-body flex flex-col gap-1">
         <div>• Days survived: {currentDay}</div>
         <div>• Seasons completed: {justCompleted.number - 1}</div>
         <div>• Peak balance: {peakBalance}</div>
@@ -182,7 +182,7 @@ function FailedVariant({
         type="button"
         onClick={onRestart}
         className="
-          mt-2 px-6 py-3 rounded font-pixel text-sm
+          mt-2 px-6 py-3 rounded font-pixel text-body
           bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink
           transition-colors
         "
@@ -212,16 +212,16 @@ function VictoryVariant({
 }) {
   return (
     <>
-      <h2 className="font-pixel text-xl text-farm-gold text-center">🌾 VICTORY 🌾</h2>
-      <p className="font-pixel text-xs text-center leading-relaxed">
+      <h2 className="font-pixel text-title text-farm-gold text-center">🌾 VICTORY 🌾</h2>
+      <p className="font-pixel text-body text-center leading-relaxed">
         You survived a full year.
       </p>
-      <div className="bg-farm-ink rounded p-3 font-pixel text-xs flex flex-col gap-1">
+      <div className="bg-farm-ink rounded p-3 font-pixel text-body flex flex-col gap-1">
         <div>Final balance: {coinBalance} / {justCompleted.target} target ✓</div>
         <div>Total days: {currentDay}</div>
         <div>Peak balance: {peakBalance}</div>
       </div>
-      <div className="bg-farm-ink/50 rounded p-3 font-pixel text-[11px] leading-relaxed">
+      <div className="bg-farm-ink/50 rounded p-3 font-pixel text-body leading-relaxed">
         Want to keep going? Deep Winter never ends. Each new season raises lease and target.
       </div>
       <div className="flex gap-2 mt-2">
@@ -230,7 +230,7 @@ function VictoryVariant({
           type="button"
           onClick={onEndRun}
           className="
-            flex-1 px-4 py-3 rounded font-pixel text-sm
+            flex-1 px-4 py-3 rounded font-pixel text-body
             bg-[#261808] text-farm-parchment hover:bg-[#3A2510] border border-farm-stone/40
             transition-colors
           "
@@ -241,7 +241,7 @@ function VictoryVariant({
           type="button"
           onClick={onContinue}
           className="
-            flex-1 px-4 py-3 rounded font-pixel text-sm
+            flex-1 px-4 py-3 rounded font-pixel text-body
             bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink
             transition-colors
           "

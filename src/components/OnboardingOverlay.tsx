@@ -114,7 +114,7 @@ function useAnchorRect(selector: string | null): DOMRect | null {
 function BuyProgress({ step, buyProgress }: { step: OnboardingStep; buyProgress: Props['buyProgress'] }) {
   if (step !== 'buy-radishes' || !buyProgress) return null;
   return (
-    <p className="font-pixel text-[10px] text-farm-gold mt-1">
+    <p className="font-pixel text-caption text-farm-gold mt-1">
       {buyProgress.owned} of {buyProgress.needed} bought
     </p>
   );
@@ -158,7 +158,7 @@ function AnchoredBubble({
             : { left: '50%', bottom: 24, transform: 'translateX(-50%)' }
         }
       >
-        <p className="font-pixel text-[10px] text-farm-parchment leading-relaxed">{anchor.copy}</p>
+        <p className="font-pixel text-caption text-farm-parchment leading-relaxed">{anchor.copy}</p>
         <BuyProgress step={step} buyProgress={buyProgress} />
       </div>
     </>
@@ -171,7 +171,7 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
       type="button"
       onClick={onSkip}
       aria-label="Skip tutorial"
-      className="fixed bottom-20 right-3 md:bottom-3 z-[60] font-pixel text-[10px] px-3 py-1.5 rounded
+      className="fixed bottom-20 right-3 md:bottom-3 z-[60] font-pixel text-caption px-3 py-1.5 rounded
                  pointer-events-auto
                  bg-farm-ink/90 text-farm-parchment border border-farm-stone/40
                  hover:bg-farm-ink"
@@ -200,13 +200,13 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
       {step === 'welcome' && (
         <div className="absolute inset-0 flex items-center justify-center p-6">
           <div className="pointer-events-auto max-w-xs w-full bg-farm-soil border border-farm-stone/40 rounded-xl p-5 flex flex-col gap-4 text-center">
-            <p className="font-pixel text-xs text-farm-parchment leading-relaxed">
+            <p className="font-pixel text-body text-farm-parchment leading-relaxed">
               Grow crops. Sell 'em. Don't go broke. Let's fill your farm with radishes!
             </p>
             <button
               type="button"
               onClick={onStart}
-              className="font-pixel text-xs px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
+              className="font-pixel text-body px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
             >
               🌱 Plant my farm
             </button>
@@ -218,15 +218,15 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
       {step === 'payoff' && (
         <div className="absolute inset-0 flex items-center justify-center p-6">
           <div className="pointer-events-auto max-w-xs w-full bg-farm-soil border border-farm-gold/50 rounded-xl p-5 flex flex-col gap-4 text-center">
-            <p className="font-pixel text-sm text-farm-gold">+{netIncome} coins profit! 🎉</p>
-            <p className="font-pixel text-[10px] text-farm-parchment leading-relaxed">
+            <p className="font-pixel text-title text-farm-gold">+{netIncome} coins profit! 🎉</p>
+            <p className="font-pixel text-caption text-farm-parchment leading-relaxed">
               Sold your radishes for {harvestIncome} — lease &amp; tax took the rest.
               That's the loop. Now hit your season target.
             </p>
             <button
               type="button"
               onClick={onDismissPayoff}
-              className="font-pixel text-xs px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
+              className="font-pixel text-body px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
             >
               Got it →
             </button>

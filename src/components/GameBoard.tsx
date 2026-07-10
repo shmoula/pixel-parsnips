@@ -93,7 +93,7 @@ function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
     <p
       role="alert"
       aria-label="Flash Drought warning"
-      className="font-pixel text-xs text-farm-red bg-farm-red/20 border border-farm-red/70 tracking-wide px-3 py-2 rounded"
+      className="font-pixel text-body text-farm-red bg-farm-red/20 border border-farm-red/70 tracking-wide px-3 py-2 rounded"
     >
       ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
       {daysRemaining} day{suffix} remaining.
@@ -108,7 +108,7 @@ function SeedHintBanner({ seedHint, selectedCrop }: { seedHint: string | null; s
   return (
     <p
       role="status"
-      className="font-pixel text-xs text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded"
+      className="font-pixel text-body text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded"
     >
       🌱 {seedHint}
     </p>
@@ -122,7 +122,7 @@ function UnwinnableBanner({ isUnwinnable, onRestart }: { isUnwinnable: boolean; 
     <div
       role="alert"
       aria-label="Run cannot recover"
-      className="flex flex-wrap items-center justify-between gap-2 font-pixel text-xs text-farm-red bg-farm-red/20 border border-farm-red/70 px-3 py-2 rounded"
+      className="flex flex-wrap items-center justify-between gap-2 font-pixel text-body text-farm-red bg-farm-red/20 border border-farm-red/70 px-3 py-2 rounded"
     >
       <span>
         💸 Out of options — you can't afford seeds and nothing is growing. Skip days to the end,
@@ -131,7 +131,7 @@ function UnwinnableBanner({ isUnwinnable, onRestart }: { isUnwinnable: boolean; 
       <button
         type="button"
         onClick={() => (armed ? onRestart() : setArmed(true))}
-        className="font-pixel text-xs px-3 py-1.5 min-h-[44px] md:min-h-0 rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-soil"
+        className="font-pixel text-body px-3 py-1.5 min-h-[44px] md:min-h-0 rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-soil"
       >
         {armed ? 'Tap again to confirm' : 'Start new run'}
       </button>
@@ -143,7 +143,7 @@ function EmptyDayConfirm({ onCancel, onAdvance }: { onCancel: () => void; onAdva
   return (
     <div role="dialog" aria-label="Advance empty day" className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 p-6">
       <div className="max-w-xs w-full bg-farm-soil border border-farm-stone/40 rounded-xl p-5 flex flex-col gap-4 text-center">
-        <p className="font-pixel text-xs text-farm-parchment leading-relaxed">
+        <p className="font-pixel text-body text-farm-parchment leading-relaxed">
           Nothing's planted — advance anyway?
         </p>
         <div className="flex gap-2 justify-center">
@@ -151,14 +151,14 @@ function EmptyDayConfirm({ onCancel, onAdvance }: { onCancel: () => void; onAdva
             type="button"
             autoFocus
             onClick={onCancel}
-            className="font-pixel text-xs px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
+            className="font-pixel text-body px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onAdvance}
-            className="font-pixel text-xs px-4 py-2 rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-soil"
+            className="font-pixel text-body px-4 py-2 rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-soil"
           >
             Advance
           </button>
@@ -319,7 +319,7 @@ export function GameBoard({
           <UnwinnableBanner isUnwinnable={isUnwinnable} onRestart={onRestart} />
           <FlashDroughtBanner daysRemaining={state.flashDroughtDaysRemaining} />
           {selectedCrop && (
-            <p className="font-pixel text-xs text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded">
+            <p className="font-pixel text-body text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded">
               🌱 Planting: {selectedCrop} — click an empty plot
             </p>
           )}
