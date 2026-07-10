@@ -1,11 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
 html {
   background-color: #140e06;
+}
+
+/* Pixel font is the app-wide default: the UI was built while this font silently
+   failed to load, so many elements were never given `font-pixel` and would now
+   render in a mismatched sans-serif. Defaulting here keeps the type consistent
+   everywhere (present and future) without hunting every element.
+   font-size-adjust rescales Press Start 2P's glyphs back to the apparent size
+   the layouts were tuned against — tune that one number if type reads big/small. */
+body {
+  font-family: 'Press Start 2P', monospace;
+  font-size-adjust: 0.6;
 }
 
 body {
