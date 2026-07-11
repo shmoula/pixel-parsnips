@@ -189,7 +189,7 @@ function GrowingCropCard({ plot }: {
   return (
     <div
       role="img"
-      aria-label={`Plot ${plot.id + 1}: ${label}, planted day ${plot.dayPlanted}, ${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining`}
+      aria-label={`Plot ${plot.id + 1}: ${label}, planted day ${plot.dayPlanted}, ${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining${plot.droughtPenalised ? ', growth slowed by Flash Drought' : ''}`}
       className={[
         'flex flex-col items-center justify-center',
         'w-full aspect-square overflow-hidden rounded-lg border-2',

@@ -244,6 +244,16 @@ export function useGameEngine(): GameEngineHook {
     stateRef.current = state;
   });
 
+  // Commit a new state by updating the ref *and* React state together. The
+  // mirroring effect above only runs after commit, so two mutating actions in
+  // the same event (e.g. plant then nextDay) would both read the same stale
+  // snapshot and the later setState would drop the earlier update. Writing the
+  // ref synchronously here keeps chained actions building on each other.
+  const commitState = useCallback((next: GameState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
   const hasSignaledPlayStartedRef = useRef(false);
   const signalPlayStarted = useCallback((action: string) => {
     if (hasSignaledPlayStartedRef.current) return;
@@ -299,64 +309,64 @@ export function useGameEngine(): GameEngineHook {
     // updaters/reducers, and an impure call there can diverge between the kept
     // and discarded invocations. Read the authoritative snapshot from stateRef
     // and call processTurn exactly once, matching every other action below.
-    setState(processTurn(stateRef.current, weatherOverride).state);
-  }, [signalPlayStarted]);
+    commitState(processTurn(stateRef.current, weatherOverride).state);
+  }, [commitState, signalPlayStarted]);
 
   const plant = useCallback((plotId: number, cropId: CropId): boolean => {
     const result = plantSeed(stateRef.current, plotId, cropId);
     if (!result.ok) return false;
     signalPlayStarted('plant');
-    setState(result.state);
+    commitState(result.state);
     return true;
-  }, [signalPlayStarted]);
+  }, [commitState, signalPlayStarted]);
 
   const buySeed = useCallback((cropId: CropId, quantity: number): boolean => {
     const result = engineBuySeed(stateRef.current, cropId, quantity);
     if (!result.ok) return false;
     signalPlayStarted('buy_seed');
-    setState(result.state);
+    commitState(result.state);
     return true;
-  }, [signalPlayStarted]);
+  }, [commitState, signalPlayStarted]);
 
   const buyUpgrade = useCallback((): boolean => {
     const result = engineBuyUpgrade(stateRef.current);
     if (!result.ok) return false;
     signalPlayStarted('buy_upgrade');
-    setState(result.state);
+    commitState(result.state);
     return true;
-  }, [signalPlayStarted]);
+  }, [commitState, signalPlayStarted]);
 
   const buyFertilizer = useCallback((quantity: number): boolean => {
     const result = engineBuyFertilizer(stateRef.current, quantity);
     if (!result.ok) return false;
     signalPlayStarted('buy_fertilizer');
-    setState(result.state);
+    commitState(result.state);
     return true;
-  }, [signalPlayStarted]);
+  }, [commitState, signalPlayStarted]);
 
   const applyFertilizer = useCallback((plotId: number): boolean => {
     const result = engineApplyFertilizer(stateRef.current, plotId);
     if (!result.ok) return false;
     signalPlayStarted('apply_fertilizer');
-    setState(result.state);
+    commitState(result.state);
     return true;
-  }, [signalPlayStarted]);
+  }, [commitState, signalPlayStarted]);
 
   const clearPestDamage = useCallback((plotId: number): boolean => {
     const result = engineClearPestDamage(stateRef.current, plotId);
     if (!result.ok) return false;
     signalPlayStarted('clear_pest');
-    setState(result.state);
+    commitState(result.state);
     return true;
-  }, [signalPlayStarted]);
+  }, [commitState, signalPlayStarted]);
 
   const buyPlot = useCallback((): boolean => {
     const result = engineBuyPlot(stateRef.current);
     if (!result.ok) return false;
     signalPlayStarted('buy_plot');
-    setState(result.state);
+    commitState(result.state);
     return true;
-  }, [signalPlayStarted]);
+  }, [commitState, signalPlayStarted]);
 
   const getNextPlotPrice = useCallback((): number | null => {
     return engineGetNextPlotPrice(state);
@@ -366,27 +376,24 @@ export function useGameEngine(): GameEngineHook {
     const fresh = initialGameState();
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
-    setState(fresh);
-  }, []);
+    commitState(fresh);
+  }, [commitState]);
 
   const continueSeason = useCallback(() => {
-    setState(prev => {
-      if (prev.phase === 'season_passed') {
-        return { ...prev, phase: 'playing' };
-      }
-      if (prev.phase === 'season_4_won') {
-        return { ...prev, phase: 'playing', endlessMode: true, currentDay: prev.currentDay + 1 };
-      }
-      return prev;
-    });
-  }, []);
+    const prev = stateRef.current;
+    if (prev.phase === 'season_passed') {
+      commitState({ ...prev, phase: 'playing' });
+    } else if (prev.phase === 'season_4_won') {
+      commitState({ ...prev, phase: 'playing', endlessMode: true, currentDay: prev.currentDay + 1 });
+    }
+  }, [commitState]);
 
   const endRunVictory = useCallback(() => {
     const fresh = initialGameState();
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
-    setState(fresh);
-  }, []);
+    commitState(fresh);
+  }, [commitState]);
 
   const getSeedPrice = useCallback(
     (cropId: CropId): number => computeSeedCost(cropId, state.upgradeTier),
