@@ -31,7 +31,7 @@ describe('BottomActionBar', () => {
     expect(screen.getByRole('button', { name: /advance to next day/i })).toBeDisabled();
   });
 
-  it('warns to plant first when advancing is unproductive', () => {
+  it('shows skip day when advancing is unproductive', () => {
     render(<BottomActionBar {...base} canAdvanceProductively={false} />);
     expect(screen.getByRole('button', { name: /skip day/i })).toBeInTheDocument();
   });

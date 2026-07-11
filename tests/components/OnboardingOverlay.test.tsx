@@ -4,6 +4,26 @@ import { OnboardingOverlay } from '../../src/components/OnboardingOverlay';
 
 const noop = () => {};
 
+/**
+ * Stubs requestAnimationFrame/cancelAnimationFrame with a manual queue and
+ * returns a `flushFrame` that runs (and clears) all queued callbacks inside
+ * `act`. Call `vi.unstubAllGlobals()` afterwards to restore. Shared by every
+ * rAF-driven anchor-tracking test below.
+ */
+function installRafStub(): () => void {
+  let rafQueue: FrameRequestCallback[] = [];
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    rafQueue.push(cb);
+    return rafQueue.length;
+  });
+  vi.stubGlobal('cancelAnimationFrame', () => {});
+  return () => {
+    const q = rafQueue;
+    rafQueue = [];
+    q.forEach(cb => act(() => cb(0)));
+  };
+}
+
 describe('OnboardingOverlay', () => {
   it('shows the welcome copy and a start CTA', () => {
     render(
@@ -118,17 +138,7 @@ describe('OnboardingOverlay', () => {
 
 describe('OnboardingOverlay — anchor robustness', () => {
   it('re-measures the anchor after mount (covers the shop-sheet slide)', () => {
-    let rafQueue: FrameRequestCallback[] = [];
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      rafQueue.push(cb);
-      return rafQueue.length;
-    });
-    vi.stubGlobal('cancelAnimationFrame', () => {});
-    const flushFrame = () => {
-      const q = rafQueue;
-      rafQueue = [];
-      q.forEach(cb => act(() => cb(0)));
-    };
+    const flushFrame = installRafStub();
 
     const anchor = document.createElement('div');
     anchor.setAttribute('data-onboarding', 'shop-radish');
@@ -184,17 +194,7 @@ describe('OnboardingOverlay — anchor robustness', () => {
   });
 
   it('re-measures the ring when the anchor element grows (rAF polling)', () => {
-    let rafQueue: FrameRequestCallback[] = [];
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      rafQueue.push(cb);
-      return rafQueue.length;
-    });
-    vi.stubGlobal('cancelAnimationFrame', () => {});
-    const flushFrame = () => {
-      const q = rafQueue;
-      rafQueue = [];
-      q.forEach(cb => act(() => cb(0)));
-    };
+    const flushFrame = installRafStub();
 
     const anchor = document.createElement('div');
     anchor.setAttribute('data-onboarding', 'shop-radish');
@@ -268,23 +268,12 @@ describe('OnboardingOverlay — anchor robustness', () => {
 });
 
 describe('OnboardingOverlay — live anchor tracking (017 FR-001/FR-002)', () => {
-  let rafQueue: FrameRequestCallback[] = [];
+  let flushFrame: () => void;
 
   beforeEach(() => {
-    rafQueue = [];
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      rafQueue.push(cb);
-      return rafQueue.length;
-    });
-    vi.stubGlobal('cancelAnimationFrame', () => {});
+    flushFrame = installRafStub();
   });
   afterEach(() => vi.unstubAllGlobals());
-
-  const flushFrame = () => {
-    const q = rafQueue;
-    rafQueue = [];
-    q.forEach(cb => act(() => cb(0)));
-  };
 
   function stubAnchor(rect: Partial<DOMRect>) {
     const el = document.createElement('div');

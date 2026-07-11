@@ -117,6 +117,19 @@ function SeedHintBanner({ seedHint, selectedCrop }: { seedHint: string | null; s
 
 function UnwinnableBanner({ isUnwinnable, onRestart }: { isUnwinnable: boolean; onRestart: () => void }) {
   const [armed, setArmed] = useState(false);
+
+  // Auto-disarm after a short window so a much-later tap can't restart without a
+  // fresh first tap; also reset whenever the banner leaves the unwinnable state.
+  useEffect(() => {
+    if (!isUnwinnable) {
+      setArmed(false);
+      return;
+    }
+    if (!armed) return;
+    const timer = setTimeout(() => setArmed(false), 3000);
+    return () => clearTimeout(timer);
+  }, [armed, isUnwinnable]);
+
   if (!isUnwinnable) return null;
   return (
     <div

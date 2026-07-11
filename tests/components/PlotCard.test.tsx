@@ -4,16 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { PlotCard } from '../../src/components/PlotCard';
 import type { PlotState } from '../../src/engine/types';
 
-const emptyPlot = (id: number): PlotState => ({
-  id, cropId: null, dayPlanted: null, daysRemaining: null,
-  consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
-});
-
 const makePlot = (overrides: Partial<PlotState> = {}): PlotState => ({
   id: 0, cropId: null, dayPlanted: null, daysRemaining: null,
   consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
   ...overrides,
 });
+
+const emptyPlot = (id: number): PlotState => makePlot({ id });
 
 describe('LockedPlot', () => {
   it('shows a Buy button on the next purchasable plot and calls onBuyPlot', async () => {

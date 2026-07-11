@@ -3,6 +3,7 @@ import { TAX_RATE } from '../engine/constants';
 import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
 import { Coin } from './Coin';
+import { nextDayLabel, nextDayText } from './nextDayCopy';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
 function getNextSeasonLease(season: SeasonConfig, endlessMode: boolean): number | null {
@@ -32,15 +33,6 @@ function getSeasonMobileLabel(expanded: boolean, number: number, name: string, s
 
 function getRepTitleClass(expanded: boolean): string {
   return `font-pixel text-caption text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
-}
-
-function getNextDayLabel(canAdvanceProductively: boolean): string {
-  // Accessible name must contain the button's visible text (axe label-content-name-mismatch).
-  return canAdvanceProductively ? 'Advance to next day' : 'Skip day — nothing planted';
-}
-
-function getNextDayText(canAdvanceProductively: boolean): string {
-  return canAdvanceProductively ? 'Next Day' : 'Skip day';
 }
 
 function getBalanceTextClass(danger: DangerLevel): string {
@@ -100,9 +92,6 @@ export function HUD({
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);
   const balanceTextClass = getBalanceTextClass(dangerLevel);
-
-  const nextDayLabel = getNextDayLabel(canAdvanceProductively);
-  const nextDayText = getNextDayText(canAdvanceProductively);
 
   return (
     <header
@@ -215,7 +204,7 @@ export function HUD({
         <button
           type="button"
           data-onboarding="next-day"
-          aria-label={nextDayLabel}
+          aria-label={nextDayLabel(canAdvanceProductively)}
           onClick={onNextDay}
           disabled={isProcessing}
           className="
@@ -228,7 +217,7 @@ export function HUD({
         >
           {/* Press Start 2P's → glyph is parked low in the em box; lift it 0.2em
               (measured) onto the letters' optical centre. */}
-          {nextDayText} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
+          {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
         </button>
       </div>
     </header>

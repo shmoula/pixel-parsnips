@@ -1,3 +1,5 @@
+import { nextDayLabel, nextDayText } from './nextDayCopy';
+
 interface BottomActionBarProps {
   onOpenShop: () => void;
   onNextDay: () => void;
@@ -5,15 +7,6 @@ interface BottomActionBarProps {
   canAdvanceProductively: boolean;
   /** Suppress the bar entirely (e.g. while the mobile shop sheet covers the bottom edge). */
   hidden?: boolean;
-}
-
-function nextDayLabel(canAdvance: boolean): string {
-  // Accessible name must contain the button's visible text (axe label-content-name-mismatch).
-  return canAdvance ? 'Advance to next day' : 'Skip day — nothing planted';
-}
-
-function nextDayText(canAdvance: boolean): string {
-  return canAdvance ? 'Next Day' : 'Skip day';
 }
 
 /**
