@@ -277,7 +277,9 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked
       }}
     >
       <span className="text-body font-pixel text-farm-gold">
-        🌱 Plant
+        {/* Emoji hangs low vs the high-sitting pixel text; lift onto its optical
+            centre (offset measured from painted pixels). */}
+        <span className="inline-block -translate-y-[0.23em]" aria-hidden="true">🌱</span> Plant
       </span>
     </button>
   );

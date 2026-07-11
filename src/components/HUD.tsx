@@ -159,7 +159,9 @@ export function HUD({
             title={`Harvest streak: ${harvestStreak} day${harvestStreak === 1 ? '' : 's'} in a row. Next harvest earns +${Math.min(harvestStreak, 4) * 5}🪙 bonus (capped at +20).`}
             className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
           >
-            <span className="text-base leading-none" aria-hidden="true">🔥</span>
+            {/* Emoji artwork hangs low vs the high-sitting pixel text; lift onto
+                the text's optical centre (offset measured from painted pixels). */}
+            <span className="text-base leading-none -translate-y-[0.17em]" aria-hidden="true">🔥</span>
             <span className="font-pixel text-caption text-farm-gold">×{harvestStreak}</span>
           </div>
         )}
@@ -171,7 +173,7 @@ export function HUD({
           onClick={() => setRepExpanded(v => !v)}
           className="flex min-h-[44px] md:min-h-0 items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
         >
-          <span className="text-base leading-none" aria-hidden="true">🎖️</span>
+          <span className="text-base leading-none -translate-y-[0.13em]" aria-hidden="true">🎖️</span>
           <span className={repTitleClass}>
             {reputation.title}
           </span>
@@ -224,7 +226,9 @@ export function HUD({
             active:enabled:scale-95 disabled:opacity-50 transition-all
           "
         >
-          {nextDayText} <span aria-hidden="true">→</span>
+          {/* Press Start 2P's → glyph is parked low in the em box; lift it 0.2em
+              (measured) onto the letters' optical centre. */}
+          {nextDayText} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
         </button>
       </div>
     </header>
