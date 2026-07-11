@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
 import { getSeasonForDay } from '../engine/seasons';
 import { MedalBadge } from './MedalBadge';
+import { Coin } from './Coin';
 import type { DailyLogEntry } from '../engine/types';
 import type { Medal } from '../engine/medals';
 import type { PersonalBests } from '../engine/records';
@@ -50,7 +52,7 @@ function NewBestBadge() {
 
 interface StatRowProps {
   label: string;
-  value: string;
+  value: ReactNode;
   isNewBest: boolean;
 }
 
@@ -114,7 +116,7 @@ export function BankruptcyScreen({
         />
         <StatRow
           label="Peak Balance"
-          value={`${peakBalance}🪙`}
+          value={<>{peakBalance}<Coin /></>}
           isNewBest={newBests.has('bestPeakBalance')}
         />
         <StatRow
@@ -143,7 +145,7 @@ export function BankruptcyScreen({
         ) : null}
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-pixel text-caption text-farm-parchment">
           <span>Best days:</span><span className="text-right">{records.bestDaysSurvived}</span>
-          <span>Best peak:</span><span className="text-right">{records.bestPeakBalance}🪙</span>
+          <span>Best peak:</span><span className="text-right">{records.bestPeakBalance}<Coin /></span>
           <span>Best season:</span><span className="text-right">{records.bestSeasonReached || '—'}</span>
           <span>Most disasters:</span><span className="text-right">{records.mostDisastersSurvived}</span>
           <span>Best streak:</span><span className="text-right">{records.bestHarvestStreak}</span>

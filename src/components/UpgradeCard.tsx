@@ -1,4 +1,5 @@
 import type { UpgradeTierDefinition } from '../engine/types';
+import { Coin } from './Coin';
 
 interface UpgradeCardProps {
   def: UpgradeTierDefinition;
@@ -49,7 +50,7 @@ export function UpgradeCard({
             transition-all
           "
         >
-          {def.cost}🪙
+          {def.cost}<Coin />
         </button>
       </div>
     );
@@ -62,7 +63,7 @@ export function UpgradeCard({
         <p className="font-pixel text-body text-farm-ink">{def.label}</p>
         <p className="text-body text-farm-stone">−{discountPct}% seeds</p>
       </div>
-      <span className="font-pixel text-body text-farm-stone">{def.cost}🪙</span>
+      <span className="font-pixel text-body text-farm-stone">{def.cost}<Coin /></span>
     </div>
   );
 }

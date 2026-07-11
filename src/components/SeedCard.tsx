@@ -1,5 +1,6 @@
 import type { CropId, CropDefinition } from '../engine/types';
 import { CROP_DEFINITIONS, coins } from '../engine/constants';
+import { Coin } from './Coin';
 
 const CROP_EMOJI: Record<CropId, string> = {
   radish: '🌱',
@@ -81,11 +82,11 @@ function CropStats({
         <span className="mx-1">·</span>
         {adjustedYield !== null ? (
           <span>
-            <span className="line-through opacity-60">{crop.baseYield}🪙</span>{' '}
-            <span className={tint}>{adjustedYield}🪙</span> yield
+            <span className="line-through opacity-60">{crop.baseYield}<Coin /></span>{' '}
+            <span className={tint}>{adjustedYield}<Coin /></span> yield
           </span>
         ) : (
-          <span>{crop.baseYield}🪙 yield</span>
+          <span>{crop.baseYield}<Coin /> yield</span>
         )}
       </div>
 
@@ -94,13 +95,13 @@ function CropStats({
         {adjustedProfit !== null ? (
           <span>
             Est. profit:{' '}
-            <span className="line-through opacity-60">{netProfit >= 0 ? '+' : ''}{netProfit}🪙</span>{' '}
+            <span className="line-through opacity-60">{netProfit >= 0 ? '+' : ''}{netProfit}<Coin /></span>{' '}
             <span className={tint}>
-              {adjustedProfit >= 0 ? '+' : ''}{adjustedProfit}🪙
+              {adjustedProfit >= 0 ? '+' : ''}{adjustedProfit}<Coin />
             </span>
           </span>
         ) : (
-          <span>Est. profit: {netProfit >= 0 ? '+' : ''}{netProfit}🪙</span>
+          <span>Est. profit: {netProfit >= 0 ? '+' : ''}{netProfit}<Coin /></span>
         )}
       </p>
     </>
@@ -173,7 +174,7 @@ export function SeedCard({
           transition-all
         "
       >
-        {canAfford ? `BUY ${price}🪙` : `Need ${price}🪙`}
+        {canAfford ? <>BUY {price}<Coin /></> : <>Need {price}<Coin /></>}
       </button>
 
       {seedCount > 0 && (

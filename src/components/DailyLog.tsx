@@ -1,4 +1,5 @@
 import type { DailyLogEntry } from '../engine/types';
+import { Coin } from './Coin';
 import { WEATHER_DEFINITIONS, EXHAUSTION_RECOVERY_DAYS } from '../engine/constants';
 import { announceText, activeText } from '../engine/market';
 
@@ -28,23 +29,23 @@ function LogAccountingRows({ log }: { log: DailyLogEntry }) {
       <div className="flex justify-between text-farm-stone">
         <span>Harvest</span>
         <span className={log.totalHarvestIncome > 0 ? 'text-farm-grass' : ''}>
-          +{log.totalHarvestIncome}🪙
+          +{log.totalHarvestIncome}<Coin />
         </span>
       </div>
 
       {log.landLeaseDeducted > 0 && (
         <div className="flex justify-between text-farm-stone">
           <span>Land lease</span>
-          <span className="text-farm-red">−{log.landLeaseDeducted}🪙</span>
+          <span className="text-farm-red">−{log.landLeaseDeducted}<Coin /></span>
         </div>
       )}
 
       {log.taxDeducted > 0 && (
         <div className="flex justify-between text-farm-stone">
           <span>
-            Tax ({Math.round(log.taxRate * 100)}% of {log.closingBalance + log.taxDeducted}🪙 savings)
+            Tax ({Math.round(log.taxRate * 100)}% of {log.closingBalance + log.taxDeducted}<Coin /> savings)
           </span>
-          <span className="text-farm-red">−{log.taxDeducted}🪙</span>
+          <span className="text-farm-red">−{log.taxDeducted}<Coin /></span>
         </div>
       )}
       {log.taxDeducted > 0 && log.day === 1 && (
@@ -57,7 +58,7 @@ function LogAccountingRows({ log }: { log: DailyLogEntry }) {
       <div className="flex justify-between font-pixel text-farm-parchment border-t border-farm-stone/30 pt-1 mt-1">
         <span>Net</span>
         <span className={log.netChange >= 0 ? 'text-farm-grass' : 'text-farm-red'}>
-          {log.netChange >= 0 ? '+' : ''}{log.netChange}🪙
+          {log.netChange >= 0 ? '+' : ''}{log.netChange}<Coin />
         </span>
       </div>
     </div>
@@ -147,7 +148,7 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
           {log.harvests.map(h => (
             <div key={h.plotId} className="flex justify-between text-farm-stone">
               <span>Plot {h.plotId + 1} {h.cropId}</span>
-              <span className="text-farm-grass">+{h.adjustedYield}🪙</span>
+              <span className="text-farm-grass">+{h.adjustedYield}<Coin /></span>
             </div>
           ))}
         </div>
@@ -162,7 +163,7 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
           className="flex justify-between text-farm-gold"
         >
           <span>🔥 Streak bonus ×{Math.min(log.streakBefore, 4)}</span>
-          <span className="text-farm-grass">+{log.streakBonus}🪙</span>
+          <span className="text-farm-grass">+{log.streakBonus}<Coin /></span>
         </div>
       )}
 

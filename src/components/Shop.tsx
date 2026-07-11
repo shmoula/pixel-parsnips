@@ -1,4 +1,5 @@
 import type { CropId, UpgradeTier, GameState, ActiveMarketEvent } from '../engine/types';
+import { Coin } from './Coin';
 import { UPGRADE_TIER_DEFINITIONS, FERTILIZER_COST } from '../engine/constants';
 import { SeedCard } from './SeedCard';
 import { UpgradeCard } from './UpgradeCard';
@@ -119,7 +120,7 @@ export function Shop({
                 disabled:opacity-40 disabled:cursor-not-allowed
               "
             >
-              {FERTILIZER_COST}🪙
+              {FERTILIZER_COST}<Coin />
             </button>
           </div>
         </div>

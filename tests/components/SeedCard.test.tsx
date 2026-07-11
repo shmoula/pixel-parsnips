@@ -4,6 +4,16 @@ import { SeedCard } from '../../src/components/SeedCard';
 
 const noop = () => {};
 
+// The coin icon renders as its own <Coin> element (the 🪙 emoji), so a value
+// like "65🪙" is split across the number text node and the coin span. Match on
+// the innermost element whose full textContent equals the target (standard TL
+// pattern for "text broken up by multiple elements").
+const byText = (target: string) => (_: string, node: Element | null): boolean => {
+  if (!node) return false;
+  const has = (n: Element) => n.textContent === target;
+  return has(node) && !Array.from(node.children).some(has);
+};
+
 function renderCard(marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number }) {
   render(
     <SeedCard
@@ -39,25 +49,25 @@ describe('SeedCard — market-adjusted yield/profit', () => {
   it('strikes through base yield/profit and shows boosted values under a shortage', () => {
     renderCard({ kind: 'shortage', multiplier: 1.4 });
     // adjusted yield floor(65 * 1.4) = 91, adjusted profit 91 - 20 = 71
-    expect(screen.getByText('65🪙').className).toContain('line-through');
-    expect(screen.getByText('91🪙')).toBeInTheDocument();
-    expect(screen.getByText('+45🪙').className).toContain('line-through');
-    expect(screen.getByText('+71🪙')).toBeInTheDocument();
+    expect(screen.getByText(byText('65🪙')).className).toContain('line-through');
+    expect(screen.getByText(byText('91🪙'))).toBeInTheDocument();
+    expect(screen.getByText(byText('+45🪙')).className).toContain('line-through');
+    expect(screen.getByText(byText('+71🪙'))).toBeInTheDocument();
   });
 
   it('strikes through base yield/profit and shows reduced values under a glut', () => {
     renderCard({ kind: 'glut', multiplier: 0.7 });
     // adjusted yield floor(65 * 0.7) = 45, adjusted profit 45 - 20 = 25
-    expect(screen.getByText('65🪙').className).toContain('line-through');
-    expect(screen.getByText('45🪙')).toBeInTheDocument();
-    expect(screen.getByText('+45🪙').className).toContain('line-through');
-    expect(screen.getByText('+25🪙')).toBeInTheDocument();
+    expect(screen.getByText(byText('65🪙')).className).toContain('line-through');
+    expect(screen.getByText(byText('45🪙'))).toBeInTheDocument();
+    expect(screen.getByText(byText('+45🪙')).className).toContain('line-through');
+    expect(screen.getByText(byText('+25🪙'))).toBeInTheDocument();
   });
 
   it('shows plain yield/profit with no strikethrough when the market is quiet', () => {
     renderCard(undefined);
-    expect(screen.getByText('65🪙 yield').className).not.toContain('line-through');
-    expect(screen.getByText('Est. profit: +45🪙')).toBeInTheDocument();
+    expect(screen.getByText(byText('65🪙 yield')).className).not.toContain('line-through');
+    expect(screen.getByText(byText('Est. profit: +45🪙'))).toBeInTheDocument();
   });
 
   it('renders a negative net profit without a stray plus sign', () => {
@@ -73,7 +83,7 @@ describe('SeedCard — market-adjusted yield/profit', () => {
         isSelected={false}
       />,
     );
-    expect(screen.getByText('Est. profit: -15🪙')).toBeInTheDocument();
+    expect(screen.getByText(byText('Est. profit: -15🪙'))).toBeInTheDocument();
     expect(screen.queryByText(/\+-/)).not.toBeInTheDocument();
   });
 });

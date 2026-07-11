@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TAX_RATE } from '../engine/constants';
 import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
+import { Coin } from './Coin';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
 function getNextSeasonLease(season: SeasonConfig, endlessMode: boolean): number | null {
@@ -180,7 +181,7 @@ export function HUD({
       {/* Centre-right: Lease + Tax — hidden on small screens */}
       <div className="hidden sm:flex items-center gap-3 ml-auto">
         <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
-          Lease {season.leasePerDay}🪙/day
+          Lease {season.leasePerDay}<Coin />/day
           {showLeasePreview && nextSeasonLease !== null && (
             <span className="ml-1 text-farm-gold/70">
               (rises to {nextSeasonLease} next season)

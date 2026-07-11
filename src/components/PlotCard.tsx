@@ -1,6 +1,7 @@
 import type { PlotState } from '../engine/types';
 import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS } from '../engine/constants';
 import { ProgressRing } from './ProgressRing';
+import { Coin } from './Coin';
 
 // T013 — crop-specific emojis for full/ready stages
 const CROP_EMOJI: Record<string, string> = {
@@ -72,7 +73,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
         className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-gold/60 bg-[#160F07] p-1 select-none hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <span className="text-2xl opacity-70">🔒</span>
-        <span className="font-pixel text-caption leading-none text-farm-gold text-center">Buy plot · {plotPrice}🪙</span>
+        <span className="font-pixel text-caption leading-none text-farm-gold text-center">Buy plot · {plotPrice}<Coin /></span>
       </button>
     );
   }

@@ -4,6 +4,14 @@ import { axe } from 'vitest-axe';
 import { DailyLog } from '../../src/components/DailyLog';
 import type { DailyLogEntry } from '../../src/engine/types';
 
+// Coin renders as its own <Coin> element (the 🪙 emoji), so "85🪙" is split
+// across nodes. Match the innermost element whose textContent matches.
+const byText = (pattern: RegExp) => (_: string, node: Element | null): boolean => {
+  if (!node) return false;
+  const has = (n: Element) => pattern.test(n.textContent ?? '');
+  return has(node) && !Array.from(node.children).some(has);
+};
+
 function makeLog(over: Partial<DailyLogEntry> = {}): DailyLogEntry {
   return {
     day: 5,
@@ -136,7 +144,7 @@ describe('DailyLog — tax legibility (017 FR-006/FR-007)', () => {
   it('states the tax basis so the amount is recomputable', () => {
     // basis = closingBalance + taxDeducted = 81 + 4 = 85
     render(<DailyLog log={makeLog({ taxRate: 0.06, taxDeducted: 4, closingBalance: 81 })} />);
-    expect(screen.getByText(/tax \(6% of 85🪙 savings\)/i)).toBeInTheDocument();
+    expect(screen.getByText(byText(/tax \(6% of 85🪙 savings\)/i))).toBeInTheDocument();
   });
 
   it('shows the one-time tax explainer on day 1', () => {
