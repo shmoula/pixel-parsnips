@@ -147,7 +147,14 @@ export function SeedCard({
       }}
     >
       <div className="flex items-center justify-between">
-        <span className="drop-shadow">
+        {/* 018 — inset frame: the sprite reads as an item on display, not floating */}
+        <span
+          className="inline-flex items-center justify-center rounded-md px-2 py-1"
+          style={{
+            backgroundColor: 'rgba(0,0,0,0.28)',
+            boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.5)',
+          }}
+        >
           <CropSprite
             cropId={cropId}
             stage="ready"
