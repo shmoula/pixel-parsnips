@@ -8,6 +8,7 @@ import { BottomActionBar } from './BottomActionBar';
 import { HUD } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
+import { PageBackdrop } from './PageBackdrop';
 import { DaySummaryModal } from './DaySummaryModal';
 import { OnboardingOverlay } from './OnboardingOverlay';
 
@@ -309,7 +310,9 @@ export function GameBoard({
 
   return (
     // T006 — relative container needed for fixed backdrop to scope correctly
-    <div className="flex flex-col min-h-screen bg-[#140E06]">
+    // 018 — page colour lives on PageBackdrop now (it needs to paint above -z-10)
+    <div className="flex flex-col min-h-screen">
+      <PageBackdrop />
       <HUD
         currentDay={state.currentDay}
         coinBalance={state.coinBalance}
@@ -326,7 +329,8 @@ export function GameBoard({
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}
-      <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4">
+      {/* 018 — max-width opens side margins on wide screens, revealing the backdrop */}
+      <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4 w-full max-w-5xl mx-auto">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
           <UnwinnableBanner isUnwinnable={isUnwinnable} onRestart={onRestart} />
