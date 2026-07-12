@@ -1,6 +1,7 @@
 import type { CropId, CropDefinition } from '../engine/types';
 import { CROP_DEFINITIONS, coins } from '../engine/constants';
 import { Coin } from './Coin';
+import { CropSprite } from './CropSprite';
 
 const CROP_EMOJI: Record<CropId, string> = {
   radish: '🌱',
@@ -8,10 +9,16 @@ const CROP_EMOJI: Record<CropId, string> = {
   pumpkin: '🎃',
 };
 
-const CROP_ACCENT: Record<CropId, string> = {
-  radish:  '#3D7A2B',
-  parsnip: '#C87820',
-  pumpkin: '#C05010',
+/**
+ * Per-crop painted-card theme (016 shop reskin). `cardBg` tints the whole card so the
+ * shelf reads at a glance — radish red, parsnip green, pumpkin orange — while `border`
+ * gives it a crisp painted edge. Colour is never the sole signal: the name label and
+ * BUY price stay as text (sharp_edges.md → colorblind-failure).
+ */
+const CROP_THEME: Record<CropId, { cardBg: string; border: string }> = {
+  radish:  { cardBg: '#6E2A24', border: '#C0392B' },
+  parsnip: { cardBg: '#3A5220', border: '#4E8A2E' },
+  pumpkin: { cardBg: '#7C3E14', border: '#C87820' },
 };
 
 interface SeedCardProps {
@@ -32,9 +39,8 @@ interface SeedCardProps {
 /** Build the card root className given selection + dim state. */
 function seedCardClass(isSelected: boolean, dimmed: boolean | undefined): string {
   return [
-    'flex flex-col gap-1 p-3 rounded-lg border transition-all',
-    'bg-[#261808]',
-    isSelected ? 'border-farm-gold ring-2 ring-farm-gold' : 'border-[#5C3D1E]/60',
+    'flex flex-col gap-1 p-3 rounded-lg border-2 transition-all',
+    isSelected ? 'ring-2 ring-farm-gold' : '',
     dimmed ? 'opacity-40' : '',
   ].join(' ');
 }
@@ -77,7 +83,7 @@ function CropStats({
 
   return (
     <>
-      <div className="text-body text-farm-stone/80">
+      <div className="text-xs text-farm-parchment/75">
         <span>{crop.growthDays}d grow</span>
         <span className="mx-1">·</span>
         {adjustedYield !== null ? (
@@ -90,8 +96,8 @@ function CropStats({
         )}
       </div>
 
-      {/* T018b — estimated net profit display */}
-      <p className="text-body text-farm-grass font-pixel">
+      {/* T018b — estimated net profit display (light mint reads on the tinted card) */}
+      <p className="text-xs text-[#BFE6A8] font-pixel">
         {adjustedProfit !== null ? (
           <span>
             Est. profit:{' '}
@@ -122,19 +128,34 @@ export function SeedCard({
 }: SeedCardProps) {
   const crop = CROP_DEFINITIONS[cropId];
   const disabled = !canAfford || interactionDisabled === true;
+  const theme = CROP_THEME[cropId];
 
   // G7 — price-direction badge for an active market event on this crop
   const marketLabel = formatMarketBadge(marketEvent);
 
   return (
-    // T018c — active border: gold ring instead of grass
+    // 016 — painted colored card; gold border+ring when selected. textShadow on the
+    // root cascades to every label so text stays legible on the tinted fill
+    // (sharp_edges.md → no-text-outline-or-shadow).
     <div
       data-onboarding={seedCardAnchor(cropId)}
       className={seedCardClass(isSelected, dimmed)}
-      style={{ borderLeftColor: CROP_ACCENT[cropId], borderLeftWidth: '3px' }}
+      style={{
+        backgroundColor: theme.cardBg,
+        borderColor: isSelected ? '#F5C842' : theme.border,
+        textShadow: '0 1px 1px rgba(0,0,0,0.55)',
+      }}
     >
       <div className="flex items-center justify-between">
-        <span className="text-lg">{CROP_EMOJI[cropId]}</span>
+        <span className="drop-shadow">
+          <CropSprite
+            cropId={cropId}
+            stage="ready"
+            fallback={CROP_EMOJI[cropId]}
+            size={64}
+            fallbackClass="text-2xl leading-none"
+          />
+        </span>
         {seedCount > 0 && (
           <span className="text-body font-pixel bg-farm-grass text-farm-parchment px-1.5 py-0.5 rounded">
             ×{seedCount}
