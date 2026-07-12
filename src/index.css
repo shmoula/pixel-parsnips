@@ -29,8 +29,11 @@ textarea {
 body {
   margin: 0;
   min-height: 100dvh;
-  background-color: #140e06;
-  background-image: repeating-linear-gradient(0deg, #3D2010 0px, #3D2010 2px, #4A2F1A 2px, #4A2F1A 6px);
+  /* 018 — the page background lives on PageBackdrop (a fixed -z-10 layer). The
+     body must stay transparent so that layer shows through; the html rule above
+     keeps #140e06 as the fallback painted beneath it. The old wood-grain
+     gradient here used to cover the backdrop entirely. */
+  background-color: transparent;
 }
 
 /* 013 — Disaster reveal juice (F2). Unified disaster banner motion.
