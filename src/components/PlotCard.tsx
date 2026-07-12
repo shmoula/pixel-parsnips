@@ -2,6 +2,8 @@ import type { PlotState } from '../engine/types';
 import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS } from '../engine/constants';
 import { ProgressRing } from './ProgressRing';
 import { Coin } from './Coin';
+import { CropSprite } from './CropSprite';
+import type { SpriteStage } from './cropSprites';
 
 // T013 — crop-specific emojis for full/ready stages
 const CROP_EMOJI: Record<string, string> = {
@@ -43,6 +45,14 @@ const GROWTH_STAGE_EMOJI: Record<GrowthStage, string | null> = {
   small:  '🌿',
   full:   null, // falls through to crop-specific emoji
   ready:  null,
+};
+
+// 018 — engine growth stage → sprite frame (see src/assets/crops/README.md)
+const STAGE_TO_SPRITE: Record<GrowthStage, SpriteStage> = {
+  sprout: 'seedling',
+  small:  'sprout',
+  full:   'mature',
+  ready:  'ready',
 };
 
 interface PlotCardProps {
@@ -200,7 +210,13 @@ function GrowingCropCard({ plot }: {
       ].join(' ')}
     >
       <ProgressRing progress={progress} size={52}>
-        <span className="text-2xl">{stageEmoji}</span>
+        <CropSprite
+          cropId={plot.cropId!}
+          stage={STAGE_TO_SPRITE[stage]}
+          fallback={stageEmoji}
+          size={40}
+          fallbackClass="text-2xl"
+        />
       </ProgressRing>
       <span className="text-body font-pixel text-farm-parchment/80 mt-1">{label}</span>
       {isReady ? (
