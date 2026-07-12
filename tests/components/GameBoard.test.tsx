@@ -124,6 +124,15 @@ describe('GameBoard — smoke tests (T047)', () => {
     expect(screen.getByRole('complementary', { name: /shop/i })).toBeInTheDocument();
   });
 
+  it('mounts the decorative PageBackdrop (018)', () => {
+    const { container } = render(<GameBoard {...makeGameBoardProps()} />);
+    // The backdrop is the only fixed, aria-hidden layer; guards against it being
+    // accidentally unmounted from GameBoard (unit tests on PageBackdrop alone can't).
+    const backdrop = container.querySelector<HTMLElement>('[aria-hidden="true"].fixed');
+    expect(backdrop).not.toBeNull();
+    expect(backdrop!.style.backgroundImage).toContain('soil_tile');
+  });
+
   it('does not render DaySummaryModal on initial load (modal is closed)', () => {
     render(<GameBoard {...makeGameBoardProps({ lastDailyLog: null })} />);
     // Modal only opens after a turn — sidebar DailyLog was removed in Phase 4 (T012)

@@ -309,8 +309,8 @@ export function GameBoard({
   const canAffordPlot = canAfford(state.coinBalance, nextPlotPrice);
 
   return (
-    // T006 — relative container needed for fixed backdrop to scope correctly
-    // 018 — page colour lives on PageBackdrop now (it needs to paint above -z-10)
+    // 018 — page colour lives on PageBackdrop now (a fixed -z-10 layer scoped to
+    // the viewport; no positioned ancestor needed). Body is transparent so it shows.
     <div className="flex flex-col min-h-screen">
       <PageBackdrop />
       <HUD
