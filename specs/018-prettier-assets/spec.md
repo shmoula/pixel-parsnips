@@ -54,6 +54,7 @@ Replace: `radish_mature`, `radish_ready`, `parsnip_seedling`, `parsnip_mature`,
 | `rake.png` | Hero prop, ~96–160px tall |
 | `pitchfork.png` | Hero prop, ~96–160px tall |
 | `grass_1.png`, `grass_2.png` | Small grass-tuft variants, ~32–48px |
+| `flower_1.png` | Small flowering tuft, ~48px |
 | `stones.png` | Small pebble cluster, ~32px |
 
 ## Components
