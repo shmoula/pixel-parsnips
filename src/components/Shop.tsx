@@ -3,6 +3,7 @@ import { Coin } from './Coin';
 import { UPGRADE_TIER_DEFINITIONS, FERTILIZER_COST } from '../engine/constants';
 import { SeedCard } from './SeedCard';
 import { UpgradeCard } from './UpgradeCard';
+import { woodPlanksUrl } from './decorAssets';
 
 const CROP_IDS: CropId[] = ['radish', 'parsnip', 'pumpkin'];
 
@@ -25,8 +26,10 @@ function Awning() {
       aria-hidden="true"
       className="pointer-events-none h-5 mb-2 rounded-t-sm"
       style={{
+        // 018 — market-stall cloth: green / cream / rust / brown (44px period,
+        // still out of phase with the 13px scallop tile).
         background:
-          'repeating-linear-gradient(90deg, #3F7D30 0 11px, #E8D9A8 11px 22px)',
+          'repeating-linear-gradient(90deg, #3F7D30 0 11px, #E8D9A8 11px 22px, #A8452A 22px 33px, #6B4A2A 33px 44px)',
         WebkitMaskImage: scallop,
         WebkitMaskSize: '13px 100%',
         WebkitMaskRepeat: 'repeat-x',
@@ -59,6 +62,19 @@ function SignHeader() {
       className="relative rounded-md border-2 py-2.5 text-center"
       style={{
         backgroundColor: '#5A3A1E',
+        // 018 — wood texture under a darker wash than the panel, so the sign
+        // still reads as a separate carved board.
+        ...(woodPlanksUrl
+          ? {
+              backgroundImage: [
+                'linear-gradient(rgba(30,16,6,0.45), rgba(30,16,6,0.45))',
+                `url(${woodPlanksUrl})`,
+              ].join(', '),
+              backgroundSize: 'auto, 128px 128px',
+              backgroundRepeat: 'repeat',
+              imageRendering: 'pixelated' as const,
+            }
+          : {}),
         borderColor: '#3D2410',
         boxShadow:
           'inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -4px 6px rgba(0,0,0,0.4)',
@@ -127,15 +143,29 @@ export function Shop({
 
   return (
     // T021 — wood-grain texture on sidebar wrapper
+    // 018 — real wood-plank texture with a dark wash so cards keep contrast;
+    // falls back to the previous CSS grain when the texture PNG is absent.
     <aside
       aria-label="Shop"
       className="flex flex-col gap-4 p-4 rounded-lg"
-      style={{
-        background: [
-          'repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 8px)',
-          '#4A2F1A',
-        ].join(', '),
-      }}
+      style={
+        woodPlanksUrl
+          ? {
+              backgroundImage: [
+                'linear-gradient(rgba(20,10,4,0.35), rgba(20,10,4,0.35))',
+                `url(${woodPlanksUrl})`,
+              ].join(', '),
+              backgroundSize: 'auto, 128px 128px',
+              backgroundRepeat: 'repeat',
+              imageRendering: 'pixelated',
+            }
+          : {
+              background: [
+                'repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 8px)',
+                '#4A2F1A',
+              ].join(', '),
+            }
+      }
     >
       <SignHeader />
 
