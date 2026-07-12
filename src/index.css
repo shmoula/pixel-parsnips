@@ -1,11 +1,29 @@
+/* Press Start 2P is self-hosted via @fontsource (imported in main.tsx), so the
+   @font-face ships in the bundle — no external Google Fonts request. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
 html {
   background-color: #140e06;
+}
+
+/* Pixel font is the app-wide default: the UI was built while this font silently
+   failed to load, so many elements were never given `font-pixel` and would now
+   render in a mismatched sans-serif. Defaulting here keeps the type consistent
+   everywhere (present and future) without hunting every element.
+   font-size-adjust rescales Press Start 2P's glyphs back to the apparent size
+   the layouts were tuned against — tune that one number if type reads big/small.
+   Form controls need it explicitly: browsers reset font-size-adjust to `none`
+   via the UA `font` shorthand, so text inside <button>/<input> (and its child
+   spans) would otherwise render un-shrunk and larger than surrounding text. */
+body,
+button,
+input,
+select,
+textarea {
+  font-family: 'Press Start 2P', monospace;
+  font-size-adjust: 0.6;
 }
 
 body {

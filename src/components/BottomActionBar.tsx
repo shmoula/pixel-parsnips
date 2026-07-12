@@ -1,18 +1,12 @@
+import { nextDayLabel, nextDayText } from './nextDayCopy';
+
 interface BottomActionBarProps {
-  onToggleShop: () => void;
+  onOpenShop: () => void;
   onNextDay: () => void;
   isProcessing: boolean;
   canAdvanceProductively: boolean;
   /** Suppress the bar entirely (e.g. while the mobile shop sheet covers the bottom edge). */
   hidden?: boolean;
-}
-
-function nextDayLabel(canAdvance: boolean): string {
-  return canAdvance ? 'Advance to next day' : 'Plant seeds first — nothing planted yet';
-}
-
-function nextDayText(canAdvance: boolean): string {
-  return canAdvance ? 'Next Day' : 'Plant seeds first';
 }
 
 /**
@@ -21,7 +15,7 @@ function nextDayText(canAdvance: boolean): string {
  * Next Day lives in the HUD and the shop is an always-visible sidebar.
  */
 export function BottomActionBar({
-  onToggleShop,
+  onOpenShop,
   onNextDay,
   isProcessing,
   canAdvanceProductively,
@@ -41,9 +35,9 @@ export function BottomActionBar({
         type="button"
         data-onboarding="shop-button"
         aria-label="Open shop"
-        onClick={onToggleShop}
+        onClick={onOpenShop}
         className="
-          flex-1 min-h-[44px] font-pixel text-[10px] rounded uppercase tracking-widest
+          flex-1 min-h-[44px] font-pixel text-caption rounded uppercase tracking-widest
           bg-farm-gold text-farm-ink ring-1 ring-farm-gold/50
           hover:brightness-110 active:scale-95 transition-all
         "
@@ -57,7 +51,7 @@ export function BottomActionBar({
         onClick={onNextDay}
         disabled={isProcessing}
         className="
-          flex-[1.4] min-h-[44px] font-pixel text-[11px] rounded uppercase tracking-widest
+          flex-[1.4] min-h-[44px] font-pixel text-body rounded uppercase tracking-widest
           bg-farm-grass text-farm-parchment
           hover:bg-farm-gold hover:text-farm-ink
           active:enabled:scale-95 disabled:opacity-50 transition-all

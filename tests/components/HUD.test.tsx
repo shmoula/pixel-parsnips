@@ -27,7 +27,23 @@ describe('HUD — Season indicator (US1)', () => {
 
   it('renders the season target alongside the coin balance', () => {
     render(<HUD {...baseProps} currentDay={1} coinBalance={87} />);
-    expect(screen.getByText(/87 \/ 105 target/i)).toBeInTheDocument();
+    expect(screen.getByText(/87/)).toBeInTheDocument();
+    expect(screen.getByText(/goal 105 by day 20/i)).toBeInTheDocument();
+  });
+});
+
+describe('HUD — season goal deadline framing (017 FR-008/FR-009)', () => {
+  it('presents the target as a deadline, not a completed fraction', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={130} />);
+    // Season 1 target is 105, season length 20
+    expect(screen.getByText(/goal 105 by day 20/i)).toBeInTheDocument();
+    expect(screen.queryByText(/130 \/ 105/)).toBeNull();
+  });
+
+  it('does not style the balance as achieved while the season is undecided', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={130} />);
+    const coins = screen.getByLabelText(/coins: 130/i);
+    expect(coins.className).not.toContain('text-[#5FB54A]');
   });
 });
 
@@ -146,7 +162,13 @@ describe('HUD — empty-day safeguard label', () => {
 
   it('warns to plant first when advancing is unproductive', () => {
     renderHUD({ canAdvanceProductively: false });
-    expect(screen.getByText(/plant seeds first/i)).toBeInTheDocument();
+    expect(screen.getByText(/skip day/i)).toBeInTheDocument();
+  });
+
+  it('labels the advance control "Skip day" when nothing is planted (017 FR-018)', () => {
+    renderHUD({ canAdvanceProductively: false });
+    expect(screen.getByRole('button', { name: /skip day — nothing planted/i })).toHaveTextContent(/skip day/i);
+    expect(screen.queryByText(/plant seeds first/i)).toBeNull();
   });
 
   it('marks the next-day and balance anchors', () => {

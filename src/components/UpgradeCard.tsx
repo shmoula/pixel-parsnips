@@ -1,4 +1,5 @@
 import type { UpgradeTierDefinition } from '../engine/types';
+import { Coin } from './Coin';
 
 interface UpgradeCardProps {
   def: UpgradeTierDefinition;
@@ -22,8 +23,8 @@ export function UpgradeCard({
     return (
       <div className="flex items-center gap-2 px-2 py-1 rounded bg-farm-grass/20 border border-farm-grass/40">
         <span className="text-farm-grass text-sm">✓</span>
-        <p className="font-pixel text-xs text-farm-parchment">{def.label}</p>
-        <p className="text-xs text-farm-stone ml-auto">−{discountPct}% seeds</p>
+        <p className="font-pixel text-body text-farm-parchment">{def.label}</p>
+        <p className="text-body text-farm-stone ml-auto">−{discountPct}% seeds</p>
       </div>
     );
   }
@@ -32,8 +33,8 @@ export function UpgradeCard({
     return (
       <div className="flex items-center justify-between p-2 rounded bg-farm-parchment border border-farm-stone">
         <div>
-          <p className="font-pixel text-xs text-farm-ink">{def.label}</p>
-          <p className="text-xs text-farm-stone">−{discountPct}% seeds</p>
+          <p className="font-pixel text-body text-farm-ink">{def.label}</p>
+          <p className="text-body text-farm-stone">−{discountPct}% seeds</p>
         </div>
         <button
           type="button"
@@ -41,7 +42,7 @@ export function UpgradeCard({
           disabled={!canAfford}
           onClick={onBuy}
           className="
-            px-2 py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs
+            px-2 py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-body
             bg-farm-gold text-farm-ink
             hover:bg-farm-grass hover:text-farm-parchment
             active:scale-95 active:brightness-90
@@ -49,7 +50,7 @@ export function UpgradeCard({
             transition-all
           "
         >
-          {def.cost}🪙
+          {def.cost}<Coin />
         </button>
       </div>
     );
@@ -59,10 +60,10 @@ export function UpgradeCard({
   return (
     <div className="flex items-center justify-between p-2 rounded bg-farm-parchment border border-farm-stone opacity-40">
       <div>
-        <p className="font-pixel text-xs text-farm-ink">{def.label}</p>
-        <p className="text-xs text-farm-stone">−{discountPct}% seeds</p>
+        <p className="font-pixel text-body text-farm-ink">{def.label}</p>
+        <p className="text-body text-farm-stone">−{discountPct}% seeds</p>
       </div>
-      <span className="font-pixel text-xs text-farm-stone">{def.cost}🪙</span>
+      <span className="font-pixel text-body text-farm-stone">{def.cost}<Coin /></span>
     </div>
   );
 }

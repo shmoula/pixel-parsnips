@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { TAX_RATE } from '../engine/constants';
 import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
+import { Coin } from './Coin';
+import { nextDayLabel, nextDayText } from './nextDayCopy';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
 function getNextSeasonLease(season: SeasonConfig, endlessMode: boolean): number | null {
@@ -30,26 +32,14 @@ function getSeasonMobileLabel(expanded: boolean, number: number, name: string, s
 }
 
 function getRepTitleClass(expanded: boolean): string {
-  return `font-pixel text-[10px] text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
+  return `font-pixel text-caption text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
 }
 
-function getNextDayLabel(canAdvanceProductively: boolean): string {
-  // Accessible name must contain the button's visible text (axe label-content-name-mismatch).
-  return canAdvanceProductively ? 'Advance to next day' : 'Plant seeds first — nothing planted yet';
-}
-
-function getNextDayText(canAdvanceProductively: boolean): string {
-  return canAdvanceProductively ? 'Next Day' : 'Plant seeds first';
-}
-
-function getBalanceTextClass(danger: DangerLevel, targetMet: boolean): string {
+function getBalanceTextClass(danger: DangerLevel): string {
   // Lighter than farm-red so the "critical" balance keeps a ≥4.5:1 contrast
   // ratio against the dark #261808 chip (WCAG AA / Lighthouse a11y).
   if (danger === 'critical') return 'text-[#EB6A5C]';
   if (danger === 'low') return 'text-yellow-300';
-  // Lighter than farm-grass so the "target met" balance keeps a ≥4.5:1
-  // contrast ratio against the dark #261808 chip (WCAG AA / Lighthouse a11y).
-  if (targetMet) return 'text-[#5FB54A]';
   return 'text-farm-gold';
 }
 
@@ -101,10 +91,7 @@ export function HUD({
 
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);
-  const balanceTextClass = getBalanceTextClass(dangerLevel, targetMet);
-
-  const nextDayLabel = getNextDayLabel(canAdvanceProductively);
-  const nextDayText = getNextDayText(canAdvanceProductively);
+  const balanceTextClass = getBalanceTextClass(dangerLevel);
 
   return (
     <header
@@ -126,29 +113,34 @@ export function HUD({
           onClick={() => setSeasonExpanded(v => !v)}
           className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"
         >
-          <span className="font-pixel text-[8px] text-farm-parchment/70 uppercase tracking-widest">
-            <span className="sm:hidden">{seasonMobileLabel}</span>
-            <span className="hidden sm:inline">Season {season.number} · {season.name}</span>
-          </span>
-          <span className="font-pixel text-[10px] text-farm-gold">
+          <span className="font-pixel text-title text-farm-gold">
             <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
             <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
+          </span>
+          <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
+            <span className="sm:hidden">{seasonMobileLabel}</span>
+            <span className="hidden sm:inline">Season {season.number} · {season.name}</span>
           </span>
         </button>
         <div data-onboarding="balance-chip" className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
-          <span
-            className={`font-pixel text-sm ${balanceTextClass}`}
-            aria-label={`Coins: ${coinBalance}, season target: ${season.target}`}
-          >
-            <span className="sm:hidden">{coinBalance} / {season.target}</span>
-            <span className="hidden sm:inline">{coinBalance} / {season.target} target</span>
-            {showWarning && (
-              <span className="ml-1 text-farm-red">
-                  — {daysRemainingInSeason} {daysRemainingInSeason === 1 ? 'day' : 'days'} left
+          <div className="flex flex-col justify-center leading-tight">
+            <span
+              className={`font-pixel text-title ${balanceTextClass}`}
+              aria-label={`Coins: ${coinBalance}. Season goal: ${season.target} coins by day ${seasonLen} of the season.`}
+            >
+              {coinBalance}
+            </span>
+            <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
+              <span className="sm:hidden">Goal {season.target}·D{seasonLen}</span>
+              <span className="hidden sm:inline">Goal {season.target} by day {seasonLen}</span>
+              {showWarning && (
+                <span className="text-farm-red">
+                  {' '}— {daysRemainingInSeason} {daysRemainingInSeason === 1 ? 'day' : 'days'} left
                 </span>
-            )}
-          </span>
+              )}
+            </span>
+          </div>
         </div>
         {harvestStreak > 0 && (
           <div
@@ -156,8 +148,10 @@ export function HUD({
             title={`Harvest streak: ${harvestStreak} day${harvestStreak === 1 ? '' : 's'} in a row. Next harvest earns +${Math.min(harvestStreak, 4) * 5}🪙 bonus (capped at +20).`}
             className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
           >
-            <span className="text-base leading-none" aria-hidden="true">🔥</span>
-            <span className="font-pixel text-[10px] text-farm-gold">×{harvestStreak}</span>
+            {/* Emoji artwork hangs low vs the high-sitting pixel text; lift onto
+                the text's optical centre (offset measured from painted pixels). */}
+            <span className="text-base leading-none -translate-y-[0.17em]" aria-hidden="true">🔥</span>
+            <span className="font-pixel text-caption text-farm-gold">×{harvestStreak}</span>
           </div>
         )}
         <button
@@ -168,7 +162,7 @@ export function HUD({
           onClick={() => setRepExpanded(v => !v)}
           className="flex min-h-[44px] md:min-h-0 items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
         >
-          <span className="text-base leading-none" aria-hidden="true">🎖️</span>
+          <span className="text-base leading-none -translate-y-[0.13em]" aria-hidden="true">🎖️</span>
           <span className={repTitleClass}>
             {reputation.title}
           </span>
@@ -177,15 +171,15 @@ export function HUD({
 
       {/* Centre-right: Lease + Tax — hidden on small screens */}
       <div className="hidden sm:flex items-center gap-3 ml-auto">
-        <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
-          Lease {season.leasePerDay}🪙/day
+        <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
+          Lease {season.leasePerDay}<Coin />/day
           {showLeasePreview && nextSeasonLease !== null && (
             <span className="ml-1 text-farm-gold/70">
               (rises to {nextSeasonLease} next season)
             </span>
           )}
         </span>
-        <span className="font-pixel text-[9px] text-farm-stone/50 uppercase tracking-widest">
+        <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
           Tax {TAX_RATE * 100}%
         </span>
       </div>
@@ -198,7 +192,7 @@ export function HUD({
           onClick={onLastTurn}
           disabled={!hasLastTurn}
           className="
-            font-pixel text-[9px] px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
+            font-pixel text-caption px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
             bg-[#261808] text-farm-stone/60 border border-[#5C3D1E]/50
             hover:enabled:bg-[#3A2510] hover:enabled:text-farm-parchment/80 hover:enabled:border-[#5C3D1E]
             active:enabled:scale-95 transition-all
@@ -210,18 +204,20 @@ export function HUD({
         <button
           type="button"
           data-onboarding="next-day"
-          aria-label={nextDayLabel}
+          aria-label={nextDayLabel(canAdvanceProductively)}
           onClick={onNextDay}
           disabled={isProcessing}
           className="
             hidden md:inline-flex
-            font-pixel text-[10px] px-4 py-1.5 rounded uppercase tracking-widest
+            font-pixel text-caption px-4 py-1.5 rounded uppercase tracking-widest
             bg-farm-grass text-farm-parchment
             hover:bg-farm-gold hover:text-farm-ink
             active:enabled:scale-95 disabled:opacity-50 transition-all
           "
         >
-          {nextDayText} <span aria-hidden="true">→</span>
+          {/* Press Start 2P's → glyph is parked low in the em box; lift it 0.2em
+              (measured) onto the letters' optical centre. */}
+          {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
         </button>
       </div>
     </header>

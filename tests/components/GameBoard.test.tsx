@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
@@ -65,7 +65,7 @@ describe('BankruptcyScreen', () => {
 
 // ── T047: GameBoard smoke tests + WCAG 2.1 AA gate ───────────────────────────
 
-function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null } = {}) {
+function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null; onRestart?: () => void } = {}) {
   return {
     state: initialGameState(),
     lastDailyLog: overrides.lastDailyLog ?? null,
@@ -81,6 +81,7 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null } =
     getNextUpgradeCost: () => 50 as number | null,
     onBuyPlot: vi.fn().mockReturnValue(false),
     getNextPlotPrice: () => null as number | null,
+    onRestart: overrides.onRestart ?? vi.fn(),
   };
 }
 
@@ -148,7 +149,7 @@ describe('GameBoard — smoke tests (T047)', () => {
   it('"Next Day" button is rendered in both HUD and bottom bar, enabled initially', () => {
     render(<GameBoard {...makeGameBoardProps()} />);
     // Nothing planted → both copies show the empty-day safeguard label.
-    const buttons = screen.getAllByRole('button', { name: /plant seeds first/i });
+    const buttons = screen.getAllByRole('button', { name: /skip day/i });
     expect(buttons).toHaveLength(2);
     buttons.forEach(b => expect(b).not.toBeDisabled());
   });
@@ -157,14 +158,14 @@ describe('GameBoard — smoke tests (T047)', () => {
     render(<GameBoard {...makeGameBoardProps()} />);
     // Bar present initially: its Shop control + its Next Day copy (alongside the HUD copy).
     expect(screen.getByRole('button', { name: /open shop/i })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /plant seeds first/i })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /skip day/i })).toHaveLength(2);
 
     // Open the mobile shop bottom sheet via the bar's Shop button.
     fireEvent.click(screen.getByRole('button', { name: /open shop/i }));
 
     // Bar unmounts so it can't overlay the sheet; only the HUD's (DOM-only) Next Day copy remains.
     expect(screen.queryByRole('button', { name: /open shop/i })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /plant seeds first/i })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /skip day/i })).toHaveLength(1);
   });
 
   it('closes the mobile shop sheet when onboarding advances to the plant step', () => {
@@ -327,6 +328,112 @@ describe('PlotCard — drought icon (T027, FR-018)', () => {
     };
     render(<PlotCard plot={normalPlot} currentDay={1} />);
     expect(screen.queryByTitle('Growth slowed by Flash Drought')).not.toBeInTheDocument();
+  });
+});
+
+// ── Task 11: UnwinnableBanner — no seeds, none owned, nothing growing (FR-017) ──
+
+describe('GameBoard — unwinnable-run notice (017 FR-017)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    markOnboardingComplete();
+  });
+
+  it('warns when no seeds are affordable, none owned, and nothing grows', () => {
+    render(
+      <GameBoard {...makeGameBoardProps()} state={{ ...initialGameState(), coinBalance: 3 }} />
+    );
+    const alert = screen.getByRole('alert', { name: /run cannot recover/i });
+    expect(alert).toHaveTextContent(/can't afford seeds/i);
+    expect(within(alert).getByRole('button', { name: /start new run/i })).toBeInTheDocument();
+  });
+
+  it('does not fire while a crop is still growing', () => {
+    const growingState = {
+      ...initialGameState(),
+      coinBalance: 3,
+      plots: initialGameState().plots.map((p, i) =>
+        i === 0 ? { ...p, cropId: 'radish' as const, dayPlanted: 1, daysRemaining: 1 } : p
+      ),
+    };
+    render(<GameBoard {...makeGameBoardProps()} state={growingState} />);
+    expect(screen.queryByRole('alert', { name: /run cannot recover/i })).not.toBeInTheDocument();
+  });
+
+  it('does not fire while the player still owns a seed', () => {
+    const seededState = {
+      ...initialGameState(),
+      coinBalance: 3,
+      seedInventory: { ...initialGameState().seedInventory, radish: 1 },
+    };
+    render(<GameBoard {...makeGameBoardProps()} state={seededState} />);
+    expect(screen.queryByRole('alert', { name: /run cannot recover/i })).not.toBeInTheDocument();
+  });
+
+  it('does not fire when the balance can still afford the cheapest seed', () => {
+    render(
+      <GameBoard {...makeGameBoardProps()} state={{ ...initialGameState(), coinBalance: 100 }} />
+    );
+    expect(screen.queryByRole('alert', { name: /run cannot recover/i })).not.toBeInTheDocument();
+  });
+
+  it('requires a second tap to restart', () => {
+    const onRestart = vi.fn();
+    render(
+      <GameBoard
+        {...makeGameBoardProps({ onRestart })}
+        state={{ ...initialGameState(), coinBalance: 3 }}
+      />
+    );
+    const btn = screen.getByRole('button', { name: /start new run/i });
+    fireEvent.click(btn);
+    expect(onRestart).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /tap again to confirm/i }));
+    expect(onRestart).toHaveBeenCalledOnce();
+  });
+});
+
+// ── Task 15: Shop sheet — explicit open/close instead of toggle (017 FR-004) ──
+
+describe('GameBoard — shop sheet open/close semantics (017 FR-004)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    markOnboardingComplete();
+  });
+
+  it('shop button opens (never closes) the sheet — double taps are safe (017 FR-004)', () => {
+    render(<GameBoard {...makeGameBoardProps()} />);
+    const shopBtn = screen.getByRole('button', { name: /open shop/i });
+    fireEvent.click(shopBtn);
+    fireEvent.click(shopBtn); // second (ghost) tap must not close it (regression test for the old toggle-based race, FR-004)
+    // The sheet wrapper is open when it lacks the translate-y-full class
+    const sheet = screen.getByRole('complementary', { name: /shop/i }).parentElement as HTMLElement;
+    expect(sheet.className).not.toContain('translate-y-full');
+  });
+});
+
+// ── Task 12: Empty-plot tap always responds (FR-014) ──────────────────────────
+
+describe('GameBoard — empty-plot tap feedback (017 FR-014)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    markOnboardingComplete();
+  });
+
+  it('guides toward the shop when the player owns no seeds', () => {
+    render(<GameBoard {...makeGameBoardProps()} state={initialGameState()} />);
+    fireEvent.click(screen.getByRole('button', { name: /empty plot 1/i }));
+    expect(screen.getByRole('status')).toHaveTextContent(/you need seeds — grab some in the shop/i);
+  });
+
+  it('prompts seed selection when seeds are owned but none selected', () => {
+    const seededState = {
+      ...initialGameState(),
+      seedInventory: { radish: 2, parsnip: 0, pumpkin: 0 },
+    };
+    render(<GameBoard {...makeGameBoardProps()} state={seededState} />);
+    fireEvent.click(screen.getByRole('button', { name: /empty plot 1/i }));
+    expect(screen.getByRole('status')).toHaveTextContent(/pick a seed first/i);
   });
 });
 

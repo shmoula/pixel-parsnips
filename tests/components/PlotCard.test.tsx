@@ -4,10 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { PlotCard } from '../../src/components/PlotCard';
 import type { PlotState } from '../../src/engine/types';
 
-const emptyPlot = (id: number): PlotState => ({
-  id, cropId: null, dayPlanted: null, daysRemaining: null,
+const makePlot = (overrides: Partial<PlotState> = {}): PlotState => ({
+  id: 0, cropId: null, dayPlanted: null, daysRemaining: null,
   consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
+  ...overrides,
 });
+
+const emptyPlot = (id: number): PlotState => makePlot({ id });
 
 describe('LockedPlot', () => {
   it('shows a Buy button on the next purchasable plot and calls onBuyPlot', async () => {
@@ -34,5 +37,18 @@ describe('LockedPlot', () => {
     render(<PlotCard plot={emptyPlot(7)} locked isNextPurchasable={false} />);
     expect(screen.queryByRole('button', { name: /buy plot/i })).toBeNull();
     expect(screen.getByLabelText(/locked plot 8/i)).toBeTruthy();
+  });
+});
+
+describe('PlotCard — drought marker inline (017 FR-021)', () => {
+  it('renders the flash-drought marker inside the time badge row, not as an extra row', () => {
+    render(
+      <PlotCard
+        plot={makePlot({ cropId: 'pumpkin', daysRemaining: 4, dayPlanted: 1, droughtPenalised: true })}
+        currentDay={2}
+      />,
+    );
+    const badge = screen.getByText(/4d left/i);
+    expect(badge).toHaveTextContent('☀️🔥');
   });
 });

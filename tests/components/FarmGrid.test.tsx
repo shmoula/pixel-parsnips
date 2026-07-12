@@ -23,3 +23,13 @@ describe('FarmGrid lock rendering', () => {
     expect(screen.queryAllByRole('button', { name: /buy plot/i })).toHaveLength(0);
   });
 });
+
+describe('FarmGrid — mobile columns (017 FR-021)', () => {
+  it('uses 3 columns below sm and 4/6 above', () => {
+    const { container } = render(<FarmGrid plots={mkPlots(12)} />);
+    const grid = container.querySelector('[data-onboarding="farm-grid"]');
+    expect(grid?.className).toContain('grid-cols-3');
+    expect(grid?.className).toContain('sm:grid-cols-4');
+    expect(grid?.className).toContain('md:grid-cols-6');
+  });
+});

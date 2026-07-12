@@ -1,8 +1,28 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { OnboardingOverlay } from '../../src/components/OnboardingOverlay';
 
 const noop = () => {};
+
+/**
+ * Stubs requestAnimationFrame/cancelAnimationFrame with a manual queue and
+ * returns a `flushFrame` that runs (and clears) all queued callbacks inside
+ * `act`. Call `vi.unstubAllGlobals()` afterwards to restore. Shared by every
+ * rAF-driven anchor-tracking test below.
+ */
+function installRafStub(): () => void {
+  let rafQueue: FrameRequestCallback[] = [];
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    rafQueue.push(cb);
+    return rafQueue.length;
+  });
+  vi.stubGlobal('cancelAnimationFrame', () => {});
+  return () => {
+    const q = rafQueue;
+    rafQueue = [];
+    q.forEach(cb => act(() => cb(0)));
+  };
+}
 
 describe('OnboardingOverlay', () => {
   it('shows the welcome copy and a start CTA', () => {
@@ -118,7 +138,8 @@ describe('OnboardingOverlay', () => {
 
 describe('OnboardingOverlay — anchor robustness', () => {
   it('re-measures the anchor after mount (covers the shop-sheet slide)', () => {
-    vi.useFakeTimers();
+    const flushFrame = installRafStub();
+
     const anchor = document.createElement('div');
     anchor.setAttribute('data-onboarding', 'shop-radish');
     document.body.appendChild(anchor);
@@ -131,14 +152,14 @@ describe('OnboardingOverlay — anchor robustness', () => {
     const initialCalls = spy.mock.calls.length;
     expect(initialCalls).toBeGreaterThan(0);
 
-    act(() => {
-      vi.advanceTimersByTime(400);
-    });
+    flushFrame();
+    flushFrame();
+    flushFrame();
     expect(spy.mock.calls.length).toBeGreaterThan(initialCalls);
 
     spy.mockRestore();
     document.body.removeChild(anchor);
-    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it('prefers a visible anchor when duplicates exist', () => {
@@ -172,17 +193,8 @@ describe('OnboardingOverlay — anchor robustness', () => {
     document.body.removeChild(visible);
   });
 
-  it('re-measures the ring when the anchor element grows (ResizeObserver)', () => {
-    // Controllable ResizeObserver so we can fire the resize callback on demand.
-    let resizeCb: ResizeObserverCallback | null = null;
-    const observed: Element[] = [];
-    const OrigRO = globalThis.ResizeObserver;
-    globalThis.ResizeObserver = class {
-      constructor(cb: ResizeObserverCallback) { resizeCb = cb; }
-      observe(el: Element) { observed.push(el); }
-      unobserve() {}
-      disconnect() {}
-    } as unknown as typeof ResizeObserver;
+  it('re-measures the ring when the anchor element grows (rAF polling)', () => {
+    const flushFrame = installRafStub();
 
     const anchor = document.createElement('div');
     anchor.setAttribute('data-onboarding', 'shop-radish');
@@ -201,15 +213,14 @@ describe('OnboardingOverlay — anchor robustness', () => {
     const ringHeight = () => (container.querySelector('.ring-farm-gold') as HTMLElement).style.height;
     // Ring sized to the initial card height (+12 padding on each measurement).
     expect(ringHeight()).toBe('62px');
-    // The overlay observed the anchor for size changes.
-    expect(observed).toContain(anchor);
 
-    // Card grows (the Plant button appears after the first purchase) → observer fires.
+    // Card grows (the Plant button appears after the first purchase) → the next
+    // polled frame picks up the new size without any observer plumbing.
     height = 92;
-    act(() => { resizeCb?.([], {} as ResizeObserver); });
+    flushFrame();
     expect(ringHeight()).toBe('104px');
 
-    globalThis.ResizeObserver = OrigRO;
+    vi.unstubAllGlobals();
     document.body.removeChild(anchor);
   });
 
@@ -253,5 +264,75 @@ describe('OnboardingOverlay — anchor robustness', () => {
     expect(container.querySelector('.ring-farm-gold')).toBeTruthy();
 
     document.body.removeChild(card);
+  });
+});
+
+describe('OnboardingOverlay — live anchor tracking (017 FR-001/FR-002)', () => {
+  let flushFrame: () => void;
+
+  beforeEach(() => {
+    flushFrame = installRafStub();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubAnchor(rect: Partial<DOMRect>) {
+    const el = document.createElement('div');
+    el.setAttribute('data-onboarding', 'shop-radish');
+    el.getBoundingClientRect = () =>
+      ({ x: 0, y: 0, top: 0, bottom: 0, left: 0, right: 0, width: 100, height: 40, ...rect }) as DOMRect;
+    // findVisibleAnchor requires a non-empty client rect list
+    el.getClientRects = () => [{}] as unknown as DOMRectList;
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('follows the anchor when it moves after mount (e.g. sheet slide-up)', () => {
+    const el = stubAnchor({ top: 900, bottom: 940, left: 10, right: 110 });
+    const { container } = render(
+      <OnboardingOverlay step="buy-radishes" harvestIncome={0} netIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+    flushFrame(); // initial measure: anchor off-screen at top 900
+
+    // Sheet finishes animating: anchor now on-screen
+    el.getBoundingClientRect = () =>
+      ({ x: 10, y: 300, top: 300, bottom: 340, left: 10, right: 110, width: 100, height: 40 }) as DOMRect;
+    flushFrame(); // next frame picks up the new position
+
+    const ring = container.querySelector('.ring-farm-gold') as HTMLElement;
+    expect(ring.style.top).toBe('294px'); // rect.top − 6
+
+    document.body.removeChild(el);
+  });
+});
+
+describe('OnboardingOverlay — skip chip positioning (017 FR-003)', () => {
+  it('positions the skip chip above the mobile bottom bar (017 FR-003)', () => {
+    render(
+      <OnboardingOverlay step="welcome" harvestIncome={0} netIncome={0}
+        onStart={() => {}} onSkip={() => {}} onDismissPayoff={() => {}} />,
+    );
+    const skip = screen.getByRole('button', { name: /skip tutorial/i });
+    expect(skip.className).toContain('bottom-20');
+    expect(skip.className).toContain('md:bottom-3');
+  });
+});
+
+describe('OnboardingOverlay — buy progress (017 FR-005)', () => {
+  it('shows buy progress during the buy-radishes step (017 FR-005)', () => {
+    render(
+      <OnboardingOverlay step="buy-radishes" harvestIncome={0} netIncome={0}
+        buyProgress={{ owned: 2, needed: 4 }}
+        onStart={() => {}} onSkip={() => {}} onDismissPayoff={() => {}} />,
+    );
+    expect(screen.getByText('2 of 4 bought')).toBeInTheDocument();
+  });
+
+  it('renders no buy-progress text when buyProgress is omitted', () => {
+    render(
+      <OnboardingOverlay step="buy-radishes" harvestIncome={0} netIncome={0}
+        onStart={() => {}} onSkip={() => {}} onDismissPayoff={() => {}} />,
+    );
+    expect(screen.queryByText(/bought/)).not.toBeInTheDocument();
   });
 });

@@ -10,6 +10,8 @@ interface Props {
   netIncome: number;
   /** True when the mobile shop bottom-sheet is open (covers anchors behind it). */
   isShopOpen?: boolean;
+  /** Seed-buying progress for the buy-radishes step: how many bought of how many needed. */
+  buyProgress?: { owned: number; needed: number } | null;
   onStart: () => void;
   onSkip: () => void;
   onDismissPayoff: () => void;
@@ -39,6 +41,11 @@ const EDGE_MARGIN = 8;
 function bubbleStyle(rect: DOMRect): CSSProperties {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  // Anchor entirely off-screen (e.g. mid-animation or scrolled away): pin the
+  // bubble above the bottom action bar so the instruction stays readable.
+  if (rect.bottom <= 0 || rect.top >= vh) {
+    return { left: '50%', bottom: 88, transform: 'translateX(-50%)' };
+  }
   const left = Math.min(
     Math.max(EDGE_MARGIN, rect.left),
     Math.max(EDGE_MARGIN, vw - BUBBLE_WIDTH - EDGE_MARGIN),
@@ -68,36 +75,94 @@ function findVisibleAnchor(selector: string): Element | null {
   return els.find(el => el.getClientRects().length > 0) ?? els[0] ?? null;
 }
 
-/** Delays (ms) at which we re-measure after the anchor changes, covering the
- *  shop bottom-sheet's 300ms slide-up animation. */
-const REMEASURE_DELAYS = [120, 260, 360];
+/** True when two rects are identical enough to skip a state update. */
+function sameRect(a: DOMRect | null, b: DOMRect | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height;
+}
 
+/**
+ * Continuously tracks the anchor's rect with a requestAnimationFrame loop while
+ * a step is anchored. This follows transform transitions (the mobile shop
+ * sheet's 300ms slide-up), scrolls, and resizes without event bookkeeping —
+ * fixed re-measure timers missed the sheet's final position (017 FR-001/FR-002).
+ * setRect bails out via sameRect, so idle frames cause no re-renders.
+ */
 function useAnchorRect(selector: string | null): DOMRect | null {
   const [rect, setRect] = useState<DOMRect | null>(null);
   useLayoutEffect(() => {
-    if (!selector) { setRect(null); return; }
+    if (!selector) {
+      setRect(null);
+      return;
+    }
+    let raf = 0;
     const measure = () => {
       const el = findVisibleAnchor(selector);
-      setRect(el ? el.getBoundingClientRect() : null);
+      const next = el ? el.getBoundingClientRect() : null;
+      setRect(prev => (sameRect(prev, next) ? prev : next));
+      raf = requestAnimationFrame(measure);
     };
+    // Measure synchronously before first paint (so the highlight appears
+    // immediately on mount) — the rAF loop then keeps it in sync every frame.
     measure();
-    const timers = REMEASURE_DELAYS.map(d => window.setTimeout(measure, d));
-    window.addEventListener('resize', measure);
-    window.addEventListener('scroll', measure, true);
-    // Track the anchor's OWN size changes — e.g. the shop card grows when its
-    // "Plant" button appears after the first purchase. resize/scroll don't fire
-    // for that, so the ring would otherwise keep its stale (smaller) rect.
-    const observed = findVisibleAnchor(selector);
-    const ro = new ResizeObserver(measure);
-    if (observed) ro.observe(observed);
-    return () => {
-      timers.forEach(clearTimeout);
-      window.removeEventListener('resize', measure);
-      window.removeEventListener('scroll', measure, true);
-      ro.disconnect();
-    };
+    return () => cancelAnimationFrame(raf);
   }, [selector]);
   return rect;
+}
+
+/** 017 FR-005 — live seed-buying progress shown under the buy-radishes copy. */
+function BuyProgress({ step, buyProgress }: { step: OnboardingStep; buyProgress: Props['buyProgress'] }) {
+  if (step !== 'buy-radishes' || !buyProgress) return null;
+  return (
+    <p className="font-pixel text-caption text-farm-gold mt-1">
+      {buyProgress.owned} of {buyProgress.needed} bought
+    </p>
+  );
+}
+
+/** The highlight ring + copy bubble anchored to the current step's on-screen target. */
+function AnchoredBubble({
+  anchor,
+  rect,
+  step,
+  buyProgress,
+  ringPulse,
+}: {
+  anchor: { selector: string; copy: string };
+  rect: DOMRect | null;
+  step: OnboardingStep;
+  buyProgress: Props['buyProgress'];
+  ringPulse: string;
+}) {
+  return (
+    <>
+      {rect && (
+        <div
+          aria-hidden="true"
+          className={`absolute rounded-lg ring-2 ring-farm-gold ${ringPulse}`}
+          style={{
+            left: rect.left - 6,
+            top: rect.top - 6,
+            width: rect.width + 12,
+            height: rect.height + 12,
+          }}
+        />
+      )}
+      <div
+        role="status"
+        aria-live="polite"
+        className="pointer-events-auto absolute max-w-[220px] bg-farm-soil border border-farm-gold/50 rounded-lg px-3 py-2"
+        style={
+          rect
+            ? bubbleStyle(rect)
+            : { left: '50%', bottom: 24, transform: 'translateX(-50%)' }
+        }
+      >
+        <p className="font-pixel text-caption text-farm-parchment leading-relaxed">{anchor.copy}</p>
+        <BuyProgress step={step} buyProgress={buyProgress} />
+      </div>
+    </>
+  );
 }
 
 function SkipChip({ onSkip }: { onSkip: () => void }) {
@@ -106,7 +171,7 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
       type="button"
       onClick={onSkip}
       aria-label="Skip tutorial"
-      className="fixed bottom-3 right-3 z-[60] font-pixel text-[10px] px-3 py-1.5 rounded
+      className="fixed bottom-20 right-3 md:bottom-3 z-[60] font-pixel text-caption px-3 py-1.5 rounded
                  pointer-events-auto
                  bg-farm-ink/90 text-farm-parchment border border-farm-stone/40
                  hover:bg-farm-ink"
@@ -116,7 +181,7 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
   );
 }
 
-export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen = false, onStart, onSkip, onDismissPayoff }: Props) {
+export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen = false, buyProgress = null, onStart, onSkip, onDismissPayoff }: Props) {
   const reduced = useReducedMotion();
   const anchor = activeAnchor(step, isShopOpen);
   const rect = useAnchorRect(anchor ? anchor.selector : null);
@@ -135,13 +200,13 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
       {step === 'welcome' && (
         <div className="absolute inset-0 flex items-center justify-center p-6">
           <div className="pointer-events-auto max-w-xs w-full bg-farm-soil border border-farm-stone/40 rounded-xl p-5 flex flex-col gap-4 text-center">
-            <p className="font-pixel text-xs text-farm-parchment leading-relaxed">
+            <p className="font-pixel text-body text-farm-parchment leading-relaxed">
               Grow crops. Sell 'em. Don't go broke. Let's fill your farm with radishes!
             </p>
             <button
               type="button"
               onClick={onStart}
-              className="font-pixel text-xs px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
+              className="font-pixel text-body px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
             >
               🌱 Plant my farm
             </button>
@@ -153,15 +218,15 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
       {step === 'payoff' && (
         <div className="absolute inset-0 flex items-center justify-center p-6">
           <div className="pointer-events-auto max-w-xs w-full bg-farm-soil border border-farm-gold/50 rounded-xl p-5 flex flex-col gap-4 text-center">
-            <p className="font-pixel text-sm text-farm-gold">+{netIncome} coins profit! 🎉</p>
-            <p className="font-pixel text-[10px] text-farm-parchment leading-relaxed">
+            <p className="font-pixel text-title text-farm-gold">+{netIncome} coins profit! 🎉</p>
+            <p className="font-pixel text-caption text-farm-parchment leading-relaxed">
               Sold your radishes for {harvestIncome} — lease &amp; tax took the rest.
               That's the loop. Now hit your season target.
             </p>
             <button
               type="button"
               onClick={onDismissPayoff}
-              className="font-pixel text-xs px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
+              className="font-pixel text-body px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
             >
               Got it →
             </button>
@@ -172,32 +237,7 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
       {/* Anchored bubble: open-shop / buy-radishes / plant / advance.
           activeAnchor() returns null while the shop sheet covers this anchor. */}
       {anchor && (
-        <>
-          {rect && (
-            <div
-              aria-hidden="true"
-              className={`absolute rounded-lg ring-2 ring-farm-gold ${ringPulse}`}
-              style={{
-                left: rect.left - 6,
-                top: rect.top - 6,
-                width: rect.width + 12,
-                height: rect.height + 12,
-              }}
-            />
-          )}
-          <div
-            role="status"
-            aria-live="polite"
-            className="pointer-events-auto absolute max-w-[220px] bg-farm-soil border border-farm-gold/50 rounded-lg px-3 py-2"
-            style={
-              rect
-                ? bubbleStyle(rect)
-                : { left: '50%', bottom: 24, transform: 'translateX(-50%)' }
-            }
-          >
-            <p className="font-pixel text-[10px] text-farm-parchment leading-relaxed">{anchor.copy}</p>
-          </div>
-        </>
+        <AnchoredBubble anchor={anchor} rect={rect} step={step} buyProgress={buyProgress} ringPulse={ringPulse} />
       )}
     </div>
   );

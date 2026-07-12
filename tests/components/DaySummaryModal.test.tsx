@@ -106,3 +106,27 @@ describe('DaySummaryModal — reduced motion', () => {
     expect(screen.getByLabelText(/^disaster$/i)).toBeInTheDocument();
   });
 });
+
+describe('DaySummaryModal — quiet-day framing (017 FR-020)', () => {
+  it('suppresses "Quiet day" when the day was a disaster', () => {
+    render(
+      <DaySummaryModal
+        log={makeLog({ weatherId: 'pest_infestation', harvests: [], totalHarvestIncome: 0 })}
+        onClose={() => {}}
+        animateReveal={false}
+      />,
+    );
+    expect(screen.queryByText(/quiet day/i)).toBeNull();
+  });
+
+  it('still shows "Quiet day" on ordinary no-harvest days', () => {
+    render(
+      <DaySummaryModal
+        log={makeLog({ weatherId: 'overcast', harvests: [], totalHarvestIncome: 0 })}
+        onClose={() => {}}
+        animateReveal={false}
+      />,
+    );
+    expect(screen.getByText(/quiet day — no harvests/i)).toBeInTheDocument();
+  });
+});

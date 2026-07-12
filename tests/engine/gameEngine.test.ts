@@ -534,6 +534,10 @@ describe('processTurn — Pest Infestation (US2)', () => {
     expect(after.plots[0].cropId).toBeNull();
     expect(after.plots[2].pestDamaged).toBe(true);
     expect(after.plots[2].cropId).toBeNull();
+    // FR-019 regression: the log's destroyed-plots list must exactly match the
+    // set of plots the resulting farm state actually marks as pest-damaged —
+    // no plot destroyed-but-unlogged, and no plot logged-but-undamaged.
+    expect(after.plots.filter(p => p.pestDamaged).map(p => p.id)).toEqual(log.pestDestroyedPlots);
   });
 
   it('untouched plot is unaffected when override excludes it', () => {

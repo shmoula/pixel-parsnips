@@ -42,8 +42,8 @@ export function MedalBadge({ medal }: MedalBadgeProps) {
         <span aria-hidden="true">{ICON[medal]}</span>
       </div>
       <div className="text-center">
-        <div className="font-pixel text-sm">{label}</div>
-        <div className="font-pixel text-[10px] text-farm-stone">{tagline}</div>
+        <div className="font-pixel text-title">{label}</div>
+        <div className="font-pixel text-caption text-farm-stone">{tagline}</div>
       </div>
     </div>
   );

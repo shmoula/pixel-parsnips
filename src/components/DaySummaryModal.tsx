@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import type { DailyLogEntry } from '../engine/types';
-import { DailyLog } from './DailyLog';
+import { DailyLog, DISASTER_WEATHER_IDS } from './DailyLog';
 import { DisasterBanner } from './DisasterBanner';
 import { useDisasterReveal } from '../hooks/useDisasterReveal';
 
@@ -16,7 +16,10 @@ interface DaySummaryModalProps {
 export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySummaryModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const { showDisasterChrome, suppressDisasterStyling, animate } = useDisasterReveal(log, animateReveal);
-  const isQuietDay = log.harvests.length === 0 && log.totalHarvestIncome === 0;
+  const isQuietDay =
+    log.harvests.length === 0 &&
+    log.totalHarvestIncome === 0 &&
+    !DISASTER_WEATHER_IDS.has(log.weatherId);
 
   useEffect(() => {
     closeButtonRef.current?.focus();
@@ -44,11 +47,11 @@ export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySumma
           {showDisasterChrome && (
             <div className="flex items-center gap-2 px-3 py-2 rounded bg-farm-red/20 border border-farm-red/50 mb-2">
               <span className="text-xl" aria-hidden="true">⚠️</span>
-              <span className="font-pixel text-xs text-farm-red uppercase tracking-widest">Disaster!</span>
+              <span className="font-pixel text-body text-farm-red uppercase tracking-widest">Disaster!</span>
             </div>
           )}
           {isQuietDay && (
-            <p className="font-pixel text-xs text-farm-stone text-center py-2 mb-1">
+            <p className="font-pixel text-body text-farm-stone text-center py-2 mb-1">
               Quiet day — no harvests.
             </p>
           )}
@@ -67,7 +70,7 @@ export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySumma
           onClick={onClose}
           className="
             mt-4 w-full py-3 rounded-xl
-            font-pixel text-sm
+            font-pixel text-body
             bg-farm-grass text-farm-parchment
             hover:bg-farm-gold hover:text-farm-ink
             active:scale-95 transition-all

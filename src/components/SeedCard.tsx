@@ -1,5 +1,6 @@
 import type { CropId, CropDefinition } from '../engine/types';
 import { CROP_DEFINITIONS, coins } from '../engine/constants';
+import { Coin } from './Coin';
 
 const CROP_EMOJI: Record<CropId, string> = {
   radish: '🌱',
@@ -76,31 +77,31 @@ function CropStats({
 
   return (
     <>
-      <div className="text-xs text-farm-stone/80">
+      <div className="text-body text-farm-stone/80">
         <span>{crop.growthDays}d grow</span>
         <span className="mx-1">·</span>
         {adjustedYield !== null ? (
           <span>
-            <span className="line-through opacity-60">{crop.baseYield}🪙</span>{' '}
-            <span className={tint}>{adjustedYield}🪙</span> yield
+            <span className="line-through opacity-60">{crop.baseYield}<Coin /></span>{' '}
+            <span className={tint}>{adjustedYield}<Coin /></span> yield
           </span>
         ) : (
-          <span>{crop.baseYield}🪙 yield</span>
+          <span>{crop.baseYield}<Coin /> yield</span>
         )}
       </div>
 
       {/* T018b — estimated net profit display */}
-      <p className="text-xs text-farm-grass font-pixel">
+      <p className="text-body text-farm-grass font-pixel">
         {adjustedProfit !== null ? (
           <span>
             Est. profit:{' '}
-            <span className="line-through opacity-60">{netProfit >= 0 ? '+' : ''}{netProfit}🪙</span>{' '}
+            <span className="line-through opacity-60">{netProfit >= 0 ? '+' : ''}{netProfit}<Coin /></span>{' '}
             <span className={tint}>
-              {adjustedProfit >= 0 ? '+' : ''}{adjustedProfit}🪙
+              {adjustedProfit >= 0 ? '+' : ''}{adjustedProfit}<Coin />
             </span>
           </span>
         ) : (
-          <span>Est. profit: {netProfit >= 0 ? '+' : ''}{netProfit}🪙</span>
+          <span>Est. profit: {netProfit >= 0 ? '+' : ''}{netProfit}<Coin /></span>
         )}
       </p>
     </>
@@ -135,7 +136,7 @@ export function SeedCard({
       <div className="flex items-center justify-between">
         <span className="text-lg">{CROP_EMOJI[cropId]}</span>
         {seedCount > 0 && (
-          <span className="text-xs font-pixel bg-farm-grass text-farm-parchment px-1.5 py-0.5 rounded">
+          <span className="text-body font-pixel bg-farm-grass text-farm-parchment px-1.5 py-0.5 rounded">
             ×{seedCount}
           </span>
         )}
@@ -143,7 +144,7 @@ export function SeedCard({
           <span
             aria-label={`Market ${marketEvent!.kind}`}
             className={[
-              'text-xs font-pixel px-1.5 py-0.5 rounded',
+              'text-body font-pixel px-1.5 py-0.5 rounded',
               marketEvent!.kind === 'shortage'
                 ? 'bg-farm-grass/30 text-farm-grass'
                 : 'bg-farm-red/30 text-farm-red',
@@ -154,7 +155,7 @@ export function SeedCard({
         )}
       </div>
 
-      <p className="font-pixel text-xs text-farm-parchment/90">{crop.name}</p>
+      <p className="font-pixel text-body text-farm-parchment/90">{crop.name}</p>
 
       <CropStats crop={crop} price={price} marketEvent={marketEvent} />
 
@@ -165,7 +166,7 @@ export function SeedCard({
         disabled={disabled}
         onClick={() => onBuy(cropId)}
         className="
-          mt-1 w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs
+          mt-1 w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-body
           bg-farm-gold text-farm-ink
           hover:bg-farm-grass hover:text-farm-parchment
           active:scale-95 active:brightness-90
@@ -173,7 +174,7 @@ export function SeedCard({
           transition-all
         "
       >
-        {canAfford ? `BUY ${price}🪙` : `Need ${price}🪙`}
+        {canAfford ? <>BUY {price}<Coin /></> : <>Need {price}<Coin /></>}
       </button>
 
       {seedCount > 0 && (
@@ -184,7 +185,7 @@ export function SeedCard({
           disabled={interactionDisabled === true}
           onClick={() => onSelect(cropId)}
           className={`
-            w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-xs transition-colors
+            w-full py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-body transition-colors
             ${isSelected
               ? 'bg-farm-grass text-farm-parchment'
               : 'bg-farm-sky text-farm-ink hover:bg-farm-grass hover:text-farm-parchment'}

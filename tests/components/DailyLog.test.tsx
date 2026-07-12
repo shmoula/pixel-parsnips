@@ -4,6 +4,14 @@ import { axe } from 'vitest-axe';
 import { DailyLog } from '../../src/components/DailyLog';
 import type { DailyLogEntry } from '../../src/engine/types';
 
+// Coin renders as its own <Coin> element (the 🪙 emoji), so "85🪙" is split
+// across nodes. Match the innermost element whose textContent matches.
+const byText = (pattern: RegExp) => (_: string, node: Element | null): boolean => {
+  if (!node) return false;
+  const has = (n: Element) => pattern.test(n.textContent ?? '');
+  return has(node) && !Array.from(node.children).some(has);
+};
+
 function makeLog(over: Partial<DailyLogEntry> = {}): DailyLogEntry {
   return {
     day: 5,
@@ -114,9 +122,9 @@ describe('DailyLog — disaster lines moved to DisasterBanner', () => {
     expect(screen.queryByText(/destroyed by pests/i)).toBeNull();
   });
 
-  it('still renders the exhaustion line', () => {
+  it('still renders the exhaustion callout', () => {
     render(<DailyLog log={makeLog({ exhaustedPlots: [3] })} />);
-    expect(screen.getByText(/Plot #4 became exhausted/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/plots exhausted/i)).toHaveTextContent('#4');
   });
 
   it('renders the weather badge neutrally when suppressDisasterStyling is set', () => {
@@ -129,5 +137,37 @@ describe('DailyLog — disaster lines moved to DisasterBanner', () => {
     render(<DailyLog log={makeLog({ weatherId: 'blight' })} />);
     const badge = screen.getByText('Blight').closest('div')!;
     expect(badge.className).toMatch(/farm-red/);
+  });
+});
+
+describe('DailyLog — tax legibility (017 FR-006/FR-007)', () => {
+  it('states the tax basis so the amount is recomputable', () => {
+    // basis = closingBalance + taxDeducted = 81 + 4 = 85
+    render(<DailyLog log={makeLog({ taxRate: 0.06, taxDeducted: 4, closingBalance: 81 })} />);
+    expect(screen.getByText(byText(/tax \(6% of 85🪙 savings\)/i))).toBeInTheDocument();
+  });
+
+  it('shows the one-time tax explainer on day 1', () => {
+    render(<DailyLog log={makeLog({ day: 1, taxDeducted: 4 })} />);
+    expect(screen.getByText(/each night you pay/i)).toBeInTheDocument();
+  });
+
+  it('does not repeat the explainer after day 1', () => {
+    render(<DailyLog log={makeLog({ day: 2, taxDeducted: 4 })} />);
+    expect(screen.queryByText(/each night you pay/i)).toBeNull();
+  });
+});
+
+describe('DailyLog — exhaustion callout (017 FR-011)', () => {
+  it('renders exhausted plots as a distinct labelled callout, not plain rows', () => {
+    render(<DailyLog log={makeLog({ exhaustedPlots: [0, 1, 3] })} />);
+    const callout = screen.getByLabelText(/plots exhausted/i);
+    expect(callout).toHaveTextContent('3 plots need rest');
+    expect(callout).toHaveTextContent('#1, #2, #4');
+  });
+
+  it('uses singular phrasing for one plot', () => {
+    render(<DailyLog log={makeLog({ exhaustedPlots: [2] })} />);
+    expect(screen.getByLabelText(/plots exhausted/i)).toHaveTextContent('A plot needs rest');
   });
 });

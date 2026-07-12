@@ -1,5 +1,6 @@
 import type { DailyLogEntry } from '../engine/types';
-import { WEATHER_DEFINITIONS } from '../engine/constants';
+import { Coin } from './Coin';
+import { WEATHER_DEFINITIONS, EXHAUSTION_RECOVERY_DAYS } from '../engine/constants';
 import { announceText, activeText } from '../engine/market';
 
 interface DailyLogProps {
@@ -28,28 +29,36 @@ function LogAccountingRows({ log }: { log: DailyLogEntry }) {
       <div className="flex justify-between text-farm-stone">
         <span>Harvest</span>
         <span className={log.totalHarvestIncome > 0 ? 'text-farm-grass' : ''}>
-          +{log.totalHarvestIncome}🪙
+          +{log.totalHarvestIncome}<Coin />
         </span>
       </div>
 
       {log.landLeaseDeducted > 0 && (
         <div className="flex justify-between text-farm-stone">
           <span>Land lease</span>
-          <span className="text-farm-red">−{log.landLeaseDeducted}🪙</span>
+          <span className="text-farm-red">−{log.landLeaseDeducted}<Coin /></span>
         </div>
       )}
 
       {log.taxDeducted > 0 && (
         <div className="flex justify-between text-farm-stone">
-          <span>Tax ({Math.round(log.taxRate * 100)}%)</span>
-          <span className="text-farm-red">−{log.taxDeducted}🪙</span>
+          <span>
+            Tax ({Math.round(log.taxRate * 100)}% of {log.closingBalance + log.taxDeducted}<Coin /> savings)
+          </span>
+          <span className="text-farm-red">−{log.taxDeducted}<Coin /></span>
         </div>
+      )}
+      {log.taxDeducted > 0 && log.day === 1 && (
+        <p className="text-caption leading-snug text-farm-stone/80">
+          Each night you pay {Math.round(log.taxRate * 100)}% of the coins you hold (after lease)
+          as tax — earn faster than the kingdom collects.
+        </p>
       )}
 
       <div className="flex justify-between font-pixel text-farm-parchment border-t border-farm-stone/30 pt-1 mt-1">
         <span>Net</span>
         <span className={log.netChange >= 0 ? 'text-farm-grass' : 'text-farm-red'}>
-          {log.netChange >= 0 ? '+' : ''}{log.netChange}🪙
+          {log.netChange >= 0 ? '+' : ''}{log.netChange}<Coin />
         </span>
       </div>
     </div>
@@ -88,14 +97,35 @@ function MarketLines({ log }: { log: DailyLogEntry }) {
   );
 }
 
+function ExhaustionCallout({ log }: { log: DailyLogEntry }) {
+  if (log.exhaustedPlots.length === 0) return null;
+  return (
+    <div
+      role="note"
+      aria-label="Plots exhausted"
+      className="flex flex-col gap-0.5 px-2 py-1.5 rounded bg-farm-gold/10 border border-farm-gold/50"
+    >
+      <span className="font-pixel text-farm-gold">
+        🪨 {log.exhaustedPlots.length === 1
+          ? 'A plot needs rest'
+          : `${log.exhaustedPlots.length} plots need rest`}
+      </span>
+      <span className="text-farm-stone">
+        {log.exhaustedPlots.map(id => `#${id + 1}`).join(', ')} — back in{' '}
+        {EXHAUSTION_RECOVERY_DAYS} days, or use Fertilizer.
+      </span>
+    </div>
+  );
+}
+
 export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps) {
   const weather = WEATHER_DEFINITIONS[log.weatherId];
   return (
     <section
       aria-label="Daily summary"
-      className="flex flex-col gap-2 p-3 bg-farm-soil rounded-lg text-xs"
+      className="flex flex-col gap-2 p-3 bg-farm-soil rounded-lg text-body"
     >
-      <h2 className="font-pixel text-xs text-farm-gold">Day {log.day} Summary</h2>
+      <h2 className="font-pixel text-body text-farm-gold">Day {log.day} Summary</h2>
 
       {/* Weather badge — disaster events get red/amber styling */}
       <div
@@ -118,23 +148,13 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
           {log.harvests.map(h => (
             <div key={h.plotId} className="flex justify-between text-farm-stone">
               <span>Plot {h.plotId + 1} {h.cropId}</span>
-              <span className="text-farm-grass">+{h.adjustedYield}🪙</span>
+              <span className="text-farm-grass">+{h.adjustedYield}<Coin /></span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Exhaustion events */}
-      {log.exhaustedPlots.length > 0 && (
-        <div className="flex flex-col gap-1">
-          {log.exhaustedPlots.map(plotId => (
-            <div key={plotId} className="flex items-center gap-1 text-farm-stone">
-              <span aria-hidden="true">🪨</span>
-              <span>Plot #{plotId + 1} became exhausted.</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <ExhaustionCallout log={log} />
 
       {/* Harvest streak bonus */}
       {log.streakBonus > 0 && (
@@ -143,7 +163,7 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
           className="flex justify-between text-farm-gold"
         >
           <span>🔥 Streak bonus ×{Math.min(log.streakBefore, 4)}</span>
-          <span className="text-farm-grass">+{log.streakBonus}🪙</span>
+          <span className="text-farm-grass">+{log.streakBonus}<Coin /></span>
         </div>
       )}
 

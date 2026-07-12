@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState, CropId, DailyLogEntry, WeatherId } from '../engine/types';
 import { canAdvanceProductively } from '../engine/gameEngine';
-import { useOnboarding } from '../hooks/useOnboarding';
+import { useOnboarding, buyRadishesNeeded } from '../hooks/useOnboarding';
+import type { OnboardingStep } from '../engine/onboarding';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { BottomActionBar } from './BottomActionBar';
 import { HUD } from './HUD';
@@ -25,6 +26,66 @@ function getNetIncome(state: GameState): number {
   return state.lastDailyLog?.netChange ?? 0;
 }
 
+/** 017 FR-005 — live seed-buying progress shown during the buy-radishes onboarding step. */
+function getBuyProgress(
+  state: GameState,
+  step: OnboardingStep,
+): { owned: number; needed: number } | null {
+  if (step !== 'buy-radishes') return null;
+  return { owned: state.seedInventory.radish, needed: buyRadishesNeeded(state) };
+}
+
+/** 017 FR-014 — guidance copy for a seedless plot tap. */
+function getSeedlessTapHint(seedInventory: GameState['seedInventory']): string {
+  const ownsSeeds = Object.values(seedInventory).some(n => n > 0);
+  return ownsSeeds
+    ? "Pick a seed first — tap 'Plant' on a seed you own."
+    : 'You need seeds — grab some in the shop.';
+}
+
+/** 017 FR-014 — react to a plot tap with no seed selected: surface a hint,
+ * and on mobile, pop the shop sheet open so the player can pick one. */
+function onSeedlessPlotTap({ seedInventory, isDesktop, showSeedHint, openShop }: {
+  seedInventory: GameState['seedInventory'];
+  isDesktop: boolean;
+  showSeedHint: (message: string) => void;
+  openShop: () => void;
+}): void {
+  showSeedHint(getSeedlessTapHint(seedInventory));
+  if (!isDesktop) openShop();
+}
+
+/** 017 FR-014 — transient (auto-clearing) guidance message state. */
+function useSeedHint() {
+  const [seedHint, setSeedHint] = useState<string | null>(null);
+  const hintTimerRef = useRef<number | null>(null);
+
+  function showSeedHint(message: string) {
+    setSeedHint(message);
+    if (hintTimerRef.current !== null) window.clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = window.setTimeout(() => setSeedHint(null), 4000);
+  }
+
+  useEffect(() => () => {
+    if (hintTimerRef.current !== null) window.clearTimeout(hintTimerRef.current);
+  }, []);
+
+  return { seedHint, showSeedHint };
+}
+
+/**
+ * FR-017: the run is unwinnable when nothing is growing, no seeds are owned,
+ * and the player can't afford even the cheapest seed (radish) to plant one.
+ */
+function checkIsUnwinnable(
+  state: GameState,
+  canAdvance: boolean,
+  getSeedPrice: (cropId: CropId) => number
+): boolean {
+  const anySeedOwned = Object.values(state.seedInventory).some(n => n > 0);
+  return !canAdvance && !anySeedOwned && state.coinBalance < getSeedPrice('radish');
+}
+
 function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
   if (daysRemaining === 0) return null;
   const suffix = daysRemaining === 1 ? '' : 's';
@@ -32,7 +93,7 @@ function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
     <p
       role="alert"
       aria-label="Flash Drought warning"
-      className="font-pixel text-xs text-farm-red bg-farm-red/20 border border-farm-red/70 tracking-wide px-3 py-2 rounded"
+      className="font-pixel text-body text-farm-red bg-farm-red/20 border border-farm-red/70 tracking-wide px-3 py-2 rounded"
     >
       ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
       {daysRemaining} day{suffix} remaining.
@@ -40,11 +101,62 @@ function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
   );
 }
 
+/** 017 FR-014 — transient hint shown after a seedless plot tap; hidden once a
+ * crop gets selected so it never lingers stale over the "Planting: X" banner. */
+function SeedHintBanner({ seedHint, selectedCrop }: { seedHint: string | null; selectedCrop: CropId | null }) {
+  if (!seedHint || selectedCrop) return null;
+  return (
+    <p
+      role="status"
+      className="font-pixel text-body text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded"
+    >
+      🌱 {seedHint}
+    </p>
+  );
+}
+
+function UnwinnableBanner({ isUnwinnable, onRestart }: { isUnwinnable: boolean; onRestart: () => void }) {
+  const [armed, setArmed] = useState(false);
+
+  // Auto-disarm after a short window so a much-later tap can't restart without a
+  // fresh first tap; also reset whenever the banner leaves the unwinnable state.
+  useEffect(() => {
+    if (!isUnwinnable) {
+      setArmed(false);
+      return;
+    }
+    if (!armed) return;
+    const timer = setTimeout(() => setArmed(false), 3000);
+    return () => clearTimeout(timer);
+  }, [armed, isUnwinnable]);
+
+  if (!isUnwinnable) return null;
+  return (
+    <div
+      role="alert"
+      aria-label="Run cannot recover"
+      className="flex flex-wrap items-center justify-between gap-2 font-pixel text-body text-farm-red bg-farm-red/20 border border-farm-red/70 px-3 py-2 rounded"
+    >
+      <span>
+        💸 Out of options — you can't afford seeds and nothing is growing. Skip days to the end,
+        or start over.
+      </span>
+      <button
+        type="button"
+        onClick={() => (armed ? onRestart() : setArmed(true))}
+        className="font-pixel text-body px-3 py-1.5 min-h-[44px] md:min-h-0 rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-soil"
+      >
+        {armed ? 'Tap again to confirm' : 'Start new run'}
+      </button>
+    </div>
+  );
+}
+
 function EmptyDayConfirm({ onCancel, onAdvance }: { onCancel: () => void; onAdvance: () => void }) {
   return (
     <div role="dialog" aria-label="Advance empty day" className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 p-6">
       <div className="max-w-xs w-full bg-farm-soil border border-farm-stone/40 rounded-xl p-5 flex flex-col gap-4 text-center">
-        <p className="font-pixel text-xs text-farm-parchment leading-relaxed">
+        <p className="font-pixel text-body text-farm-parchment leading-relaxed">
           Nothing's planted — advance anyway?
         </p>
         <div className="flex gap-2 justify-center">
@@ -52,14 +164,14 @@ function EmptyDayConfirm({ onCancel, onAdvance }: { onCancel: () => void; onAdva
             type="button"
             autoFocus
             onClick={onCancel}
-            className="font-pixel text-xs px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
+            className="font-pixel text-body px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onAdvance}
-            className="font-pixel text-xs px-4 py-2 rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-soil"
+            className="font-pixel text-body px-4 py-2 rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-soil"
           >
             Advance
           </button>
@@ -84,6 +196,8 @@ interface GameBoardProps {
   getNextUpgradeCost: () => number | null;
   onBuyPlot: () => boolean;
   getNextPlotPrice: () => number | null;
+  /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
+  onRestart: () => void;
 }
 
 export function GameBoard({
@@ -101,6 +215,7 @@ export function GameBoard({
   getNextUpgradeCost,
   onBuyPlot,
   getNextPlotPrice,
+  onRestart,
 }: GameBoardProps) {
   const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
 
@@ -122,6 +237,10 @@ export function GameBoard({
   const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
   const [hasConfirmedEmptyDay, setHasConfirmedEmptyDay] = useState(false);
 
+  const isUnwinnable = checkIsUnwinnable(state, canAdvance, getSeedPrice);
+
+  const { seedHint, showSeedHint } = useSeedHint();
+
   // T010 — When the parent re-renders with a new lastDailyLog after onNextDay(),
   // open the Day Summary modal with that log.
   useEffect(() => {
@@ -141,19 +260,21 @@ export function GameBoard({
     }
   }, [selectedCrop, state.seedInventory]);
 
+  // 017 FR-004 — the bar's shop button can only OPEN (the bar hides while the
+  // sheet is up); the backdrop CLOSES. A toggle here let double-fired events
+  // close the sheet right after opening, stranding the tutorial's buy step.
+  const openShop = () => setIsShopOpen(true);
+  const closeShop = () => setIsShopOpen(false);
+
   // When onboarding reaches the planting step, close the mobile shop sheet so the
   // farm grid it covers becomes visible and tappable — otherwise the "fill every
   // plot" highlight floats over the open sheet and the plots can't be reached.
   // No-op on desktop, where the shop is an always-open sidebar and isShopOpen stays false.
   useEffect(() => {
     if (onboarding.active && onboarding.step === 'plant') {
-      setIsShopOpen(false);
+      closeShop();
     }
   }, [onboarding.active, onboarding.step]);
-
-  function toggleShop() {
-    setIsShopOpen(prev => !prev);
-  }
 
   // T010 — Next Day handler: flag modal as awaited, then fire the engine callback
   function doAdvance() {
@@ -170,7 +291,10 @@ export function GameBoard({
   }
 
   function handlePlot(plotId: number) {
-    if (!selectedCrop) return;
+    if (!selectedCrop) {
+      onSeedlessPlotTap({ seedInventory: state.seedInventory, isDesktop, showSeedHint, openShop });
+      return;
+    }
     onPlantSeed(plotId, selectedCrop);
     // Selection persists across plants; the effect below clears it when inventory empties.
   }
@@ -205,12 +329,14 @@ export function GameBoard({
       <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
+          <UnwinnableBanner isUnwinnable={isUnwinnable} onRestart={onRestart} />
           <FlashDroughtBanner daysRemaining={state.flashDroughtDaysRemaining} />
           {selectedCrop && (
-            <p className="font-pixel text-xs text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded">
+            <p className="font-pixel text-body text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded">
               🌱 Planting: {selectedCrop} — click an empty plot
             </p>
           )}
+          <SeedHintBanner seedHint={seedHint} selectedCrop={selectedCrop} />
           <FarmGrid
             plots={state.plots}
             currentDay={state.currentDay}
@@ -231,7 +357,7 @@ export function GameBoard({
             'fixed inset-0 bg-black/40 z-30 transition-opacity md:hidden',
             isShopOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
           ].join(' ')}
-          onClick={toggleShop}
+          onClick={closeShop}
           aria-hidden="true"
         />
 
@@ -285,6 +411,7 @@ export function GameBoard({
           harvestIncome={getHarvestIncome(state)}
           netIncome={getNetIncome(state)}
           isShopOpen={isShopOpen}
+          buyProgress={getBuyProgress(state, onboarding.step)}
           onStart={onboarding.onStart}
           onSkip={onboarding.onSkip}
           onDismissPayoff={onboarding.onDismissPayoff}
@@ -308,7 +435,7 @@ export function GameBoard({
           (and is md:hidden). Dismiss the sheet via the backdrop. */}
       <BottomActionBar
         hidden={isShopOpen}
-        onToggleShop={toggleShop}
+        onOpenShop={openShop}
         onNextDay={handleNextDay}
         isProcessing={isProcessing}
         canAdvanceProductively={canAdvance}
