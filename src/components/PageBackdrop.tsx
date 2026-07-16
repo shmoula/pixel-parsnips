@@ -25,8 +25,6 @@ interface PropSpec {
  * freely in the browser preview.
  */
 const PROPS: PropSpec[] = [
-  { name: 'rake',      height: 320, style: { top: '10%', left: 8 },        desktopOnly: true },
-  { name: 'pitchfork', height: 320, style: { bottom: '6%', right: 12 },    desktopOnly: true },
   { name: 'grass_2',   height: 96,  style: { top: '40%', right: 28 },      desktopOnly: true },
   { name: 'flower_1',  height: 96,  style: { bottom: '12%', left: 48 },    desktopOnly: true },
   { name: 'stones',    height: 64,  style: { top: '32%', left: 52 },       desktopOnly: true },

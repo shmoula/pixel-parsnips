@@ -22,7 +22,7 @@ describe('PageBackdrop (018)', () => {
     expect(imgs.length).toBeGreaterThan(0);
     for (const img of imgs) expect(img.getAttribute('alt')).toBe('');
     const srcs = imgs.map(i => i.getAttribute('src') ?? '');
-    expect(srcs.some(s => s.includes('rake'))).toBe(true);
-    expect(srcs.some(s => s.includes('pitchfork'))).toBe(true);
+    expect(srcs.some(s => s.includes('grass_1'))).toBe(true);
+    expect(srcs.some(s => s.includes('grass_2'))).toBe(true);
   });
 });

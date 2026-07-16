@@ -3,9 +3,9 @@ import { getDecorUrl, woodPlanksUrl } from '../../src/components/decorAssets';
 
 describe('decorAssets registry (018)', () => {
   it('resolves an existing decor prop to its asset URL', () => {
-    const url = getDecorUrl('rake');
+    const url = getDecorUrl('grass_1');
     expect(url).not.toBeNull();
-    expect(url).toContain('rake');
+    expect(url).toContain('grass_1');
   });
 
   it('resolves the soil tile', () => {

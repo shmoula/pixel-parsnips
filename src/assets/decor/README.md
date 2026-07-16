@@ -11,7 +11,6 @@ missing `soil_tile.png` falls back to the flat page colour.
 | File | Role | Size |
 |---|---|---|
 | `soil_tile.png` | Seamlessly tileable page background (the only opaque file) | 256×256 |
-| `rake.png`, `pitchfork.png` | Hero tools at the page edges, desktop only | ~55–85 × 160 |
 | `grass_1.png`, `grass_2.png` | Grass tufts | 48×48 |
 | `flower_1.png` | Flowering tuft | 48×48 |
 | `stones.png` | Pebble cluster | 32×32 |

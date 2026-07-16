@@ -329,8 +329,7 @@ export function GameBoard({
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}
-      {/* 018 — max-width opens side margins on wide screens, revealing the backdrop */}
-      <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4 w-full max-w-5xl mx-auto">
+      <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4">
         {/* Farm grid — main area */}
         <main className="flex flex-col gap-4 flex-1 min-w-0">
           <UnwinnableBanner isUnwinnable={isUnwinnable} onRestart={onRestart} />
