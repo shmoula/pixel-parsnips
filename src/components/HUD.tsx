@@ -98,13 +98,15 @@ export function HUD({
     <header
       aria-label="Game status"
       className="
-        flex flex-wrap items-center gap-2 px-4 py-2
+        flex flex-wrap items-stretch gap-2 px-4 py-2
         bg-[#0E0A04]/95 backdrop-blur-sm
         border-b border-[#5C3D1E]/50
       "
     >
-      {/* Left: Season chip + Day chip + Balance/target chip */}
-      <div className="flex flex-wrap items-stretch gap-2">
+      {/* Left: Season chip + Day chip + Balance/target chip.
+          `contents` on mobile lets the chips wrap alongside the action buttons in
+          the header's own flex row, instead of reserving whole lines to itself. */}
+      <div className="contents sm:flex sm:flex-wrap sm:items-stretch sm:gap-2">
         <button
           type="button"
           // No aria-label: the visible compact text ("Spring", "D1/20") is the
