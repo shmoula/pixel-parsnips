@@ -1,5 +1,5 @@
 import type { CropId } from '../engine/types';
-import { getCropSpriteUrl, type SpriteStage } from './cropSprites';
+import { getCropSpriteUrl, SPRITE_HEIGHT, SPRITE_WIDTH, type SpriteStage } from './cropSprites';
 
 interface CropSpriteProps {
   cropId: CropId;
@@ -29,13 +29,19 @@ export function CropSprite({ cropId, stage, fallback, size, fallbackClass, label
     );
   }
 
+  // Width is derived rather than left to `auto` so the browser can reserve the
+  // box before the sprite decodes (no layout shift, and Lighthouse's
+  // unsized-images audit needs both dimensions declared).
+  const width = Math.round((size * SPRITE_WIDTH) / SPRITE_HEIGHT);
+
   return (
     <img
       src={url}
       alt={label ?? ''}
+      width={width}
       height={size}
       draggable={false}
-      style={{ height: size, width: 'auto', imageRendering: 'pixelated' }}
+      style={{ height: size, width, imageRendering: 'pixelated' }}
     />
   );
 }

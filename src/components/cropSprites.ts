@@ -20,6 +20,16 @@ export type SpriteStage = 'seedling' | 'sprout' | 'mature' | 'ready';
 
 const STAGE_ORDER: SpriteStage[] = ['seedling', 'sprout', 'mature', 'ready'];
 
+/**
+ * Every crop frame is authored at these intrinsic dimensions — the tall frame
+ * gives crops transparent headroom above a shared ground line. Callers size
+ * sprites by height alone, so the width they must reserve is derived from this
+ * ratio; `tests/components/cropSprites.assets.test.ts` fails the build if any
+ * sprite is authored off-size.
+ */
+export const SPRITE_WIDTH = 32;
+export const SPRITE_HEIGHT = 64;
+
 const spriteUrls = import.meta.glob('../assets/crops/*.png', {
   eager: true,
   query: '?url',

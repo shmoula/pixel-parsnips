@@ -1,17 +1,17 @@
 /**
  * 018 — decorative asset registry: page-backdrop props (src/assets/decor/) and
  * UI textures (src/assets/ui/). Same auto-discovery pattern as cropSprites.ts:
- * drop a PNG in the folder and it's picked up at build time; a missing file
- * resolves to null and the caller simply skips rendering it.
+ * drop a PNG or WebP in the folder and it's picked up at build time; a missing
+ * file resolves to null and the caller simply skips rendering it.
  */
 
-const decorUrls = import.meta.glob('../assets/decor/*.png', {
+const decorUrls = import.meta.glob('../assets/decor/*.{png,webp}', {
   eager: true,
   query: '?url',
   import: 'default',
 }) as Record<string, string>;
 
-const uiUrls = import.meta.glob('../assets/ui/*.png', {
+const uiUrls = import.meta.glob('../assets/ui/*.{png,webp}', {
   eager: true,
   query: '?url',
   import: 'default',
@@ -20,7 +20,7 @@ const uiUrls = import.meta.glob('../assets/ui/*.png', {
 function toNameMap(urls: Record<string, string>): Record<string, string> {
   const map: Record<string, string> = {};
   for (const [path, url] of Object.entries(urls)) {
-    const name = path.split('/').pop()?.replace(/\.png$/, '');
+    const name = path.split('/').pop()?.replace(/\.(png|webp)$/, '');
     if (name) map[name] = url;
   }
   return map;
