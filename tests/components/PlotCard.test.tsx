@@ -52,3 +52,37 @@ describe('PlotCard — drought marker inline (017 FR-021)', () => {
     expect(badge).toHaveTextContent('☀️🔥');
   });
 });
+
+describe('PlotCard — growth-stage sprites (018)', () => {
+  // Engine stage → sprite frame: sprout→seedling, small→sprout, full→mature, ready→ready.
+
+  it('renders the seedling sprite for a just-planted pumpkin (sprout stage)', () => {
+    const { container } = render(
+      <PlotCard
+        plot={makePlot({ cropId: 'pumpkin', dayPlanted: 1, daysRemaining: 3 })}
+        currentDay={1}
+      />,
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toContain('pumpkin_seedling');
+  });
+
+  it('renders the mature sprite for a full-stage pumpkin', () => {
+    const { container } = render(
+      <PlotCard
+        plot={makePlot({ cropId: 'pumpkin', dayPlanted: 1, daysRemaining: 1 })}
+        currentDay={3}
+      />,
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toContain('pumpkin_mature');
+  });
+
+  it('renders the ready sprite for a harvest-ready radish', () => {
+    const { container } = render(
+      <PlotCard
+        plot={makePlot({ cropId: 'radish', dayPlanted: 1, daysRemaining: 0 })}
+        currentDay={2}
+      />,
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toContain('radish_ready');
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { DailyLog } from '../../src/components/DailyLog';
 import type { DailyLogEntry } from '../../src/engine/types';
@@ -169,5 +169,51 @@ describe('DailyLog — exhaustion callout (017 FR-011)', () => {
   it('uses singular phrasing for one plot', () => {
     render(<DailyLog log={makeLog({ exhaustedPlots: [2] })} />);
     expect(screen.getByLabelText(/plots exhausted/i)).toHaveTextContent('A plot needs rest');
+  });
+});
+
+// ── Icon optical alignment ────────────────────────────────────────────────────
+//
+// Press Start 2P paints entirely above the alphabetic baseline, while the emoji
+// fallback font straddles it. Sharing a baseline therefore drops the emoji's
+// optical centre ~0.1875em below the text's, so every emoji sitting inline with
+// pixel text must be lifted back with <EmojiIcon>. jsdom has no font metrics, so
+// this asserts the wrapper is present rather than measuring pixels.
+
+describe('DailyLog — inline icons are optically centred', () => {
+  function expectLiftedIcon(row: HTMLElement, emoji: string) {
+    const icon = within(row).getByText(emoji);
+    expect(icon.className).toContain('-translate-y-[0.1875em]');
+    expect(icon.className).toContain('inline-block');
+  }
+
+  it('lifts the weather badge icon', () => {
+    const { container } = render(<DailyLog log={makeLog({ weatherId: 'drought' })} />);
+    expectLiftedIcon(container.querySelector('section')!, '☀️');
+  });
+
+  it('lifts the streak bonus icon', () => {
+    render(<DailyLog log={makeLog({ streakBefore: 3, streakAfter: 4, streakBonus: 15 })} />);
+    expectLiftedIcon(screen.getByLabelText(/streak bonus/i), '🔥');
+  });
+
+  it('lifts the streak reset icon', () => {
+    render(<DailyLog log={makeLog({ streakBefore: 4, streakAfter: 0 })} />);
+    expectLiftedIcon(screen.getByLabelText(/streak reset/i), '🔥');
+  });
+
+  it('lifts the exhaustion callout icon', () => {
+    render(<DailyLog log={makeLog({ exhaustedPlots: [2] })} />);
+    expectLiftedIcon(screen.getByLabelText(/plots exhausted/i), '🪨');
+  });
+
+  it('lifts the active market event icon', () => {
+    render(<DailyLog log={makeLog({ marketActive: { kind: 'shortage', cropId: 'radish', multiplier: 1.5 } })} />);
+    expectLiftedIcon(screen.getByLabelText(/market event/i), '📊');
+  });
+
+  it('lifts the market forecast icon', () => {
+    render(<DailyLog log={makeLog({ marketAnnounced: { kind: 'glut', cropId: 'radish', multiplier: 0.5 } })} />);
+    expectLiftedIcon(screen.getByLabelText(/market forecast/i), '📈');
   });
 });

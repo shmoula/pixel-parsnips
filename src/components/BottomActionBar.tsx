@@ -1,3 +1,4 @@
+import { EmojiIcon } from './EmojiIcon';
 import { nextDayLabel, nextDayText } from './nextDayCopy';
 
 interface BottomActionBarProps {
@@ -24,6 +25,7 @@ export function BottomActionBar({
   if (hidden) return null;
   return (
     <div
+      data-onboarding="action-bar"
       className="
         md:hidden fixed bottom-0 left-0 right-0 z-40
         flex items-stretch gap-2 px-3 pt-2
@@ -37,12 +39,12 @@ export function BottomActionBar({
         aria-label="Open shop"
         onClick={onOpenShop}
         className="
-          flex-1 min-h-[44px] font-pixel text-caption rounded uppercase tracking-widest
+          flex-1 min-h-[44px] font-pixel text-body rounded uppercase tracking-widest
           bg-farm-gold text-farm-ink ring-1 ring-farm-gold/50
           hover:brightness-110 active:scale-95 transition-all
         "
       >
-        🌾 Shop
+        <EmojiIcon>🛒</EmojiIcon> Shop
       </button>
       <button
         type="button"

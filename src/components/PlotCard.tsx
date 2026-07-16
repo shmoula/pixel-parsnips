@@ -1,7 +1,11 @@
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { PlotState } from '../engine/types';
 import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS } from '../engine/constants';
 import { ProgressRing } from './ProgressRing';
 import { Coin } from './Coin';
+import { CropSprite } from './CropSprite';
+import { EmojiIcon } from './EmojiIcon';
+import type { SpriteStage } from './cropSprites';
 
 // T013 — crop-specific emojis for full/ready stages
 const CROP_EMOJI: Record<string, string> = {
@@ -45,11 +49,21 @@ const GROWTH_STAGE_EMOJI: Record<GrowthStage, string | null> = {
   ready:  null,
 };
 
+// 018 — engine growth stage → sprite frame (see src/assets/crops/README.md)
+const STAGE_TO_SPRITE: Record<GrowthStage, SpriteStage> = {
+  sprout: 'seedling',
+  small:  'sprout',
+  full:   'mature',
+  ready:  'ready',
+};
+
 interface PlotCardProps {
   plot: PlotState;
   currentDay?: number;
   fertilizerInventory?: number;
   locked?: boolean;
+  /** Marks this tile as the onboarding 'plant' step's highlight target. */
+  isPlantAnchor?: boolean;
   isNextPurchasable?: boolean;
   plotPrice?: number;
   canAffordPlot?: boolean;
@@ -73,7 +87,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
         className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-gold/60 bg-[#160F07] p-1 select-none hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <span className="text-2xl opacity-70">🔒</span>
-        <span className="font-pixel text-caption leading-none text-farm-gold text-center">Buy plot · {plotPrice}<Coin /></span>
+        <span className="font-pixel text-caption leading-none text-farm-gold text-center">Buy plot <span className="whitespace-nowrap">· {plotPrice}<Coin /></span></span>
       </button>
     );
   }
@@ -134,7 +148,7 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
         flex flex-col items-center justify-center
         w-full aspect-square overflow-hidden rounded-lg border-2
         border-farm-red/60
-        select-none p-1 opacity-75
+        select-none p-2 text-center opacity-75
       "
       style={{
         background: [
@@ -145,7 +159,7 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
       }}
     >
       <span className="text-2xl">🪨</span>
-      <span className="text-body font-pixel text-farm-stone/80 mt-0.5">
+      <span className="text-caption font-pixel text-farm-stone/80 mt-1 leading-snug">
         {daysUntilRecovery}d remaining
       </span>
       {hasFertilizer ? (
@@ -154,21 +168,63 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
           aria-label="Use Fertilizer on this plot"
           onClick={() => onApplyFertilizer?.(plot.id)}
           className="
-            mt-1 font-pixel text-body px-1.5 py-0.5 rounded
+            mt-1 font-pixel text-caption px-1.5 py-0.5 rounded
             bg-farm-grass text-farm-parchment
             hover:bg-farm-gold hover:text-farm-ink
             active:scale-95 transition-all cursor-pointer
           "
         >
-          Use Fertilizer
+          Fertilize
         </button>
       ) : (
-        <span className="text-body text-farm-stone/70 mt-0.5 text-center px-1">
-          Buy Fertilizer in the shop
+        <span className="text-caption text-farm-stone/70 mt-1 leading-snug">
+          Fertilizer
+          <br />
+          in shop
         </span>
       )}
     </div>
   );
+}
+
+const RING_MAX = 52;
+const RING_MIN = 20;
+
+/**
+ * Ring diameter that keeps the crop label and day badge clear of the tile
+ * border. The tile is a fixed square, so the ring gets whatever vertical space
+ * the label and badge leave behind. Their heights are measured rather than
+ * assumed — the badge wraps to two lines on the narrowest tiles.
+ */
+function useRingSize(ref: React.RefObject<HTMLElement>): number {
+  const [size, setSize] = useState(RING_MAX);
+
+  useLayoutEffect(() => {
+    const tile = ref.current;
+    if (!tile) return;
+
+    const measure = () => {
+      const style = getComputedStyle(tile);
+      const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      // Every child except the ring itself (the first) is fixed-height chrome.
+      const chrome = Array.from(tile.children)
+        .slice(1)
+        .reduce((total, child) => (
+          total + (child as HTMLElement).offsetHeight + parseFloat(getComputedStyle(child).marginTop)
+        ), 0);
+
+      const budget = tile.clientHeight - padding - chrome;
+      setSize(Math.max(RING_MIN, Math.min(RING_MAX, Math.floor(budget))));
+    };
+    measure();
+
+    if (typeof ResizeObserver !== 'function') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(tile);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return size;
 }
 
 // T014 — GrowingCropCard: ProgressRing + growth stages
@@ -186,21 +242,37 @@ function GrowingCropCard({ plot }: {
   const stageEmoji = GROWTH_STAGE_EMOJI[stage] ?? CROP_EMOJI[plot.cropId!];
   const label = CROP_LABEL[plot.cropId!];
 
+  const tileRef = useRef<HTMLDivElement>(null);
+  const ringSize = useRingSize(tileRef);
+
   return (
     <div
+      ref={tileRef}
       role="img"
       aria-label={`Plot ${plot.id + 1}: ${label}, planted day ${plot.dayPlanted}, ${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining${plot.droughtPenalised ? ', growth slowed by Flash Drought' : ''}`}
       className={[
         'flex flex-col items-center justify-center',
-        'w-full aspect-square overflow-hidden rounded-lg border-2',
+        'w-full aspect-square overflow-hidden rounded-lg border-2 p-1',
         isReady
           ? 'border-farm-grass ring-2 ring-farm-grass/50 bg-[#162810]'
           : 'border-farm-gold/60 bg-[#1A2C10]',
         'select-none shadow-inner',
       ].join(' ')}
     >
-      <ProgressRing progress={progress} size={52}>
-        <span className="text-2xl">{stageEmoji}</span>
+      <ProgressRing progress={progress} size={ringSize}>
+        {/* Crop art sits in the lower half of its 32×64 frame with transparent
+            headroom above (so crops share a ground line as they grow). Lift the
+            sprite ~¼ of its height so the visible crop centers in the ring instead
+            of hugging the bottom; the transparent top absorbs the overflow. */}
+        <span className="inline-flex" style={{ transform: `translateY(${-ringSize * (12 / 52)}px)` }}>
+          <CropSprite
+            cropId={plot.cropId!}
+            stage={STAGE_TO_SPRITE[stage]}
+            fallback={stageEmoji}
+            size={ringSize}
+            fallbackClass="text-3xl"
+          />
+        </span>
       </ProgressRing>
       <span className="text-body font-pixel text-farm-parchment/80 mt-1">{label}</span>
       {isReady ? (
@@ -208,7 +280,7 @@ function GrowingCropCard({ plot }: {
           HARVEST
         </span>
       ) : (
-        <span className="mt-1 font-pixel text-caption px-2 py-0.5 rounded bg-farm-gold/20 border border-farm-gold/50 text-farm-gold">
+        <span className="mt-1 font-pixel text-caption px-2 py-0.5 rounded bg-farm-gold/20 border border-farm-gold/50 text-farm-gold whitespace-nowrap">
           {daysRemaining}d left
           {plot.droughtPenalised && (
             <span
@@ -224,7 +296,7 @@ function GrowingCropCard({ plot }: {
   );
 }
 
-export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked, isNextPurchasable, plotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: PlotCardProps) {
+export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked, isPlantAnchor, isNextPurchasable, plotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: PlotCardProps) {
   if (locked) {
     return (
       <LockedPlot
@@ -262,6 +334,7 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked
     <button
       type="button"
       aria-label={`Empty plot ${plot.id + 1} — click to plant`}
+      data-onboarding={isPlantAnchor ? 'empty-plot' : undefined}
       onClick={() => onPlant?.(plot.id)}
       className="
         group
@@ -277,9 +350,7 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked
       }}
     >
       <span className="text-body font-pixel text-farm-gold">
-        {/* Emoji hangs low vs the high-sitting pixel text; lift onto its optical
-            centre (offset measured from painted pixels). */}
-        <span className="inline-block -translate-y-[0.23em]" aria-hidden="true">🌱</span> Plant
+        <EmojiIcon>🌱</EmojiIcon> Plant
       </span>
     </button>
   );

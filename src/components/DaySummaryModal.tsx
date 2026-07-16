@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import type { DailyLogEntry } from '../engine/types';
 import { DailyLog, DISASTER_WEATHER_IDS } from './DailyLog';
 import { DisasterBanner } from './DisasterBanner';
+import { EmojiIcon } from './EmojiIcon';
 import { useDisasterReveal } from '../hooks/useDisasterReveal';
 
 interface DaySummaryModalProps {
@@ -46,7 +47,7 @@ export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySumma
         <div className="overflow-y-auto overscroll-contain flex-1">
           {showDisasterChrome && (
             <div className="flex items-center gap-2 px-3 py-2 rounded bg-farm-red/20 border border-farm-red/50 mb-2">
-              <span className="text-xl" aria-hidden="true">⚠️</span>
+              <EmojiIcon className="text-xl">⚠️</EmojiIcon>
               <span className="font-pixel text-body text-farm-red uppercase tracking-widest">Disaster!</span>
             </div>
           )}

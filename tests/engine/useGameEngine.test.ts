@@ -151,13 +151,15 @@ describe('useGameEngine — full turn sequence integration (T046)', () => {
 
     expect(result.current.state.coinBalance).toBe(125); // 130 - 5
 
-    // Radish grows in 1 day, so one nextDay() should harvest it
-    // Use sunny weather (×1.0) → yield = 12
-    // processTurn is called internally (uses Math.random in prod),
-    // but we verify the accounting identity:
-    //   closing = opening + harvest - lease - tax
+    // Radish grows in 1 day, so one nextDay() should harvest it.
+    // Pin weather to sunny (×1.0) via the weatherOverride seam so this turn is
+    // deterministic: with no override, processTurn rolls Math.random for weather
+    // and can land on pest_infestation (which then rolls a 50% per-plot destroy)
+    // or another disaster, zeroing totalHarvestIncome and making this test flaky.
+    // Sunny keeps yield = 12 and skips every disaster branch. We still verify the
+    // accounting identity: closing = opening + harvest + streakBonus - lease - tax.
     const openingBalance = result.current.state.coinBalance;
-    act(() => { result.current.nextDay(); });
+    act(() => { result.current.nextDay('sunny'); });
 
     const log = result.current.lastDailyLog;
     expect(log).not.toBeNull();

@@ -130,3 +130,14 @@ describe('DaySummaryModal — quiet-day framing (017 FR-020)', () => {
     expect(screen.getByText(/quiet day — no harvests/i)).toBeInTheDocument();
   });
 });
+
+// Emoji sitting inline with Press Start 2P text must be lifted onto the text's
+// optical centre with <EmojiIcon> — see DailyLog.test.tsx for the metrics.
+describe('DaySummaryModal — inline icons are optically centred', () => {
+  it('lifts the Disaster! badge icon', () => {
+    render(<DaySummaryModal log={makeLog()} onClose={() => {}} animateReveal={false} />);
+    const icon = screen.getByText('⚠️');
+    expect(icon.className).toContain('-translate-y-[0.1875em]');
+    expect(icon.className).toContain('inline-block');
+  });
+});

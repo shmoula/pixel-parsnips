@@ -124,6 +124,15 @@ describe('GameBoard — smoke tests (T047)', () => {
     expect(screen.getByRole('complementary', { name: /shop/i })).toBeInTheDocument();
   });
 
+  it('mounts the decorative PageBackdrop (018)', () => {
+    const { container } = render(<GameBoard {...makeGameBoardProps()} />);
+    // The backdrop is the only fixed, aria-hidden layer; guards against it being
+    // accidentally unmounted from GameBoard (unit tests on PageBackdrop alone can't).
+    const backdrop = container.querySelector<HTMLElement>('[aria-hidden="true"].fixed');
+    expect(backdrop).not.toBeNull();
+    expect(backdrop!.style.backgroundImage).toContain('soil_tile');
+  });
+
   it('does not render DaySummaryModal on initial load (modal is closed)', () => {
     render(<GameBoard {...makeGameBoardProps({ lastDailyLog: null })} />);
     // Modal only opens after a turn — sidebar DailyLog was removed in Phase 4 (T012)
@@ -465,5 +474,60 @@ describe('PlotCard — exhaustion countdown (T019, US3)', () => {
     };
     render(<PlotCard plot={emptyPlot} currentDay={5} />);
     expect(screen.queryByText(/remaining/i)).not.toBeInTheDocument();
+  });
+});
+
+// ── Banner icon optical alignment ─────────────────────────────────────────────
+//
+// Press Start 2P paints entirely above the alphabetic baseline, while the emoji
+// fallback font straddles it. Sharing a baseline therefore drops the emoji's
+// optical centre ~0.1875em below the text's, so every banner that puts an emoji
+// inline with pixel text must lift it back with <EmojiIcon>. jsdom has no font
+// metrics, so this asserts the wrapper is present rather than measuring pixels.
+
+describe('GameBoard — banner icons are optically centred', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    markOnboardingComplete();
+  });
+
+  /** The emoji must live in its own lifted span, not bare in the banner text. */
+  function expectLiftedIcon(banner: HTMLElement, emoji: string) {
+    const icon = within(banner).getByText(emoji);
+    expect(icon.className).toContain('-translate-y-[0.1875em]');
+    expect(icon.className).toContain('inline-block');
+  }
+
+  it('lifts the seed-hint banner icon', () => {
+    render(<GameBoard {...makeGameBoardProps()} state={initialGameState()} />);
+    fireEvent.click(screen.getByRole('button', { name: /empty plot 1/i }));
+    expectLiftedIcon(screen.getByRole('status'), '🌱');
+  });
+
+  it('lifts the planting banner icon', () => {
+    const seededState = {
+      ...initialGameState(),
+      seedInventory: { radish: 2, parsnip: 0, pumpkin: 0 },
+    };
+    render(<GameBoard {...makeGameBoardProps()} state={seededState} />);
+    fireEvent.click(screen.getByRole('button', { name: /select radish seed to plant/i }));
+    const banner = screen.getByText(/planting: radish/i);
+    expectLiftedIcon(banner, '🌱');
+  });
+
+  it('lifts the Flash Drought banner icon', () => {
+    const droughtState = { ...initialGameState(), flashDroughtDaysRemaining: 2 };
+    render(<GameBoard {...makeGameBoardProps()} state={droughtState} />);
+    expectLiftedIcon(screen.getByRole('alert', { name: /flash drought warning/i }), '☀️🔥');
+  });
+
+  it('lifts the unwinnable banner icon', () => {
+    const brokeState = {
+      ...initialGameState(),
+      coinBalance: 0,
+      seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
+    };
+    render(<GameBoard {...makeGameBoardProps()} state={brokeState} />);
+    expectLiftedIcon(screen.getByRole('alert', { name: /run cannot recover/i }), '💸');
   });
 });
