@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { PlotState } from '../engine/types';
 import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS } from '../engine/constants';
 import { ProgressRing } from './ProgressRing';
@@ -186,6 +187,46 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
   );
 }
 
+const RING_MAX = 52;
+const RING_MIN = 20;
+
+/**
+ * Ring diameter that keeps the crop label and day badge clear of the tile
+ * border. The tile is a fixed square, so the ring gets whatever vertical space
+ * the label and badge leave behind. Their heights are measured rather than
+ * assumed — the badge wraps to two lines on the narrowest tiles.
+ */
+function useRingSize(ref: React.RefObject<HTMLElement>): number {
+  const [size, setSize] = useState(RING_MAX);
+
+  useLayoutEffect(() => {
+    const tile = ref.current;
+    if (!tile) return;
+
+    const measure = () => {
+      const style = getComputedStyle(tile);
+      const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      // Every child except the ring itself (the first) is fixed-height chrome.
+      const chrome = Array.from(tile.children)
+        .slice(1)
+        .reduce((total, child) => (
+          total + (child as HTMLElement).offsetHeight + parseFloat(getComputedStyle(child).marginTop)
+        ), 0);
+
+      const budget = tile.clientHeight - padding - chrome;
+      setSize(Math.max(RING_MIN, Math.min(RING_MAX, Math.floor(budget))));
+    };
+    measure();
+
+    if (typeof ResizeObserver !== 'function') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(tile);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return size;
+}
+
 // T014 — GrowingCropCard: ProgressRing + growth stages
 function GrowingCropCard({ plot }: {
   plot: PlotState;
@@ -201,30 +242,34 @@ function GrowingCropCard({ plot }: {
   const stageEmoji = GROWTH_STAGE_EMOJI[stage] ?? CROP_EMOJI[plot.cropId!];
   const label = CROP_LABEL[plot.cropId!];
 
+  const tileRef = useRef<HTMLDivElement>(null);
+  const ringSize = useRingSize(tileRef);
+
   return (
     <div
+      ref={tileRef}
       role="img"
       aria-label={`Plot ${plot.id + 1}: ${label}, planted day ${plot.dayPlanted}, ${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining${plot.droughtPenalised ? ', growth slowed by Flash Drought' : ''}`}
       className={[
         'flex flex-col items-center justify-center',
-        'w-full aspect-square overflow-hidden rounded-lg border-2',
+        'w-full aspect-square overflow-hidden rounded-lg border-2 p-1',
         isReady
           ? 'border-farm-grass ring-2 ring-farm-grass/50 bg-[#162810]'
           : 'border-farm-gold/60 bg-[#1A2C10]',
         'select-none shadow-inner',
       ].join(' ')}
     >
-      <ProgressRing progress={progress} size={52}>
+      <ProgressRing progress={progress} size={ringSize}>
         {/* Crop art sits in the lower half of its 32×64 frame with transparent
             headroom above (so crops share a ground line as they grow). Lift the
             sprite ~¼ of its height so the visible crop centers in the ring instead
             of hugging the bottom; the transparent top absorbs the overflow. */}
-        <span className="inline-flex" style={{ transform: 'translateY(-12px)' }}>
+        <span className="inline-flex" style={{ transform: `translateY(${-ringSize * (12 / 52)}px)` }}>
           <CropSprite
             cropId={plot.cropId!}
             stage={STAGE_TO_SPRITE[stage]}
             fallback={stageEmoji}
-            size={52}
+            size={ringSize}
             fallbackClass="text-3xl"
           />
         </span>
@@ -235,7 +280,7 @@ function GrowingCropCard({ plot }: {
           HARVEST
         </span>
       ) : (
-        <span className="mt-1 font-pixel text-caption px-2 py-0.5 rounded bg-farm-gold/20 border border-farm-gold/50 text-farm-gold">
+        <span className="mt-1 font-pixel text-caption px-2 py-0.5 rounded bg-farm-gold/20 border border-farm-gold/50 text-farm-gold whitespace-nowrap">
           {daysRemaining}d left
           {plot.droughtPenalised && (
             <span

@@ -57,11 +57,13 @@ describe('FarmGrid — plant onboarding anchor', () => {
 });
 
 describe('FarmGrid — mobile columns (017 FR-021)', () => {
+  // 6-across waits until lg: at md the plot area is only ~480px wide, which
+  // squeezed tiles to 72px and pushed the day badge through the tile border.
   it('uses 3 columns below sm and 4/6 above', () => {
     const { container } = render(<FarmGrid plots={mkPlots(12)} />);
     const grid = container.querySelector('[data-onboarding="farm-grid"]');
     expect(grid?.className).toContain('grid-cols-3');
     expect(grid?.className).toContain('sm:grid-cols-4');
-    expect(grid?.className).toContain('md:grid-cols-6');
+    expect(grid?.className).toContain('lg:grid-cols-6');
   });
 });
