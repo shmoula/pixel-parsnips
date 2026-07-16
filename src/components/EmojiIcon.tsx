@@ -14,9 +14,9 @@ import type { ReactNode } from 'react';
 const OPTICAL_LIFT = '-translate-y-[0.1875em]';
 
 /** Decorative emoji lifted onto the optical centre of adjacent pixel text. */
-export function EmojiIcon({ children }: { children: ReactNode }) {
+export function EmojiIcon({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <span className={`inline-block ${OPTICAL_LIFT}`} aria-hidden="true">
+    <span className={`inline-block ${OPTICAL_LIFT} ${className}`} aria-hidden="true">
       {children}
     </span>
   );

@@ -3,6 +3,7 @@ import { TAX_RATE } from '../engine/constants';
 import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
 import { Coin } from './Coin';
+import { EmojiIcon } from './EmojiIcon';
 import { nextDayLabel, nextDayText } from './nextDayCopy';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
@@ -148,9 +149,7 @@ export function HUD({
             title={`Harvest streak: ${harvestStreak} day${harvestStreak === 1 ? '' : 's'} in a row. Next harvest earns +${Math.min(harvestStreak, 4) * 5}🪙 bonus (capped at +20).`}
             className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
           >
-            {/* Emoji artwork hangs low vs the high-sitting pixel text; lift onto
-                the text's optical centre (offset measured from painted pixels). */}
-            <span className="text-base leading-none -translate-y-[0.17em]" aria-hidden="true">🔥</span>
+            <EmojiIcon className="text-base leading-none">🔥</EmojiIcon>
             <span className="font-pixel text-caption text-farm-gold">×{harvestStreak}</span>
           </div>
         )}

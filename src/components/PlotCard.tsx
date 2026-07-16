@@ -3,6 +3,7 @@ import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS } from '../engine/constants'
 import { ProgressRing } from './ProgressRing';
 import { Coin } from './Coin';
 import { CropSprite } from './CropSprite';
+import { EmojiIcon } from './EmojiIcon';
 import type { SpriteStage } from './cropSprites';
 
 // T013 — crop-specific emojis for full/ready stages
@@ -299,9 +300,7 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked
       }}
     >
       <span className="text-body font-pixel text-farm-gold">
-        {/* Emoji hangs low vs the high-sitting pixel text; lift onto its optical
-            centre (offset measured from painted pixels). */}
-        <span className="inline-block -translate-y-[0.23em]" aria-hidden="true">🌱</span> Plant
+        <EmojiIcon>🌱</EmojiIcon> Plant
       </span>
     </button>
   );
