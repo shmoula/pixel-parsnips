@@ -86,7 +86,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
         className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-gold/60 bg-[#160F07] p-1 select-none hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <span className="text-2xl opacity-70">🔒</span>
-        <span className="font-pixel text-caption leading-none text-farm-gold text-center">Buy plot · {plotPrice}<Coin /></span>
+        <span className="font-pixel text-caption leading-none text-farm-gold text-center">Buy plot <span className="whitespace-nowrap">· {plotPrice}<Coin /></span></span>
       </button>
     );
   }
