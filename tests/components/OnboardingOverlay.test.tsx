@@ -225,20 +225,20 @@ describe('OnboardingOverlay — anchor robustness', () => {
   });
 
   it('suppresses a behind-sheet highlight (plant) while the shop sheet is open', () => {
-    const grid = document.createElement('div');
-    grid.setAttribute('data-onboarding', 'farm-grid');
-    grid.getClientRects = () => [{ width: 100, height: 50 } as DOMRect] as unknown as DOMRectList;
-    document.body.appendChild(grid);
+    const plot = document.createElement('button');
+    plot.setAttribute('data-onboarding', 'empty-plot');
+    plot.getClientRects = () => [{ width: 100, height: 50 } as DOMRect] as unknown as DOMRectList;
+    document.body.appendChild(plot);
 
     const { container, rerender } = render(
       <OnboardingOverlay step="plant" isShopOpen={false} harvestIncome={0} netIncome={0}
         onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
     );
-    // Shop closed → the grid is reachable, so its highlight + copy show.
+    // Shop closed → the plot is reachable, so its highlight + copy show.
     expect(container.querySelector('.ring-farm-gold')).toBeTruthy();
     expect(container.querySelector('[role="status"]')).toBeTruthy();
 
-    // Shop open → the grid is behind the sheet; the highlight would frame over the
+    // Shop open → the plot is behind the sheet; the highlight would frame over the
     // shop (the user's z-index complaint), so it is suppressed entirely.
     rerender(
       <OnboardingOverlay step="plant" isShopOpen={true} harvestIncome={0} netIncome={0}
@@ -247,7 +247,7 @@ describe('OnboardingOverlay — anchor robustness', () => {
     expect(container.querySelector('.ring-farm-gold')).toBeNull();
     expect(container.querySelector('[role="status"]')).toBeNull();
 
-    document.body.removeChild(grid);
+    document.body.removeChild(plot);
   });
 
   it('keeps an in-sheet highlight (buy-radishes) visible while the shop sheet is open', () => {
@@ -315,6 +315,155 @@ describe('OnboardingOverlay — skip chip positioning (017 FR-003)', () => {
     const skip = screen.getByRole('button', { name: /skip tutorial/i });
     expect(skip.className).toContain('bottom-20');
     expect(skip.className).toContain('md:bottom-3');
+  });
+});
+
+/**
+ * The mobile bottom action bar is `fixed bottom-0` and the overlay sits above it
+ * at z-50, so an anchor taller than the free viewport (the farm grid, and any
+ * future tall anchor) would draw its ring straight over Shop / Skip Day. The
+ * overlay measures the bar and treats its top edge as the bottom of usable space.
+ */
+describe('OnboardingOverlay — action-bar clamping', () => {
+  const VIEWPORT_HEIGHT = 812;
+  const BAR_TOP = 720;
+  /** Mirrors RING_PAD in OnboardingOverlay: padding between anchor and ring. */
+  const RING_PAD = 6;
+
+  beforeEach(() => {
+    vi.stubGlobal('innerHeight', VIEWPORT_HEIGHT);
+    vi.stubGlobal('innerWidth', 375);
+  });
+  afterEach(() => {
+    document.body.innerHTML = '';
+    vi.unstubAllGlobals();
+  });
+
+  /** Mount a stand-in for the fixed BottomActionBar with its top edge at BAR_TOP. */
+  function mountActionBar() {
+    const bar = document.createElement('div');
+    bar.setAttribute('data-onboarding', 'action-bar');
+    bar.getClientRects = () => [{}] as unknown as DOMRectList;
+    bar.getBoundingClientRect = () =>
+      ({ x: 0, y: BAR_TOP, top: BAR_TOP, bottom: VIEWPORT_HEIGHT, left: 0, right: 375,
+         width: 375, height: VIEWPORT_HEIGHT - BAR_TOP, toJSON() {} }) as DOMRect;
+    document.body.appendChild(bar);
+    return bar;
+  }
+
+  /** Mount the plant-step anchor with the given viewport rect. */
+  function mountPlotAnchor(rect: Partial<DOMRect>) {
+    const el = document.createElement('button');
+    el.setAttribute('data-onboarding', 'empty-plot');
+    el.getClientRects = () => [{}] as unknown as DOMRectList;
+    el.getBoundingClientRect = () =>
+      ({ x: 0, y: 0, top: 0, bottom: 0, left: 10, right: 110, width: 100, height: 40,
+         toJSON() {}, ...rect }) as DOMRect;
+    document.body.appendChild(el);
+    return el;
+  }
+
+  const renderPlant = () =>
+    render(
+      <OnboardingOverlay step="plant" harvestIncome={0} netIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+
+  it('ends the highlight ring above the action bar when the anchor runs past it', () => {
+    mountActionBar();
+    // Anchor extends well below the bar's top edge (a tall grid on a short screen).
+    mountPlotAnchor({ top: 400, bottom: 1100, height: 700 });
+
+    const { container } = renderPlant();
+    const ring = container.querySelector('.ring-farm-gold') as HTMLElement;
+
+    const ringTop = parseFloat(ring.style.top);
+    const ringBottom = ringTop + parseFloat(ring.style.height);
+    expect(ringBottom).toBeLessThanOrEqual(BAR_TOP);
+  });
+
+  it('leaves a ring that already fits above the bar unclamped', () => {
+    mountActionBar();
+    mountPlotAnchor({ top: 300, bottom: 340, height: 40 });
+
+    const { container } = renderPlant();
+    const ring = container.querySelector('.ring-farm-gold') as HTMLElement;
+
+    expect(ring.style.top).toBe('294px');    // rect.top − 6
+    expect(ring.style.height).toBe('52px');  // rect.height + 12
+  });
+
+  it('drops the ring entirely when the anchor sits fully behind the action bar', () => {
+    mountActionBar();
+    mountPlotAnchor({ top: 760, bottom: 800, height: 40 });
+
+    const { container } = renderPlant();
+    expect(container.querySelector('.ring-farm-gold')).toBeNull();
+  });
+
+  /**
+   * The open-shop / advance steps anchor to buttons that live INSIDE the action
+   * bar. The bar cannot occlude its own children, so those rings must survive the
+   * clamp — clamping them away leaves the step with a bubble and no highlight.
+   */
+  it('keeps the ring on an anchor that lives inside the action bar', () => {
+    const bar = mountActionBar();
+    const button = document.createElement('button');
+    button.setAttribute('data-onboarding', 'shop-button');
+    button.getClientRects = () => [{}] as unknown as DOMRectList;
+    button.getBoundingClientRect = () =>
+      ({ x: 12, y: 740, top: 740, bottom: 784, left: 12, right: 180, width: 168, height: 44,
+         toJSON() {} }) as DOMRect;
+    bar.appendChild(button);
+
+    const { container } = render(
+      <OnboardingOverlay step="open-shop" harvestIncome={0} netIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+    const ring = container.querySelector('.ring-farm-gold') as HTMLElement;
+
+    expect(ring).toBeTruthy();
+    // Framed around the button itself, not cut off at the bar it sits in.
+    expect(ring.style.top).toBe('734px');   // rect.top − 6
+    expect(ring.style.height).toBe('56px'); // rect.height + 12
+  });
+
+  it('pads an in-bar ring evenly even when the button sits at the viewport edge', () => {
+    const bar = mountActionBar();
+    // Mirrors the real Next Day button: flush against the bottom of the screen,
+    // so a viewport-edge clamp would shave the ring's bottom padding to nothing.
+    const button = document.createElement('button');
+    button.setAttribute('data-onboarding', 'shop-button');
+    button.getClientRects = () => [{}] as unknown as DOMRectList;
+    button.getBoundingClientRect = () =>
+      ({ x: 12, y: 760, top: 760, bottom: 804, left: 12, right: 180, width: 168, height: 44,
+         toJSON() {} }) as DOMRect;
+    bar.appendChild(button);
+
+    const { container } = render(
+      <OnboardingOverlay step="open-shop" harvestIncome={0} netIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+    const ring = container.querySelector('.ring-farm-gold') as HTMLElement;
+    const top = parseFloat(ring.style.top);
+    const bottom = top + parseFloat(ring.style.height);
+
+    // Equal 6px breathing room above and below — no lopsided frame.
+    expect(760 - top).toBe(RING_PAD);
+    expect(bottom - 804).toBe(RING_PAD);
+  });
+
+  it('flips the copy bubble above an anchor when only the action bar is below it', () => {
+    mountActionBar();
+    // 64px of bubble + margin fits under rect.bottom within the 812px viewport,
+    // but NOT within the 720px of space the action bar leaves.
+    mountPlotAnchor({ top: 620, bottom: 660, height: 40 });
+
+    const { container } = renderPlant();
+    const bubble = container.querySelector('[role="status"]') as HTMLElement;
+
+    expect(bubble.style.top).toBe('610px'); // rect.top − 10, flipped up
+    expect(bubble.style.transform).toContain('translateY(-100%)');
   });
 });
 

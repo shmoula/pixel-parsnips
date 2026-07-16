@@ -61,6 +61,8 @@ interface PlotCardProps {
   currentDay?: number;
   fertilizerInventory?: number;
   locked?: boolean;
+  /** Marks this tile as the onboarding 'plant' step's highlight target. */
+  isPlantAnchor?: boolean;
   isNextPurchasable?: boolean;
   plotPrice?: number;
   canAffordPlot?: boolean;
@@ -247,7 +249,7 @@ function GrowingCropCard({ plot }: {
   );
 }
 
-export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked, isNextPurchasable, plotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: PlotCardProps) {
+export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked, isPlantAnchor, isNextPurchasable, plotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: PlotCardProps) {
   if (locked) {
     return (
       <LockedPlot
@@ -285,6 +287,7 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked
     <button
       type="button"
       aria-label={`Empty plot ${plot.id + 1} — click to plant`}
+      data-onboarding={isPlantAnchor ? 'empty-plot' : undefined}
       onClick={() => onPlant?.(plot.id)}
       className="
         group

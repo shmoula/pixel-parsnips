@@ -24,6 +24,38 @@ describe('FarmGrid lock rendering', () => {
   });
 });
 
+/**
+ * The onboarding 'plant' step rings this anchor. It marks the first plot the
+ * player can actually plant into, so the ring points at one tile near the top of
+ * the grid rather than framing the whole (viewport-taller) grid.
+ */
+describe('FarmGrid — plant onboarding anchor', () => {
+  const anchors = (c: HTMLElement) => c.querySelectorAll('[data-onboarding="empty-plot"]');
+
+  it('marks exactly the first plantable plot', () => {
+    const { container } = render(<FarmGrid plots={mkPlots(12)} unlockedPlots={4} />);
+    expect(anchors(container)).toHaveLength(1);
+    expect(anchors(container)[0].getAttribute('aria-label')).toMatch(/empty plot 1/i);
+  });
+
+  it('skips planted, exhausted and pest-damaged plots when choosing the anchor', () => {
+    const plots = mkPlots(4);
+    plots[0] = { ...plots[0], cropId: 'radish', daysRemaining: 1 };
+    plots[1] = { ...plots[1], exhaustedSinceDay: 1 };
+    plots[2] = { ...plots[2], pestDamaged: true };
+
+    const { container } = render(<FarmGrid plots={plots} unlockedPlots={4} />);
+    expect(anchors(container)).toHaveLength(1);
+    expect(anchors(container)[0].getAttribute('aria-label')).toMatch(/empty plot 4/i);
+  });
+
+  it('marks no anchor when a locked plot is the only empty one', () => {
+    const plots = mkPlots(12).map(p => (p.id < 4 ? { ...p, cropId: 'radish', daysRemaining: 1 } : p));
+    const { container } = render(<FarmGrid plots={plots} unlockedPlots={4} />);
+    expect(anchors(container)).toHaveLength(0);
+  });
+});
+
 describe('FarmGrid — mobile columns (017 FR-021)', () => {
   it('uses 3 columns below sm and 4/6 above', () => {
     const { container } = render(<FarmGrid plots={mkPlots(12)} />);

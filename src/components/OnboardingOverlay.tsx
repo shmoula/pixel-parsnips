@@ -26,7 +26,7 @@ interface Props {
 const ANCHORS: Partial<Record<OnboardingStep, { selector: string; copy: string; inShopSheet?: boolean }>> = {
   'open-shop':    { selector: '[data-onboarding="shop-button"]', copy: 'Pop open the shop.' },
   'buy-radishes': { selector: '[data-onboarding="shop-radish"]', copy: 'Radishes sprout overnight — grab 4, one for each open plot.', inShopSheet: true },
-  'plant':        { selector: '[data-onboarding="farm-grid"]',   copy: 'Fill every plot — more crops, more coins.' },
+  'plant':        { selector: '[data-onboarding="empty-plot"]',  copy: 'Fill every plot — more crops, more coins.' },
   'advance':      { selector: '[data-onboarding="next-day"]',    copy: 'Sleep on it — advance a day.' },
 };
 
@@ -34,27 +34,62 @@ const ANCHORS: Partial<Record<OnboardingStep, { selector: string; copy: string; 
 const BUBBLE_WIDTH = 220;
 const BUBBLE_HEIGHT = 64;
 const EDGE_MARGIN = 8;
+/** Breathing room between the anchor's edges and the ring drawn around it. */
+const RING_PAD = 6;
+
+/**
+ * Top edge of whatever covers this anchor, or null when nothing does. The mobile
+ * action bar is fixed to the bottom edge at z-40 while the overlay sits at z-50,
+ * so anything drawn past the bar's top edge covers Shop / Next Day. Measured
+ * rather than hardcoded: the bar's height varies with env(safe-area-inset-bottom)
+ * and it is absent on desktop.
+ *
+ * The bar only occludes anchors BEHIND it. The open-shop and advance steps anchor
+ * to its own buttons, which it cannot cover — those report no occluder, so their
+ * ring is padded evenly instead of being clamped (or deleted) against the bar.
+ */
+function measureOccluderTop(anchorEl: Element | null): number | null {
+  const bar = findVisibleAnchor('[data-onboarding="action-bar"]');
+  if (!bar || (anchorEl && bar.contains(anchorEl))) return null;
+  const rect = bar.getBoundingClientRect();
+  return rect.height > 0 ? rect.top : null;
+}
 
 /**
  * Place the copy bubble near the anchor while keeping it fully on-screen: clamp the
  * left edge within the viewport, and flip above the anchor when there's no room below.
  */
-function bubbleStyle(rect: DOMRect): CSSProperties {
+function bubbleStyle(rect: DOMRect, occluderTop: number | null): CSSProperties {
   const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  // Anchor entirely off-screen (e.g. mid-animation or scrolled away): pin the
-  // bubble above the bottom action bar so the instruction stays readable.
-  if (rect.bottom <= 0 || rect.top >= vh) {
-    return { left: '50%', bottom: 88, transform: 'translateX(-50%)' };
+  const safeBottom = occluderTop ?? window.innerHeight;
+  // Anchor entirely out of usable space (mid-animation, scrolled away, or behind
+  // the action bar): pin the bubble just above the bar so the copy stays readable.
+  if (rect.bottom <= 0 || rect.top >= safeBottom) {
+    return { left: '50%', bottom: window.innerHeight - safeBottom + EDGE_MARGIN, transform: 'translateX(-50%)' };
   }
   const left = Math.min(
     Math.max(EDGE_MARGIN, rect.left),
     Math.max(EDGE_MARGIN, vw - BUBBLE_WIDTH - EDGE_MARGIN),
   );
-  const fitsBelow = rect.bottom + 10 + BUBBLE_HEIGHT + EDGE_MARGIN <= vh;
+  const fitsBelow = rect.bottom + 10 + BUBBLE_HEIGHT + EDGE_MARGIN <= safeBottom;
   return fitsBelow
     ? { left, top: rect.bottom + 10 }
     : { left, top: rect.top - 10, transform: 'translateY(-100%)' };
+}
+
+/**
+ * Ring box padded evenly around the anchor. When something covers the anchor the
+ * ring is cut off above it, and returns null if no drawable height survives (the
+ * anchor is fully behind it) — an anchor can be taller than the free viewport, in
+ * which case the ring ends at the occluder. With nothing in the way the padding
+ * stays even, so a button at the very bottom of the screen keeps its full frame.
+ */
+function ringStyle(rect: DOMRect, occluderTop: number | null): CSSProperties | null {
+  const top = rect.top - RING_PAD;
+  const padded = rect.bottom + RING_PAD;
+  const bottom = occluderTop === null ? padded : Math.min(padded, occluderTop - EDGE_MARGIN);
+  if (bottom <= top) return null;
+  return { left: rect.left - RING_PAD, top, width: rect.width + RING_PAD * 2, height: bottom - top };
 }
 
 /**
@@ -82,25 +117,35 @@ function sameRect(a: DOMRect | null, b: DOMRect | null): boolean {
   return a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height;
 }
 
+interface AnchorGeometry {
+  rect: DOMRect | null;
+  /** Top edge of the element covering the anchor, or null when nothing does. */
+  occluderTop: number | null;
+}
+
 /**
- * Continuously tracks the anchor's rect with a requestAnimationFrame loop while
- * a step is anchored. This follows transform transitions (the mobile shop
- * sheet's 300ms slide-up), scrolls, and resizes without event bookkeeping —
- * fixed re-measure timers missed the sheet's final position (017 FR-001/FR-002).
- * setRect bails out via sameRect, so idle frames cause no re-renders.
+ * Continuously tracks the anchor's rect and the usable bottom edge with a
+ * requestAnimationFrame loop while a step is anchored. This follows transform
+ * transitions (the mobile shop sheet's 300ms slide-up), scrolls, and resizes
+ * without event bookkeeping — fixed re-measure timers missed the sheet's final
+ * position (017 FR-001/FR-002). The setter bails out when nothing moved, so idle
+ * frames cause no re-renders.
  */
-function useAnchorRect(selector: string | null): DOMRect | null {
-  const [rect, setRect] = useState<DOMRect | null>(null);
+function useAnchorGeometry(selector: string | null): AnchorGeometry {
+  const [geom, setGeom] = useState<AnchorGeometry>(() => ({ rect: null, occluderTop: null }));
   useLayoutEffect(() => {
     if (!selector) {
-      setRect(null);
+      setGeom({ rect: null, occluderTop: null });
       return;
     }
     let raf = 0;
     const measure = () => {
       const el = findVisibleAnchor(selector);
-      const next = el ? el.getBoundingClientRect() : null;
-      setRect(prev => (sameRect(prev, next) ? prev : next));
+      const rect = el ? el.getBoundingClientRect() : null;
+      const occluderTop = measureOccluderTop(el);
+      setGeom(prev =>
+        sameRect(prev.rect, rect) && prev.occluderTop === occluderTop ? prev : { rect, occluderTop },
+      );
       raf = requestAnimationFrame(measure);
     };
     // Measure synchronously before first paint (so the highlight appears
@@ -108,7 +153,7 @@ function useAnchorRect(selector: string | null): DOMRect | null {
     measure();
     return () => cancelAnimationFrame(raf);
   }, [selector]);
-  return rect;
+  return geom;
 }
 
 /** 017 FR-005 — live seed-buying progress shown under the buy-radishes copy. */
@@ -125,28 +170,26 @@ function BuyProgress({ step, buyProgress }: { step: OnboardingStep; buyProgress:
 function AnchoredBubble({
   anchor,
   rect,
+  occluderTop,
   step,
   buyProgress,
   ringPulse,
 }: {
   anchor: { selector: string; copy: string };
   rect: DOMRect | null;
+  occluderTop: number | null;
   step: OnboardingStep;
   buyProgress: Props['buyProgress'];
   ringPulse: string;
 }) {
+  const ring = rect ? ringStyle(rect, occluderTop) : null;
   return (
     <>
-      {rect && (
+      {ring && (
         <div
           aria-hidden="true"
           className={`absolute rounded-lg ring-2 ring-farm-gold ${ringPulse}`}
-          style={{
-            left: rect.left - 6,
-            top: rect.top - 6,
-            width: rect.width + 12,
-            height: rect.height + 12,
-          }}
+          style={ring}
         />
       )}
       <div
@@ -155,7 +198,7 @@ function AnchoredBubble({
         className="pointer-events-auto absolute max-w-[220px] bg-farm-soil border border-farm-gold/50 rounded-lg px-3 py-2"
         style={
           rect
-            ? bubbleStyle(rect)
+            ? bubbleStyle(rect, occluderTop)
             : { left: '50%', bottom: 24, transform: 'translateX(-50%)' }
         }
       >
@@ -185,7 +228,7 @@ function SkipChip({ onSkip }: { onSkip: () => void }) {
 export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen = false, buyProgress = null, onStart, onSkip, onDismissPayoff }: Props) {
   const reduced = useReducedMotion();
   const anchor = activeAnchor(step, isShopOpen);
-  const rect = useAnchorRect(anchor ? anchor.selector : null);
+  const { rect, occluderTop } = useAnchorGeometry(anchor ? anchor.selector : null);
 
   if (step === 'done') return null;
 
@@ -238,7 +281,7 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
       {/* Anchored bubble: open-shop / buy-radishes / plant / advance.
           activeAnchor() returns null while the shop sheet covers this anchor. */}
       {anchor && (
-        <AnchoredBubble anchor={anchor} rect={rect} step={step} buyProgress={buyProgress} ringPulse={ringPulse} />
+        <AnchoredBubble anchor={anchor} rect={rect} occluderTop={occluderTop} step={step} buyProgress={buyProgress} ringPulse={ringPulse} />
       )}
     </div>
   );

@@ -14,7 +14,20 @@ interface FarmGridProps {
   onBuyPlot?: (plotId: number) => void;
 }
 
+/**
+ * Id of the first plot the player can plant into right now, or null if there is
+ * none. The onboarding 'plant' step rings this one tile instead of the whole
+ * grid, which on mobile is taller than the viewport.
+ */
+function firstPlantablePlotId(plots: PlotState[], unlockedPlots: number): number | null {
+  const plot = plots.find(
+    p => p.id < unlockedPlots && p.cropId === null && p.exhaustedSinceDay === null && !p.pestDamaged,
+  );
+  return plot ? plot.id : null;
+}
+
 export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, unlockedPlots, nextPlotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: FarmGridProps) {
+  const plantAnchorId = firstPlantablePlotId(plots, unlockedPlots ?? plots.length);
   return (
     // T017 — textured farm canvas: dark tilled soil + grain filter + fence border + decor
     <div className="relative rounded-xl overflow-hidden p-3 bg-[#2A1A0E] [filter:url(#pp-grain)] shadow-inner">
@@ -89,6 +102,7 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, unloc
                 plot={plot}
                 currentDay={currentDay}
                 fertilizerInventory={fertilizerInventory}
+                isPlantAnchor={plot.id === plantAnchorId}
                 locked={locked}
                 isNextPurchasable={locked && isNextPurchasable}
                 plotPrice={nextPlotPrice ?? undefined}

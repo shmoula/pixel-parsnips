@@ -24,6 +24,7 @@ export function BottomActionBar({
   if (hidden) return null;
   return (
     <div
+      data-onboarding="action-bar"
       className="
         md:hidden fixed bottom-0 left-0 right-0 z-40
         flex items-stretch gap-2 px-3 pt-2
