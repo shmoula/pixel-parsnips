@@ -147,7 +147,7 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
         flex flex-col items-center justify-center
         w-full aspect-square overflow-hidden rounded-lg border-2
         border-farm-red/60
-        select-none p-1 opacity-75
+        select-none p-2 text-center opacity-75
       "
       style={{
         background: [
@@ -158,7 +158,7 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
       }}
     >
       <span className="text-2xl">🪨</span>
-      <span className="text-body font-pixel text-farm-stone/80 mt-0.5">
+      <span className="text-caption font-pixel text-farm-stone/80 mt-1 leading-snug">
         {daysUntilRecovery}d remaining
       </span>
       {hasFertilizer ? (
@@ -167,17 +167,19 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
           aria-label="Use Fertilizer on this plot"
           onClick={() => onApplyFertilizer?.(plot.id)}
           className="
-            mt-1 font-pixel text-body px-1.5 py-0.5 rounded
+            mt-1 font-pixel text-caption px-1.5 py-0.5 rounded
             bg-farm-grass text-farm-parchment
             hover:bg-farm-gold hover:text-farm-ink
             active:scale-95 transition-all cursor-pointer
           "
         >
-          Use Fertilizer
+          Fertilize
         </button>
       ) : (
-        <span className="text-body text-farm-stone/70 mt-0.5 text-center px-1">
-          Buy Fertilizer in the shop
+        <span className="text-caption text-farm-stone/70 mt-1 leading-snug">
+          Fertilizer
+          <br />
+          in shop
         </span>
       )}
     </div>
