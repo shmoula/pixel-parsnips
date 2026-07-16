@@ -1,5 +1,6 @@
 import type { DailyLogEntry } from '../engine/types';
 import { Coin } from './Coin';
+import { EmojiIcon } from './EmojiIcon';
 import { WEATHER_DEFINITIONS, EXHAUSTION_RECOVERY_DAYS } from '../engine/constants';
 import { announceText, activeText } from '../engine/market';
 
@@ -78,7 +79,7 @@ function MarketLines({ log }: { log: DailyLogEntry }) {
               : 'flex items-center gap-1 px-2 py-1 rounded bg-farm-red/20 border border-farm-red/40 text-farm-parchment'
           }
         >
-          <span aria-hidden="true">📊</span>
+          <EmojiIcon>📊</EmojiIcon>
           <span>{activeText(log.marketActive)}</span>
         </div>
       )}
@@ -89,7 +90,7 @@ function MarketLines({ log }: { log: DailyLogEntry }) {
           aria-label="Market forecast"
           className="flex items-center gap-1 px-2 py-1 rounded bg-farm-parchment/10 text-farm-stone"
         >
-          <span aria-hidden="true">📈</span>
+          <EmojiIcon>📈</EmojiIcon>
           <span>Tomorrow: {announceText(log.marketAnnounced)}</span>
         </div>
       )}
@@ -106,7 +107,7 @@ function ExhaustionCallout({ log }: { log: DailyLogEntry }) {
       className="flex flex-col gap-0.5 px-2 py-1.5 rounded bg-farm-gold/10 border border-farm-gold/50"
     >
       <span className="font-pixel text-farm-gold">
-        🪨 {log.exhaustedPlots.length === 1
+        <EmojiIcon>🪨</EmojiIcon> {log.exhaustedPlots.length === 1
           ? 'A plot needs rest'
           : `${log.exhaustedPlots.length} plots need rest`}
       </span>
@@ -135,7 +136,7 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
             : 'flex items-center gap-1 px-2 py-1 rounded bg-farm-parchment/20'
         }
       >
-        <span aria-hidden="true">{WEATHER_EMOJI[log.weatherId]}</span>
+        <EmojiIcon>{WEATHER_EMOJI[log.weatherId]}</EmojiIcon>
         <span className="font-pixel text-farm-parchment">{weather.name}</span>
         <span className="text-farm-stone ml-auto">×{(log.weatherMultiplier).toFixed(1)}</span>
       </div>
@@ -162,7 +163,7 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
           aria-label="Streak bonus"
           className="flex justify-between text-farm-gold"
         >
-          <span>🔥 Streak bonus ×{Math.min(log.streakBefore, 4)}</span>
+          <span><EmojiIcon>🔥</EmojiIcon> Streak bonus ×{Math.min(log.streakBefore, 4)}</span>
           <span className="text-farm-grass">+{log.streakBonus}<Coin /></span>
         </div>
       )}
@@ -174,7 +175,7 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
           aria-label="Streak reset"
           className="flex items-center gap-1 text-farm-stone/70"
         >
-          <span aria-hidden="true">🔥</span>
+          <EmojiIcon>🔥</EmojiIcon>
           <span>
             {log.harvests.length > 0
               ? 'New season reset the streak'
