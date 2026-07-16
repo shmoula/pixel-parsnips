@@ -147,10 +147,15 @@ export function SeedCard({
       }}
     >
       <div className="flex items-center justify-between">
-        {/* 018 — inset frame: the sprite reads as an item on display, not floating */}
+        {/* 018 — inset frame: the sprite reads as an item on display, not floating.
+            Crop sprites are 32×64 with the art in the bottom ~half and transparent
+            headroom above (so crops share a ground line as they grow on the board).
+            Here we bottom-align inside a shorter clip window (overflow-hidden) so that
+            wasted headroom is trimmed and the crop sits centered with even margin. */}
         <span
-          className="inline-flex items-center justify-center rounded-md px-2 py-1"
+          className="inline-flex items-end justify-center overflow-hidden rounded-md px-2 pb-1"
           style={{
+            height: 40,
             backgroundColor: 'rgba(0,0,0,0.28)',
             boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.5)',
           }}

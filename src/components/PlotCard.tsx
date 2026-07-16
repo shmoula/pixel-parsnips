@@ -210,13 +210,19 @@ function GrowingCropCard({ plot }: {
       ].join(' ')}
     >
       <ProgressRing progress={progress} size={52}>
-        <CropSprite
-          cropId={plot.cropId!}
-          stage={STAGE_TO_SPRITE[stage]}
-          fallback={stageEmoji}
-          size={40}
-          fallbackClass="text-2xl"
-        />
+        {/* Crop art sits in the lower half of its 32×64 frame with transparent
+            headroom above (so crops share a ground line as they grow). Lift the
+            sprite ~¼ of its height so the visible crop centers in the ring instead
+            of hugging the bottom; the transparent top absorbs the overflow. */}
+        <span className="inline-flex" style={{ transform: 'translateY(-12px)' }}>
+          <CropSprite
+            cropId={plot.cropId!}
+            stage={STAGE_TO_SPRITE[stage]}
+            fallback={stageEmoji}
+            size={52}
+            fallbackClass="text-3xl"
+          />
+        </span>
       </ProgressRing>
       <span className="text-body font-pixel text-farm-parchment/80 mt-1">{label}</span>
       {isReady ? (
