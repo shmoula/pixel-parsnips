@@ -104,9 +104,11 @@ export function HUD({
       "
     >
       {/* Left: Season chip + Day chip + Balance/target chip.
-          `contents` on mobile lets the chips wrap alongside the action buttons in
-          the header's own flex row, instead of reserving whole lines to itself. */}
-      <div className="contents sm:flex sm:flex-wrap sm:items-stretch sm:gap-2">
+          `contents` keeps the chips in the header's own flex row at every width, so
+          they wrap one at a time alongside the status/action group. A real flex box
+          here would shrink and wrap internally, stranding a chip on its own line
+          while the group beside it wrapped down to a third. */}
+      <div className="contents">
         <button
           type="button"
           // No aria-label: the visible compact text ("Spring", "D1/20") is the
@@ -170,56 +172,58 @@ export function HUD({
         </button>
       </div>
 
-      {/* Centre-right: Lease + Tax — hidden on small screens */}
-      <div className="hidden sm:flex items-center gap-3 ml-auto">
-        <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
-          Lease {season.leasePerDay}<Coin />/day
-          {showLeasePreview && nextSeasonLease !== null && (
-            <span className="ml-1 text-farm-gold/70">
-              (rises to {nextSeasonLease} next season)
-            </span>
-          )}
-        </span>
-        <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
-          Tax {TAX_RATE * 100}%
-        </span>
-      </div>
-
-      {/* Action buttons: Last Turn + Next Day */}
-      <div className="flex items-center gap-2 ml-auto sm:ml-0">
-        <button
-          type="button"
-          aria-label="View last turn summary"
-          onClick={onLastTurn}
-          disabled={!hasLastTurn}
-          className="
-            font-pixel text-caption px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
-            bg-[#261808] text-farm-stone/60 border border-[#5C3D1E]/50
-            hover:enabled:bg-[#3A2510] hover:enabled:text-farm-parchment/80 hover:enabled:border-[#5C3D1E]
-            active:enabled:scale-95 transition-all
-            disabled:opacity-30
-          "
-        >
-          Last Turn
-        </button>
-        <button
-          type="button"
-          data-onboarding="next-day"
-          aria-label={nextDayLabel(canAdvanceProductively)}
-          onClick={onNextDay}
-          disabled={isProcessing}
-          className="
-            hidden md:inline-flex
-            font-pixel text-caption px-4 py-1.5 rounded uppercase tracking-widest
-            bg-farm-grass text-farm-parchment
-            hover:bg-farm-gold hover:text-farm-ink
-            active:enabled:scale-95 disabled:opacity-50 transition-all
-          "
-        >
-          {/* Press Start 2P's → glyph is parked low in the em box; lift it 0.2em
-              (measured) onto the letters' optical centre. */}
-          {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
-        </button>
+      {/* Right: Lease/Tax (hidden on small screens) and the action buttons, kept in one
+          flex item so a single `ml-auto` right-aligns them as a unit — sharing the
+          header's first line, or on a line of their own once the chips push them down. */}
+      <div className="flex items-center justify-end gap-2 sm:gap-3 ml-auto">
+        <div className="hidden sm:flex items-center gap-3">
+          <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
+            Lease {season.leasePerDay}<Coin />/day
+            {showLeasePreview && nextSeasonLease !== null && (
+              <span className="ml-1 text-farm-gold/70">
+                (rises to {nextSeasonLease} next season)
+              </span>
+            )}
+          </span>
+          <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
+            Tax {TAX_RATE * 100}%
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="View last turn summary"
+            onClick={onLastTurn}
+            disabled={!hasLastTurn}
+            className="
+              font-pixel text-caption px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
+              bg-[#261808] text-farm-stone/60 border border-[#5C3D1E]/50
+              hover:enabled:bg-[#3A2510] hover:enabled:text-farm-parchment/80 hover:enabled:border-[#5C3D1E]
+              active:enabled:scale-95 transition-all
+              disabled:opacity-30
+            "
+          >
+            Last Turn
+          </button>
+          <button
+            type="button"
+            data-onboarding="next-day"
+            aria-label={nextDayLabel(canAdvanceProductively)}
+            onClick={onNextDay}
+            disabled={isProcessing}
+            className="
+              hidden md:inline-flex
+              font-pixel text-caption px-4 py-1.5 rounded uppercase tracking-widest
+              bg-farm-grass text-farm-parchment
+              hover:bg-farm-gold hover:text-farm-ink
+              active:enabled:scale-95 disabled:opacity-50 transition-all
+            "
+          >
+            {/* Press Start 2P's → glyph is parked low in the em box; lift it 0.2em
+                (measured) onto the letters' optical centre. */}
+            {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
+          </button>
+        </div>
       </div>
     </header>
   );
