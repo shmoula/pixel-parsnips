@@ -1,6 +1,7 @@
 import { useLayoutEffect, useState, type CSSProperties } from 'react';
 import type { OnboardingStep } from '../engine/onboarding';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { EmojiIcon } from './EmojiIcon';
 
 interface Props {
   step: OnboardingStep;
@@ -208,7 +209,7 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
               onClick={onStart}
               className="font-pixel text-body px-4 py-2 rounded bg-farm-grass text-farm-parchment hover:bg-farm-gold hover:text-farm-ink"
             >
-              🌱 Plant my farm
+              <EmojiIcon>🌱</EmojiIcon> Plant my farm
             </button>
           </div>
         </div>

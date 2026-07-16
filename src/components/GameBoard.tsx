@@ -8,6 +8,7 @@ import { BottomActionBar } from './BottomActionBar';
 import { HUD } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
+import { EmojiIcon } from './EmojiIcon';
 import { PageBackdrop } from './PageBackdrop';
 import { DaySummaryModal } from './DaySummaryModal';
 import { OnboardingOverlay } from './OnboardingOverlay';
@@ -96,7 +97,7 @@ function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
       aria-label="Flash Drought warning"
       className="font-pixel text-body text-farm-red bg-farm-red/20 border border-farm-red/70 tracking-wide px-3 py-2 rounded"
     >
-      ☀️🔥 Flash Drought — crops planted today grow at half speed.{' '}
+      <EmojiIcon>☀️🔥</EmojiIcon> Flash Drought — crops planted today grow at half speed.{' '}
       {daysRemaining} day{suffix} remaining.
     </p>
   );
@@ -111,7 +112,7 @@ function SeedHintBanner({ seedHint, selectedCrop }: { seedHint: string | null; s
       role="status"
       className="font-pixel text-body text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded"
     >
-      🌱 {seedHint}
+      <EmojiIcon>🌱</EmojiIcon> {seedHint}
     </p>
   );
 }
@@ -139,8 +140,8 @@ function UnwinnableBanner({ isUnwinnable, onRestart }: { isUnwinnable: boolean; 
       className="flex flex-wrap items-center justify-between gap-2 font-pixel text-body text-farm-red bg-farm-red/20 border border-farm-red/70 px-3 py-2 rounded"
     >
       <span>
-        💸 Out of options — you can't afford seeds and nothing is growing. Skip days to the end,
-        or start over.
+        <EmojiIcon>💸</EmojiIcon> Out of options — you can't afford seeds and nothing is growing.
+        Skip days to the end, or start over.
       </span>
       <button
         type="button"
@@ -336,7 +337,7 @@ export function GameBoard({
           <FlashDroughtBanner daysRemaining={state.flashDroughtDaysRemaining} />
           {selectedCrop && (
             <p className="font-pixel text-body text-farm-gold bg-farm-gold/10 border border-farm-gold/30 px-3 py-2 rounded">
-              🌱 Planting: {selectedCrop} — click an empty plot
+              <EmojiIcon>🌱</EmojiIcon> Planting: {selectedCrop} — click an empty plot
             </p>
           )}
           <SeedHintBanner seedHint={seedHint} selectedCrop={selectedCrop} />
