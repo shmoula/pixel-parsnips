@@ -56,6 +56,15 @@ function measureOccluderTop(anchorEl: Element | null): number | null {
 }
 
 /**
+ * Centred fallback for when the anchor offers no usable position: pin the bubble
+ * just above whatever covers the bottom of the screen so the copy stays readable.
+ */
+function centeredStyle(occluderTop: number | null): CSSProperties {
+  const safeBottom = occluderTop ?? window.innerHeight;
+  return { left: '50%', bottom: window.innerHeight - safeBottom + EDGE_MARGIN, transform: 'translateX(-50%)' };
+}
+
+/**
  * Place the copy bubble near the anchor while keeping it fully on-screen: clamp the
  * left edge within the viewport, and flip above the anchor when there's no room below.
  */
@@ -63,9 +72,9 @@ function bubbleStyle(rect: DOMRect, occluderTop: number | null): CSSProperties {
   const vw = window.innerWidth;
   const safeBottom = occluderTop ?? window.innerHeight;
   // Anchor entirely out of usable space (mid-animation, scrolled away, or behind
-  // the action bar): pin the bubble just above the bar so the copy stays readable.
+  // the action bar).
   if (rect.bottom <= 0 || rect.top >= safeBottom) {
-    return { left: '50%', bottom: window.innerHeight - safeBottom + EDGE_MARGIN, transform: 'translateX(-50%)' };
+    return centeredStyle(occluderTop);
   }
   const left = Math.min(
     Math.max(EDGE_MARGIN, rect.left),
@@ -196,11 +205,7 @@ function AnchoredBubble({
         role="status"
         aria-live="polite"
         className="pointer-events-auto absolute max-w-[220px] bg-farm-soil border border-farm-gold/50 rounded-lg px-3 py-2"
-        style={
-          rect
-            ? bubbleStyle(rect, occluderTop)
-            : { left: '50%', bottom: 24, transform: 'translateX(-50%)' }
-        }
+        style={rect ? bubbleStyle(rect, occluderTop) : centeredStyle(occluderTop)}
       >
         <p className="font-pixel text-caption text-farm-parchment leading-relaxed">{anchor.copy}</p>
         <BuyProgress step={step} buyProgress={buyProgress} />
