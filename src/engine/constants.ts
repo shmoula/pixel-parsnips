@@ -3,20 +3,18 @@ import type {
   CropId,
   WeatherDefinition,
   WeatherId,
-  UpgradeTierDefinition,
   BuildingDefinition,
   BuildingId,
 } from './types';
 
 // ── Scalar constants ──────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 export const STARTING_BALANCE = 130;
 export const PLOT_COUNT = 12;
 export const STARTING_PLOTS = 4;
 export const PLOT_PRICES = [30, 55, 85, 120, 160, 210, 280, 360];
 export const TAX_RATE = 0.06;
-export const MAX_UPGRADE_TIER = 3;
 export const EXHAUSTION_THRESHOLD = 3;
 export const EXHAUSTION_RECOVERY_DAYS = 3;
 export const FERTILIZER_COST = 30;
@@ -152,12 +150,4 @@ export const WEATHER_PROBABILITY_BANDS: Array<{ threshold: number; id: WeatherId
   { threshold: 0.66, id: 'sunny' },
   { threshold: 0.83, id: 'warm_breeze' },
   { threshold: 1.00, id: 'perfect_sun' },
-];
-
-// ── Upgrade tier definitions ──────────────────────────────────────────────────
-
-export const UPGRADE_TIER_DEFINITIONS: UpgradeTierDefinition[] = [
-  { tier: 1, label: 'Rusty Trowel',  cost: 50,  cumulativeDiscount: 0.20 },
-  { tier: 2, label: 'Iron Hoe',      cost: 120, cumulativeDiscount: 0.40 },
-  { tier: 3, label: 'Golden Spade',  cost: 250, cumulativeDiscount: 0.60 },
 ];

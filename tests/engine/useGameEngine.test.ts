@@ -89,14 +89,14 @@ describe('useGameEngine — localStorage persistence (US5)', () => {
     expect(saved.state.coinBalance).toBe(125); // 130 - 5
   });
 
-  it('saves state to localStorage after buyUpgrade', () => {
+  it('saves state to localStorage after buyPlot', () => {
     const { result } = renderHook(() => useGameEngine());
 
-    act(() => { result.current.buyUpgrade(); });
+    act(() => { result.current.buyPlot(); });
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
-    expect(saved.state.upgradeTier).toBe(1);
-    expect(saved.state.coinBalance).toBe(80); // 130 - 50
+    expect(saved.state.unlockedPlots).toBe(5); // 4 starting + 1
+    expect(saved.state.coinBalance).toBe(100); // 130 - 30 (first plot price)
   });
 
   it('saves state to localStorage after plantSeed', () => {
@@ -194,18 +194,20 @@ describe('useGameEngine — full turn sequence integration (T046)', () => {
     expect(before - after).toBeGreaterThanOrEqual(15); // at least the lease
   });
 
-  it('upgradeTier reduces seed cost on subsequent buys', () => {
-    const { result } = renderHook(() => useGameEngine());
-
-    // Tier 0: radish costs 5
+  it('the Toolshed reduces seed cost', () => {
+    // No buildings: radish costs 5
+    const { result, unmount } = renderHook(() => useGameEngine());
     expect(result.current.getSeedPrice('radish')).toBe(5);
+    unmount();
 
-    // Buy tier 1 upgrade (costs 50)
-    act(() => { result.current.buyUpgrade(); });
-    expect(result.current.state.upgradeTier).toBe(1);
-
-    // Tier 1: 10% cumulative discount → radish = floor(5 * 0.9) = 4
-    expect(result.current.getSeedPrice('radish')).toBe(4);
+    // With the Toolshed owned (40% off): radish = floor(5 * 0.6) = 3
+    const withToolshed = {
+      ...initialGameState(),
+      buildings: { ...initialGameState().buildings, toolshed: true },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: withToolshed }));
+    const { result: withShed } = renderHook(() => useGameEngine());
+    expect(withShed.current.getSeedPrice('radish')).toBe(3);
   });
 
   it('restart resets state to day 1 with starting balance', () => {
@@ -235,34 +237,14 @@ describe('useGameEngine — branch coverage completions (T048)', () => {
   });
 
   it('buySeed returns false when insufficient funds', () => {
+    // Inject a near-empty balance so a large pumpkin order can't be afforded.
+    const broke = { ...initialGameState(), coinBalance: 10 };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: broke }));
     const { result } = renderHook(() => useGameEngine());
-    // Pumpkin costs 30; drain coins first
-    act(() => { result.current.buyUpgrade(); }); // spends 50 → balance 50
-    act(() => { result.current.buyUpgrade(); }); // no tier left (tier 1 → can't buy again yet)
-    // Try to buy pumpkin × 10 (300 coins needed) — should fail
+    // Try to buy pumpkin × 10 (200 coins needed) — should fail
     let ok: boolean = true;
     act(() => { ok = result.current.buySeed('pumpkin', 10); });
     expect(ok).toBe(false);
-  });
-
-  it('buyUpgrade returns false when already at MAX_UPGRADE_TIER', () => {
-    const { result } = renderHook(() => useGameEngine());
-    // Buy all 3 tiers (costs 50 + 75 + 100 = 225; starting 100 is not enough)
-    // Instead, directly verify getNextUpgradeCost returns null at max tier
-    // by testing the null branch of getNextUpgradeCost
-    act(() => { result.current.buyUpgrade(); }); // tier 0 → 1, costs 50; balance 50
-    // now can't afford tier 2 (75), but let's test that buyUpgrade returns false for insufficient
-    let ok: boolean = true;
-    act(() => { ok = result.current.buyUpgrade(); }); // tier 2 costs 75, only 50 coins → false
-    expect(ok).toBe(false);
-  });
-
-  it('getNextUpgradeCost returns null at MAX_UPGRADE_TIER', () => {
-    // Build a state with upgradeTier === MAX_UPGRADE_TIER via localStorage
-    const maxed = { ...initialGameState(), upgradeTier: 3 };
-    localStorage.setItem('pixel-parsnips-state', JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: maxed }));
-    const { result } = renderHook(() => useGameEngine());
-    expect(result.current.getNextUpgradeCost()).toBeNull();
   });
 
   it('getOccupiedPlotCount returns 0 on fresh state', () => {
@@ -297,13 +279,6 @@ describe('useGameEngine — action callbacks return true on success', () => {
     act(() => { result.current.buySeed('radish', 1); });
     let ok = false;
     act(() => { ok = result.current.plantSeed(0, 'radish'); });
-    expect(ok).toBe(true);
-  });
-
-  it('buyUpgrade returns true when affordable', () => {
-    const { result } = renderHook(() => useGameEngine());
-    let ok = false;
-    act(() => { ok = result.current.buyUpgrade(); });
     expect(ok).toBe(true);
   });
 
@@ -528,7 +503,6 @@ describe('useGameEngine — schema 3 → 5 migration (US7 chained via 007)', () 
         pestDamaged: false, droughtPenalised: false,
       })),
       seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-      upgradeTier: 0,
       lastDailyLog: null,
       phase: 'playing',
       peakBalance: 200,
@@ -627,7 +601,7 @@ describe('useGameEngine — endOfRunRecap (007)', () => {
   // TODO: assert recap does not fire on season_passed/season_failed
 });
 
-describe('v6 → v8 migration', () => {
+describe('v6 save → current schema migration', () => {
   beforeEach(() => localStorage.clear());
 
   it('adds unlockedPlots = plots.length to a v6 save (existing runs keep all plots)', () => {
@@ -640,7 +614,7 @@ describe('v6 → v8 migration', () => {
           consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
         })),
         currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
         flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
         harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: 6,
       },
@@ -653,10 +627,10 @@ describe('v6 → v8 migration', () => {
   });
 });
 
-describe('v7 → v8 migration (Market Events)', () => {
+describe('v7 save → current schema migration (Market Events)', () => {
   beforeEach(() => localStorage.clear());
 
-  it('adds an empty market to a v7 save and bumps to v8', () => {
+  it('adds an empty market to a v7 save and migrates to the current schema', () => {
     const v7Save = {
       schemaVersion: 7,
       state: {
@@ -666,7 +640,7 @@ describe('v7 → v8 migration (Market Events)', () => {
           consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
         })),
         currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
         flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
         harvestStreak: 0, peakHarvestStreak: 0, unlockedPlots: 12, schemaVersion: 7,
         // market intentionally absent (added in v8)
@@ -675,7 +649,7 @@ describe('v7 → v8 migration (Market Events)', () => {
     localStorage.setItem('pixel-parsnips-state', JSON.stringify(v7Save));
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.market).toEqual({ active: null, pending: null });
-    expect(result.current.state.schemaVersion).toBe(8);
+    expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
   });
 });
 
@@ -692,7 +666,7 @@ describe('v8 load — corrupt/missing unlockedPlots/market', () => {
           consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
         })),
         currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
         flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
         harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: SCHEMA_VERSION,
         // unlockedPlots and market intentionally absent (tampered/corrupt save)
@@ -713,7 +687,7 @@ describe('v8 load — corrupt/missing unlockedPlots/market', () => {
         plots: 'not-an-array', // tampered
         unlockedPlots: 999, // out of range
         currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
         flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
         harvestStreak: 0, peakHarvestStreak: 0, schemaVersion: SCHEMA_VERSION,
       },
@@ -738,7 +712,7 @@ describe('v8 load — corrupt/missing unlockedPlots/market', () => {
             consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
           })),
           currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-          upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+          lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
           flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
           harvestStreak: 0, peakHarvestStreak: 0, unlockedPlots: 6, schemaVersion: SCHEMA_VERSION,
           market: badMarket,
@@ -761,7 +735,7 @@ describe('v8 load — corrupt/missing unlockedPlots/market', () => {
           consecutiveHarvests: 0, exhaustedSinceDay: null, pestDamaged: false, droughtPenalised: false,
         })),
         currentDay: 5, coinBalance: 200, seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-        upgradeTier: 0, lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
+        lastDailyLog: null, peakBalance: 200, fertilizerInventory: 0,
         flashDroughtDaysRemaining: 0, endlessMode: false, disastersSurvived: 0,
         harvestStreak: 0, peakHarvestStreak: 0, unlockedPlots: 6, schemaVersion: SCHEMA_VERSION,
         market: {
@@ -793,7 +767,6 @@ describe('useGameEngine — v5 → v7 migration (chained: Harvest Streak + Plot 
         pestDamaged: false, droughtPenalised: false,
       })),
       seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-      upgradeTier: 0,
       lastDailyLog: null,
       phase: 'playing',
       peakBalance: 100,

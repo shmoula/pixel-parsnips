@@ -189,13 +189,11 @@ interface GameBoardProps {
   onNextDay: (weatherOverride?: WeatherId) => void;
   onPlantSeed: (plotId: number, cropId: CropId) => boolean;
   onBuySeed: (cropId: CropId) => void;
-  onBuyUpgrade: () => void;
   onBuyFertilizer: () => void;
   onApplyFertilizer: (plotId: number) => void;
   onClearPestDamage: (plotId: number) => void;
   getFertilizerCount: () => number;
   getSeedPrice: (cropId: CropId) => number;
-  getNextUpgradeCost: () => number | null;
   onBuyPlot: () => boolean;
   getNextPlotPrice: () => number | null;
   /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
@@ -208,13 +206,11 @@ export function GameBoard({
   onNextDay,
   onPlantSeed,
   onBuySeed,
-  onBuyUpgrade,
   onBuyFertilizer,
   onApplyFertilizer,
   onClearPestDamage,
   getFertilizerCount,
   getSeedPrice,
-  getNextUpgradeCost,
   onBuyPlot,
   getNextPlotPrice,
   onRestart,
@@ -384,16 +380,13 @@ export function GameBoard({
         >
           <Shop
             coinBalance={state.coinBalance}
-            upgradeTier={state.upgradeTier}
             seedInventory={state.seedInventory}
             fertilizerInventory={getFertilizerCount()}
             selectedCrop={selectedCrop}
             getSeedPrice={getSeedPrice}
             onBuySeed={handleBuySeed}
             onSelectCrop={setSelectedCrop}
-            onBuyUpgrade={onBuyUpgrade}
             onBuyFertilizer={onBuyFertilizer}
-            getNextUpgradeCost={getNextUpgradeCost}
             marketActive={state.market.active}
             dimNonRadish={onboarding.active && onboarding.step === 'buy-radishes'}
           />

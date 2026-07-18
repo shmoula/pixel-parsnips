@@ -12,8 +12,6 @@ export type WeatherId =
   | 'pest_infestation'
   | 'flash_drought';
 
-export type UpgradeTier = 0 | 1 | 2 | 3;
-
 export type BuildingId =
   | 'toolshed'
   | 'compost_bin'
@@ -57,13 +55,6 @@ export interface WeatherDefinition {
   name: string;
   multiplier: number;
   description: string;
-}
-
-export interface UpgradeTierDefinition {
-  tier: 1 | 2 | 3;
-  label: string;
-  cost: number;
-  cumulativeDiscount: number;
 }
 
 export interface BuildingDefinition {
@@ -145,7 +136,6 @@ export interface GameState {
   coinBalance: number;
   plots: PlotState[];
   seedInventory: SeedInventory;
-  upgradeTier: UpgradeTier;
   lastDailyLog: DailyLogEntry | null;
   phase: 'playing' | 'bankrupt'
        | 'season_passed' | 'season_4_won' | 'season_failed';
@@ -188,10 +178,6 @@ export type BuyResult =
   | { ok: true; state: GameState }
   | { ok: false; error: 'insufficient_funds'; cost: number; balance: number }
   | { ok: false; error: 'invalid_quantity' };
-
-export type UpgradeResult =
-  | { ok: true; state: GameState }
-  | { ok: false; error: 'insufficient_funds' | 'max_tier_reached' };
 
 export type ClearPestDamageResult =
   | { ok: true; state: GameState }

@@ -1,9 +1,9 @@
 import {
-  buySeed, plantSeed, buyUpgrade, buyPlot, computeSeedCost,
+  buySeed, plantSeed, buyBuilding, buyPlot, computeSeedCost,
 } from '../../src/engine/gameEngine';
 import { getSeasonForDay } from '../../src/engine/seasons';
 import type { EconomyConfig } from '../../src/engine/economy';
-import type { GameState, CropId, ActiveMarketEvent, MarketEvent } from '../../src/engine/types';
+import type { GameState, CropId, ActiveMarketEvent, MarketEvent, BuildingId } from '../../src/engine/types';
 
 export type Strategy = (state: GameState, config: EconomyConfig) => GameState;
 
@@ -15,7 +15,7 @@ function fillBoard(state: GameState, config: EconomyConfig, pick: (s: GameState)
     const plot = s.plots[i];
     if (plot.cropId !== null || plot.exhaustedSinceDay !== null || plot.pestDamaged) continue;
     const crop = pick(s);
-    const cost = computeSeedCost(crop, s.upgradeTier, config);
+    const cost = computeSeedCost(crop, s.buildings, config);
     if (s.coinBalance - cost < lease) break;
     const b = buySeed(s, crop, 1, config);
     if (!b.ok) break;
@@ -26,15 +26,27 @@ function fillBoard(state: GameState, config: EconomyConfig, pick: (s: GameState)
   return s;
 }
 
-/** Buy upgrades while comfortably affordable (keeps an 80-coin working buffer). */
-function maybeUpgrade(state: GameState, config: EconomyConfig): GameState {
+/** Priority order for building purchases; a retune candidate (Task 12). */
+const BUILDING_PRIORITY: BuildingId[] = [
+  'toolshed', 'compost_bin', 'irrigation_well', 'scarecrow', 'farm_stand',
+];
+
+/** Buy buildings in priority order while comfortably affordable (lease ×2 buffer).
+ *  Locked or unknown buildings are skipped, not waited for. */
+export function maybeBuyBuildings(
+  state: GameState,
+  config: EconomyConfig,
+  ids: BuildingId[] = BUILDING_PRIORITY,
+): GameState {
   let s = state;
-  while (s.upgradeTier < config.upgrades.length) {
-    const cost = config.upgrades[s.upgradeTier].cost;
-    if (s.coinBalance - cost <= 80) break;
-    const r = buyUpgrade(s, config);
-    if (!r.ok) break;
-    s = r.state;
+  const lease = getSeasonForDay(s.currentDay, config).leasePerDay;
+  for (const id of ids) {
+    if (s.buildings[id]) continue;
+    const def = config.buildings.definitions.find(d => d.id === id);
+    if (!def) continue;
+    if (s.coinBalance - def.cost < lease * 2) continue;
+    const r = buyBuilding(s, id, config);
+    if (r.ok) s = r.state;
   }
   return s;
 }
@@ -59,7 +71,7 @@ function maybeBuyPlots(state: GameState, config: EconomyConfig): GameState {
 }
 
 const single = (crop: CropId): Strategy => (state, config) =>
-  fillBoard(maybeUpgrade(state, config), config, () => crop);
+  fillBoard(maybeBuyBuildings(state, config, ['toolshed']), config, () => crop);
 
 /**
  * Adjust a base crop choice for the current market: chase a shortage, dodge a glut.
@@ -84,7 +96,7 @@ export function pickCropWithMarket(
 }
 
 const smartMixed: Strategy = (state, config) => {
-  let s = maybeUpgrade(state, config);
+  let s = maybeBuyBuildings(state, config);
   const pick = (cur: GameState): CropId => {
     const base: CropId = cur.coinBalance > 250 ? 'pumpkin' : cur.coinBalance > 60 ? 'parsnip' : 'radish';
     return pickCropWithMarket(base, cur.market.active, cur.market.pending);

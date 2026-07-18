@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initialGameState } from '../../src/engine/gameEngine';
 import { DEFAULT_ECONOMY } from '../../src/engine/economy';
-import { STRATEGIES, pickCropWithMarket } from '../../scripts/sim/strategies';
+import { STRATEGIES, pickCropWithMarket, maybeBuyBuildings } from '../../scripts/sim/strategies';
 import { baseline, proposed } from '../../scripts/sim/economyPresets';
 
 describe('strategies', () => {
@@ -44,6 +44,33 @@ describe('smartMixed plot buying', () => {
     const plantedBeyondUnlocked = s.plots.slice(s.unlockedPlots).some(p => p.cropId !== null);
     expect(plantedBeyondUnlocked).toBe(false);
     expect(s.coinBalance).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('maybeBuyBuildings (019)', () => {
+  it('buys in priority order while the lease buffer holds', () => {
+    const rich = { ...initialGameState(), currentDay: 21, coinBalance: 400 };
+    const s = maybeBuyBuildings(rich, DEFAULT_ECONOMY);
+    // Season 2 lease = 22, buffer = 44.
+    // 400 → toolshed (150) leaves 250 ≥ 44 → buy; 250 → compost (150) leaves 100 ≥ 44 → buy;
+    // 100 → well (180) would leave -80 < 44 → stop there.
+    expect(s.buildings.toolshed).toBe(true);
+    expect(s.buildings.compost_bin).toBe(true);
+    expect(s.buildings.irrigation_well).toBe(false);
+  });
+
+  it('skips locked buildings in season 1 instead of waiting', () => {
+    const rich = { ...initialGameState(), currentDay: 1, coinBalance: 1000 };
+    const s = maybeBuyBuildings(rich, DEFAULT_ECONOMY);
+    expect(s.buildings.toolshed).toBe(true);
+    expect(s.buildings.scarecrow).toBe(false);
+  });
+
+  it('honors a restricted id list (single-crop bots buy toolshed only)', () => {
+    const rich = { ...initialGameState(), currentDay: 21, coinBalance: 5000 };
+    const s = maybeBuyBuildings(rich, DEFAULT_ECONOMY, ['toolshed']);
+    expect(s.buildings.toolshed).toBe(true);
+    expect(Object.entries(s.buildings).filter(([, v]) => v)).toHaveLength(1);
   });
 });
 

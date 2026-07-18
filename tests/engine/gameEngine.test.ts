@@ -5,14 +5,13 @@ import {
   processTurn,
   computeSeedCost,
   buySeed,
-  buyUpgrade,
   buyFertilizer,
   applyFertilizer,
   clearPestDamage,
   buyPlot,
   getNextPlotPrice,
 } from '../../src/engine/gameEngine';
-import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST, STREAK_BONUS_PER_LEVEL } from '../../src/engine/constants';
+import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST, STREAK_BONUS_PER_LEVEL, NO_BUILDINGS } from '../../src/engine/constants';
 import { DEFAULT_ECONOMY } from '../../src/engine/economy';
 import type { GameState } from '../../src/engine/types';
 
@@ -37,8 +36,8 @@ describe('initialGameState — schema 5 fields', () => {
     expect(s.endlessMode).toBe(false);
   });
 
-  it('has schemaVersion 8', () => {
-    expect(initialGameState().schemaVersion).toBe(8);
+  it('has schemaVersion 9', () => {
+    expect(initialGameState().schemaVersion).toBe(9);
   });
 
   it('starts with disastersSurvived: 0', () => {
@@ -790,30 +789,12 @@ describe('processTurn — Blight disaster (US1)', () => {
 // ── computeSeedCost (US3) ─────────────────────────────────────────────────────
 
 describe('computeSeedCost', () => {
-  it('returns full base price at tier 0 (no discount)', () => {
-    expect(computeSeedCost('radish', 0)).toBe(5);
-    expect(computeSeedCost('parsnip', 0)).toBe(10);
-    expect(computeSeedCost('pumpkin', 0)).toBe(20);
+  it('returns full base price with no buildings owned', () => {
+    expect(computeSeedCost('radish', { ...NO_BUILDINGS })).toBe(5);
+    expect(computeSeedCost('parsnip', { ...NO_BUILDINGS })).toBe(10);
+    expect(computeSeedCost('pumpkin', { ...NO_BUILDINGS })).toBe(20);
   });
-
-  it('applies 20% discount at tier 1 (floor-rounded)', () => {
-    // coins(baseSeedCost * (1 - 0.20))
-    expect(computeSeedCost('radish', 1)).toBe(4);   // floor(5 * 0.8) = 4
-    expect(computeSeedCost('parsnip', 1)).toBe(8);  // floor(10 * 0.8) = 8
-    expect(computeSeedCost('pumpkin', 1)).toBe(16); // floor(20 * 0.8) = 16
-  });
-
-  it('applies 40% discount at tier 2 (floor-rounded)', () => {
-    expect(computeSeedCost('radish', 2)).toBe(3);   // floor(5 * 0.6) = 3
-    expect(computeSeedCost('parsnip', 2)).toBe(6);  // floor(10 * 0.6) = 6
-    expect(computeSeedCost('pumpkin', 2)).toBe(12); // floor(20 * 0.6) = 12
-  });
-
-  it('applies 60% discount at tier 3 (floor-rounded)', () => {
-    expect(computeSeedCost('radish', 3)).toBe(2);   // floor(5 * 0.4) = 2
-    expect(computeSeedCost('parsnip', 3)).toBe(4);  // floor(10 * 0.4) = 4
-    expect(computeSeedCost('pumpkin', 3)).toBe(8);  // floor(20 * 0.4) = 8
-  });
+  // Toolshed-discount cases live in tests/engine/useGameEngine.buildings.test.ts (019).
 });
 
 // ── buySeed (US3) ─────────────────────────────────────────────────────────────
@@ -837,12 +818,12 @@ describe('buySeed', () => {
     expect(result.state.seedInventory.parsnip).toBe(3);
   });
 
-  it('applies upgrade discount when buying seeds', () => {
-    const state = { ...initialGameState(), upgradeTier: 1 as const }; // 20% off
+  it('applies the toolshed discount when buying seeds', () => {
+    const state = { ...initialGameState(), buildings: { ...NO_BUILDINGS, toolshed: true } }; // 40% off
     const result = buySeed(state, 'radish', 1);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.state.coinBalance).toBe(126); // 130 - 4 (radish at tier 1)
+    expect(result.state.coinBalance).toBe(127); // 130 - 3 (radish w/ toolshed: floor(5*0.6)=3)
   });
 
   it('returns insufficient_funds when balance is too low', () => {
@@ -875,53 +856,6 @@ describe('buySeed', () => {
     const result = buySeed(state, 'radish', -2);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe('invalid_quantity');
-  });
-});
-
-// ── buyUpgrade (US3) ──────────────────────────────────────────────────────────
-
-describe('buyUpgrade', () => {
-  it('increments upgradeTier and deducts cost for tier 0 → 1 (costs 50)', () => {
-    const state = initialGameState(); // 130 coins, tier 0
-    const result = buyUpgrade(state);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.state.upgradeTier).toBe(1);
-    expect(result.state.coinBalance).toBe(80); // 130 - 50
-  });
-
-  it('increments upgradeTier and deducts cost for tier 1 → 2 (costs 120)', () => {
-    const state = { ...initialGameState(), upgradeTier: 1 as const, coinBalance: 200 };
-    const result = buyUpgrade(state);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.state.upgradeTier).toBe(2);
-    expect(result.state.coinBalance).toBe(80); // 200 - 120
-  });
-
-  it('increments upgradeTier and deducts cost for tier 2 → 3 (costs 250)', () => {
-    const state = { ...initialGameState(), upgradeTier: 2 as const, coinBalance: 300 };
-    const result = buyUpgrade(state);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.state.upgradeTier).toBe(3);
-    expect(result.state.coinBalance).toBe(50); // 300 - 250
-  });
-
-  it('returns max_tier_reached when already at tier 3', () => {
-    const state = { ...initialGameState(), upgradeTier: 3 as const };
-    const result = buyUpgrade(state);
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error).toBe('max_tier_reached');
-  });
-
-  it('returns insufficient_funds when balance < next tier cost', () => {
-    const state = { ...initialGameState(), coinBalance: 49 }; // tier 1 costs 50
-    const result = buyUpgrade(state);
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error).toBe('insufficient_funds');
   });
 });
 
@@ -1576,22 +1510,19 @@ describe('processTurn — harvest streak season reset', () => {
   });
 });
 
-describe('config injection — state/upgrade/plant', () => {
+describe('config injection — state/seed-cost/plant', () => {
   it('initialGameState uses startingBalance from config', () => {
     const custom = { ...DEFAULT_ECONOMY, startingBalance: 500 };
     expect(initialGameState(custom).coinBalance).toBe(500);
     expect(initialGameState().coinBalance).toBe(130);
   });
 
-  it('buyUpgrade uses the custom upgrade cost', () => {
+  it('computeSeedCost uses the custom toolshed discount from config', () => {
     const custom = {
       ...DEFAULT_ECONOMY,
-      upgrades: DEFAULT_ECONOMY.upgrades.map((u, i) => i === 0 ? { ...u, cost: 10 } : u),
+      buildings: { ...DEFAULT_ECONOMY.buildings, seedDiscount: 0.5 },
     };
-    const s = initialGameState();
-    const r = buyUpgrade(s, custom);
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(r.state.coinBalance).toBe(s.coinBalance - 10);
+    expect(computeSeedCost('pumpkin', { ...NO_BUILDINGS, toolshed: true }, custom)).toBe(10); // floor(20 * 0.5)
   });
 
   it('plantSeed uses growthDays from config', () => {
@@ -1613,8 +1544,8 @@ describe('config injection — seeds', () => {
       ...DEFAULT_ECONOMY,
       crops: { ...DEFAULT_ECONOMY.crops, radish: { ...DEFAULT_ECONOMY.crops.radish, baseSeedCost: 99 } },
     };
-    expect(computeSeedCost('radish', 0, custom)).toBe(99);
-    expect(computeSeedCost('radish', 0)).toBe(5); // default unchanged
+    expect(computeSeedCost('radish', { ...NO_BUILDINGS }, custom)).toBe(99);
+    expect(computeSeedCost('radish', { ...NO_BUILDINGS })).toBe(5); // default unchanged
   });
 
   it('buySeed deducts the custom seed cost', () => {

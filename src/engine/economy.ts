@@ -1,4 +1,4 @@
-import type { CropDefinition, CropId, UpgradeTierDefinition, BuildingDefinition } from './types';
+import type { CropDefinition, CropId, BuildingDefinition } from './types';
 import {
   STARTING_BALANCE, PLOT_COUNT, STARTING_PLOTS, PLOT_PRICES, TAX_RATE, FERTILIZER_COST,
   EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS,
@@ -10,7 +10,7 @@ import {
   BUILDING_SEED_DISCOUNT, BUILDING_EXHAUSTION_RECOVERY_DAYS,
   BUILDING_DROUGHT_WINDOW_DAYS, BUILDING_PEST_DESTRUCTION_CHANCE,
   BUILDING_YIELD_MULTIPLIER, BUILDING_DEFINITIONS,
-  CROP_DEFINITIONS, UPGRADE_TIER_DEFINITIONS,
+  CROP_DEFINITIONS,
 } from './constants';
 import type { SeasonConfig } from './seasons';
 
@@ -64,7 +64,6 @@ export interface EconomyConfig {
   plotPrices: number[];  // unused in 009; 010 reads it
   taxRate: number;
   crops: Record<CropId, CropDefinition>;
-  upgrades: UpgradeTierDefinition[];
   seasons: SeasonConfig[];
   endless: EndlessFormula;
   exhaustionThreshold: number;
@@ -87,7 +86,6 @@ export const DEFAULT_ECONOMY: EconomyConfig = {
   plotPrices: PLOT_PRICES,
   taxRate: TAX_RATE,
   crops: CROP_DEFINITIONS,
-  upgrades: UPGRADE_TIER_DEFINITIONS,
   seasons: SEASON_TABLE,
   endless: {
     leaseBase: 30, leasePerSeason: 2,

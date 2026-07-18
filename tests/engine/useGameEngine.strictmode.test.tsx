@@ -26,7 +26,7 @@ describe('useGameEngine.nextDay — StrictMode safety (017 FR-019)', () => {
     // it exists as a standing regression guard for the invariant the fix
     // establishes: processTurn must run exactly once per nextDay() call, via
     // the same stateRef-read-then-setState(result) pattern every other action
-    // in this hook already uses (plant, buySeed, buyUpgrade, ...). Keeping the
+    // in this hook already uses (plant, buySeed, buyPlot, ...). Keeping the
     // impure processTurn call out of the setState updater removes the risk
     // entirely, regardless of whether double-invocation reproduces here.
     const seeded = { ...initialGameState(), currentDay: 5 };

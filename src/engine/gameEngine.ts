@@ -12,11 +12,9 @@ import type {
   PlotState,
   CropId,
   WeatherId,
-  UpgradeTier,
   PlantResult,
   BuyPlotResult,
   BuyResult,
-  UpgradeResult,
   FertilizerResult,
   ClearPestDamageResult,
   TurnResult,
@@ -47,7 +45,6 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     coinBalance: config.startingBalance,
     plots,
     seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-    upgradeTier: 0,
     lastDailyLog: null,
     phase: 'playing',
     peakBalance: config.startingBalance,
@@ -143,14 +140,15 @@ export function plantSeed(
 
 // ── T029: computeSeedCost ─────────────────────────────────────────────────────
 
-/** Returns the current purchase price for one seed, applying upgrade discount. */
+/** Returns the current purchase price for one seed, applying the Toolshed discount. */
 export function computeSeedCost(
-  cropId: CropId, upgradeTier: UpgradeTier, config: EconomyConfig = DEFAULT_ECONOMY,
+  cropId: CropId,
+  buildings: GameState['buildings'],
+  config: EconomyConfig = DEFAULT_ECONOMY,
 ): number {
   const crop = config.crops[cropId];
-  if (upgradeTier === 0) return crop.baseSeedCost;
-  const def = config.upgrades[upgradeTier - 1];
-  return coins(crop.baseSeedCost * (1 - def.cumulativeDiscount));
+  if (!buildings.toolshed) return crop.baseSeedCost;
+  return coins(crop.baseSeedCost * (1 - config.buildings.seedDiscount));
 }
 
 // ── T029: buySeed ─────────────────────────────────────────────────────────────
@@ -165,7 +163,7 @@ export function buySeed(
   if (!Number.isInteger(quantity) || quantity < 1) {
     return { ok: false, error: 'invalid_quantity' };
   }
-  const unitCost = computeSeedCost(cropId, state.upgradeTier, config);
+  const unitCost = computeSeedCost(cropId, state.buildings, config);
   const totalCost = unitCost * quantity;
 
   if (state.coinBalance < totalCost) {
@@ -186,32 +184,6 @@ export function buySeed(
         ...state.seedInventory,
         [cropId]: state.seedInventory[cropId] + quantity,
       },
-    },
-  };
-}
-
-// ── T029: buyUpgrade ──────────────────────────────────────────────────────────
-
-/** Purchases the next tool upgrade tier. Pure — no mutations. */
-export function buyUpgrade(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): UpgradeResult {
-  const maxTier = config.upgrades.length;
-  if (state.upgradeTier >= maxTier) {
-    return { ok: false, error: 'max_tier_reached' };
-  }
-
-  const nextTier = (state.upgradeTier + 1) as UpgradeTier;
-  const def = config.upgrades[nextTier - 1];
-
-  if (state.coinBalance < def.cost) {
-    return { ok: false, error: 'insufficient_funds' };
-  }
-
-  return {
-    ok: true,
-    state: {
-      ...state,
-      upgradeTier: nextTier,
-      coinBalance: state.coinBalance - def.cost,
     },
   };
 }
