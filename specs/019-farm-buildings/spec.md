@@ -294,8 +294,9 @@ Prevented losses are invisible by default; these make ownership feel real:
     banner body. The generic Flash Drought weather description ("…for the next 2 days") stays
     static; the sub-line is what communicates the shortened window.
 - **Toolshed**: seed prices in the shop simply show the discounted value (as they did with tiers).
-- **Compost Bin**: the plot-card rest countdown reflects the shorter period (already derived from
-  state — no extra work).
+- **Compost Bin**: the plot-card rest countdown must reflect the effective period. `PlotCard`
+  currently computes it from the `EXHAUSTION_RECOVERY_DAYS` constant, so the effective recovery
+  days (2 with Compost, 3 without) are threaded down as a prop.
 - **Farm Stand**: passive; its owned card in the tray reads "+10% harvests".
 
 ---
