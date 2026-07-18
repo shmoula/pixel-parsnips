@@ -361,7 +361,8 @@ export function processTurn(
     });
   })();
 
-  // Step 2b: Flash Drought — set counter to +2 when event fires (stacks)
+  // Step 2b: Flash Drought — extend counter when event fires (stacks); window is
+  // shortened with an irrigation well (019)
   const flashDroughtDaysAfterEvent = weatherId === 'flash_drought'
     ? state.flashDroughtDaysRemaining + droughtWindowDaysFor(state, config)
     : state.flashDroughtDaysRemaining;
