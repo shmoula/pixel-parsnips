@@ -9,6 +9,7 @@ import {
   clearPestDamage as engineClearPestDamage,
   buyPlot as engineBuyPlot,
   getNextPlotPrice as engineGetNextPlotPrice,
+  buyBuilding as engineBuyBuilding,
   computeSeedCost,
 } from './gameEngine';
 import { SCHEMA_VERSION, NO_BUILDINGS } from './constants';
@@ -23,6 +24,8 @@ import type {
   ActiveMarketEvent,
   MarketEventKind,
   WeatherId,
+  BuildingId,
+  BuildingDefinition,
 } from './types';
 import { recordRunEnd, type PersonalBests } from './records';
 import { deriveMedal, type Medal } from './medals';
@@ -243,6 +246,12 @@ export interface EndOfRunRecap {
   seasonReached: number;
 }
 
+export interface BuildingCardData {
+  def: BuildingDefinition;
+  owned: boolean;
+  unlocked: boolean;
+}
+
 export interface GameEngineHook {
   state: GameState;
   lastDailyLog: DailyLogEntry | null;
@@ -254,6 +263,8 @@ export interface GameEngineHook {
   applyFertilizer: (plotId: number) => boolean;
   clearPestDamage: (plotId: number) => boolean;
   buyPlot: () => boolean;
+  buyBuilding: (id: BuildingId) => boolean;
+  getBuildingCards: () => BuildingCardData[];
   getFertilizerCount: () => number;
   restart: () => void;
   continueSeason: () => void;
@@ -396,6 +407,23 @@ export function useGameEngine(): GameEngineHook {
     return engineGetNextPlotPrice(state, ECONOMY);
   }, [state]);
 
+  const buyBuilding = useCallback((id: BuildingId): boolean => {
+    const result = engineBuyBuilding(stateRef.current, id, ECONOMY);
+    if (!result.ok) return false;
+    signalPlayStarted('buy_building');
+    commitState(result.state);
+    return true;
+  }, [commitState, signalPlayStarted]);
+
+  const getBuildingCards = useCallback((): BuildingCardData[] => {
+    const season = getSeasonForDay(state.currentDay, ECONOMY).number;
+    return ECONOMY.buildings.definitions.map(def => ({
+      def,
+      owned: state.buildings[def.id],
+      unlocked: season >= def.unlockSeason,
+    }));
+  }, [state.currentDay, state.buildings]);
+
   const restart = useCallback(() => {
     const fresh = initialGameState(ECONOMY);
     setEndOfRunRecap(null);
@@ -445,6 +473,8 @@ export function useGameEngine(): GameEngineHook {
     applyFertilizer,
     clearPestDamage,
     buyPlot,
+    buyBuilding,
+    getBuildingCards,
     getFertilizerCount,
     restart,
     continueSeason,

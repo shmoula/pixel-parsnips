@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameState, CropId, DailyLogEntry, WeatherId } from '../engine/types';
+import type { GameState, CropId, DailyLogEntry, WeatherId, BuildingId } from '../engine/types';
+import type { BuildingCardData } from '../engine/useGameEngine';
 import { canAdvanceProductively } from '../engine/gameEngine';
 import { useOnboarding, buyRadishesNeeded } from '../hooks/useOnboarding';
 import type { OnboardingStep } from '../engine/onboarding';
@@ -196,6 +197,8 @@ interface GameBoardProps {
   getSeedPrice: (cropId: CropId) => number;
   onBuyPlot: () => boolean;
   getNextPlotPrice: () => number | null;
+  buildingCards: BuildingCardData[];
+  onBuyBuilding: (id: BuildingId) => boolean;
   /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
   onRestart: () => void;
 }
@@ -213,6 +216,8 @@ export function GameBoard({
   getSeedPrice,
   onBuyPlot,
   getNextPlotPrice,
+  buildingCards,
+  onBuyBuilding,
   onRestart,
 }: GameBoardProps) {
   const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
@@ -389,6 +394,8 @@ export function GameBoard({
             onBuyFertilizer={onBuyFertilizer}
             marketActive={state.market.active}
             dimNonRadish={onboarding.active && onboarding.step === 'buy-radishes'}
+            buildingCards={buildingCards}
+            onBuyBuilding={onBuyBuilding}
           />
         </div>
       </div>

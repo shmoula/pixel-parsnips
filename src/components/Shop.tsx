@@ -1,8 +1,10 @@
-import type { CropId, GameState, ActiveMarketEvent } from '../engine/types';
+import type { CropId, GameState, ActiveMarketEvent, BuildingId } from '../engine/types';
 import { Coin } from './Coin';
 import { FERTILIZER_COST } from '../engine/constants';
 import { SeedCard } from './SeedCard';
+import { BuildingCard } from './BuildingCard';
 import { woodPlanksUrl } from './decorAssets';
+import type { BuildingCardData } from '../engine/useGameEngine';
 
 const CROP_IDS: CropId[] = ['radish', 'parsnip', 'pumpkin'];
 
@@ -113,6 +115,8 @@ interface ShopProps {
   onBuyFertilizer: () => void;
   marketActive: ActiveMarketEvent | null;
   dimNonRadish?: boolean;
+  buildingCards: BuildingCardData[];
+  onBuyBuilding: (id: BuildingId) => void;
 }
 
 export function Shop({
@@ -126,7 +130,13 @@ export function Shop({
   onBuyFertilizer,
   marketActive,
   dimNonRadish,
+  buildingCards,
+  onBuyBuilding,
 }: ShopProps) {
+  const ownedBuildings = buildingCards.filter(c => c.owned);
+  const shelfBuildings = buildingCards.filter(c => !c.owned && c.unlocked);
+  const hasLockedBuildings = buildingCards.some(c => !c.owned && !c.unlocked);
+
   return (
     // T021 — wood-grain texture on sidebar wrapper
     // 018 — real wood-plank texture with a dark wash so cards keep contrast;
@@ -226,6 +236,43 @@ export function Shop({
         </div>
         <ShelfLedge />
       </section>
+
+      {/* Active Buffs tray (019) — owned buildings, moved off the shelf */}
+      {ownedBuildings.length > 0 && (
+        <section aria-label="Active Buffs">
+          <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Active Buffs</p>
+          <div className="flex flex-col gap-1">
+            {ownedBuildings.map(c => (
+              <BuildingCard key={c.def.id} def={c.def} owned={true} canAfford={false} onBuy={() => {}} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Buildings shelf (019) */}
+      {(shelfBuildings.length > 0 || hasLockedBuildings) && (
+        <section aria-label="Buildings">
+          <Awning />
+          <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Buildings</p>
+          <div className="flex flex-col gap-2">
+            {shelfBuildings.map(c => (
+              <BuildingCard
+                key={c.def.id}
+                def={c.def}
+                owned={false}
+                canAfford={coinBalance >= c.def.cost}
+                onBuy={onBuyBuilding}
+              />
+            ))}
+            {hasLockedBuildings && (
+              <div className="flex items-center justify-center p-3 rounded bg-[#261808]/60 border border-dashed border-[#5C3D1E] text-farm-stone text-body">
+                🔒 New stock arrives in Season 2
+              </div>
+            )}
+          </div>
+          <ShelfLedge />
+        </section>
+      )}
     </aside>
   );
 }

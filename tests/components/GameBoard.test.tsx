@@ -79,6 +79,8 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null; on
     getSeedPrice: () => 5,
     onBuyPlot: vi.fn().mockReturnValue(false),
     getNextPlotPrice: () => null as number | null,
+    buildingCards: [],
+    onBuyBuilding: vi.fn().mockReturnValue(false),
     onRestart: overrides.onRestart ?? vi.fn(),
   };
 }

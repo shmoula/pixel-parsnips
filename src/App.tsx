@@ -93,6 +93,8 @@ function App() {
         getSeedPrice={engine.getSeedPrice}
         onBuyPlot={engine.buyPlot}
         getNextPlotPrice={engine.getNextPlotPrice}
+        buildingCards={engine.getBuildingCards()}
+        onBuyBuilding={engine.buyBuilding}
         onRestart={restart}
       />
       {transitionVariant && (
