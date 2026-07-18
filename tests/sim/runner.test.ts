@@ -28,8 +28,12 @@ describe('baseline difficulty smoke', () => {
   it('confirms the current economy is trivially easy for smartMixed', () => {
     const outcomes = monteCarlo(baseline, STRATEGIES.smartMixed, 500, 42);
     const m = aggregate(outcomes, baseline.seasons[3].target);
-    expect(m.winPct).toBeGreaterThan(90);   // ~97% observed
-    expect(m.overshoot).toBeGreaterThan(2); // ~4x observed
+    // 019 froze `baseline` to definitions: [] (no buildings) — the true pre-buildings
+    // control. That drops win/overshoot from the pre-019 ~97%/~4x (buildings were
+    // accidentally purchasable on this preset before the freeze) to ~86%/~3.2x, still
+    // trivially easy.
+    expect(m.winPct).toBeGreaterThan(80);   // ~86% observed
+    expect(m.overshoot).toBeGreaterThan(2); // ~3.2x observed
   });
 
   it('confirms pumpkinOnly is the cash-flow death trap', () => {

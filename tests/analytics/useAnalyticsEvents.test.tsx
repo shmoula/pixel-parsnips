@@ -224,7 +224,7 @@ describe('useAnalyticsEvents shop_purchased (019)', () => {
     const bought: GameState = { ...base, buildings: { ...base.buildings, scarecrow: true } };
     rerender({ state: bought });
     expect(track).toHaveBeenCalledWith('shop_purchased', expect.objectContaining({
-      item_type: 'building', item_id: 'scarecrow', quantity: 1, cost: 220, season_number: 2,
+      item_type: 'building', item_id: 'scarecrow', quantity: 1, cost: 150, season_number: 2,
     }));
   });
 

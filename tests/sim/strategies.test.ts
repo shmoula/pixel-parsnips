@@ -49,11 +49,11 @@ describe('smartMixed plot buying', () => {
 
 describe('maybeBuyBuildings (019)', () => {
   it('buys in priority order while the lease buffer holds', () => {
-    const rich = { ...initialGameState(), currentDay: 21, coinBalance: 400 };
+    const rich = { ...initialGameState(), currentDay: 21, coinBalance: 300 };
     const s = maybeBuyBuildings(rich, DEFAULT_ECONOMY);
     // Season 2 lease = 22, buffer = 44.
-    // 400 → toolshed (150) leaves 250 ≥ 44 → buy; 250 → compost (150) leaves 100 ≥ 44 → buy;
-    // 100 → well (180) would leave -80 < 44 → stop there.
+    // 300 → toolshed (100) leaves 200 ≥ 44 → buy; 200 → compost (100) leaves 100 ≥ 44 → buy;
+    // 100 → well (130) would leave -30 < 44 → stop there.
     expect(s.buildings.toolshed).toBe(true);
     expect(s.buildings.compost_bin).toBe(true);
     expect(s.buildings.irrigation_well).toBe(false);

@@ -11,7 +11,7 @@ describe('BuildingCard', () => {
     render(<BuildingCard def={scarecrow} owned={false} canAfford={true} onBuy={onBuy} />);
     expect(screen.getByText('Scarecrow')).toBeInTheDocument();
     expect(screen.getByText('Pests destroy half as many plots')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Buy Scarecrow for 220 coins/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Buy Scarecrow for 150 coins/ }));
     expect(onBuy).toHaveBeenCalledWith('scarecrow');
   });
 

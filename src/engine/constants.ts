@@ -66,11 +66,11 @@ export const CROP_DEFINITIONS: Record<CropId, CropDefinition> = {
 // ── Building definitions (019) ────────────────────────────────────────────────
 
 export const BUILDING_DEFINITIONS: BuildingDefinition[] = [
-  { id: 'toolshed',        name: 'Toolshed',        emoji: '🛠️', cost: 150, description: 'Seeds cost 40% less',                    unlockSeason: 1 },
-  { id: 'compost_bin',     name: 'Compost Bin',     emoji: '🍂', cost: 150, description: 'Exhausted plots rest 2 days instead of 3', unlockSeason: 2 },
-  { id: 'irrigation_well', name: 'Irrigation Well', emoji: '⛲', cost: 180, description: 'Flash droughts pass in 1 day instead of 2', unlockSeason: 2 },
-  { id: 'scarecrow',       name: 'Scarecrow',       emoji: '🎃', cost: 220, description: 'Pests destroy half as many plots',          unlockSeason: 2 },
-  { id: 'farm_stand',      name: 'Farm Stand',      emoji: '🧺', cost: 300, description: 'All harvests sell for 10% more',            unlockSeason: 2 },
+  { id: 'toolshed',        name: 'Toolshed',        emoji: '🛠️', cost: 100, description: 'Seeds cost 40% less',                    unlockSeason: 1 },
+  { id: 'compost_bin',     name: 'Compost Bin',     emoji: '🍂', cost: 100, description: 'Exhausted plots rest 2 days instead of 3', unlockSeason: 2 },
+  { id: 'irrigation_well', name: 'Irrigation Well', emoji: '⛲', cost: 130, description: 'Flash droughts pass in 1 day instead of 2', unlockSeason: 2 },
+  { id: 'scarecrow',       name: 'Scarecrow',       emoji: '🎃', cost: 150, description: 'Pests destroy half as many plots',          unlockSeason: 2 },
+  { id: 'farm_stand',      name: 'Farm Stand',      emoji: '🧺', cost: 200, description: 'All harvests sell for 10% more',            unlockSeason: 2 },
 ];
 
 /** Canonical "nothing owned" record — spread it, never mutate it. */

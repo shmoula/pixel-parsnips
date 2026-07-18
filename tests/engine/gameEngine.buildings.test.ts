@@ -54,7 +54,7 @@ describe('buyBuilding (019)', () => {
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.state.buildings.toolshed).toBe(true);
-      expect(r.state.coinBalance).toBe(1000 - 150);
+      expect(r.state.coinBalance).toBe(1000 - 100);
     }
   });
 
