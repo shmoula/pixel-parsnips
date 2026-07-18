@@ -173,6 +173,18 @@ describe('DailyLog — exhaustion callout (017 FR-011)', () => {
   });
 });
 
+describe('DailyLog — recovery help text honors compost bin (019 code review)', () => {
+  it('defaults to the 3-day recovery period', () => {
+    render(<DailyLog log={makeLog({ exhaustedPlots: [0] })} />);
+    expect(screen.getByLabelText(/plots exhausted/i)).toHaveTextContent('back in 3 days');
+  });
+
+  it('shows the compost-shortened period when recoveryDays is 2', () => {
+    render(<DailyLog log={makeLog({ exhaustedPlots: [0] })} recoveryDays={2} />);
+    expect(screen.getByLabelText(/plots exhausted/i)).toHaveTextContent('back in 2 days');
+  });
+});
+
 // ── Icon optical alignment ────────────────────────────────────────────────────
 //
 // Press Start 2P paints entirely above the alphabetic baseline, while the emoji

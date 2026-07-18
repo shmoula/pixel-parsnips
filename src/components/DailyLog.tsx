@@ -9,6 +9,9 @@ interface DailyLogProps {
   /** When true, the weather badge renders without disaster (red) styling — used while
       the Day Summary reveal is still pending so the disaster is not spoiled early. */
   suppressDisasterStyling?: boolean;
+  /** Effective natural-recovery period for exhausted plots (2 with Compost Bin, 3 without).
+      Kept in sync with PlotCard's recovery countdown (019 T9). */
+  recoveryDays?: number;
 }
 
 const WEATHER_EMOJI: Record<string, string> = {
@@ -98,7 +101,7 @@ function MarketLines({ log }: { log: DailyLogEntry }) {
   );
 }
 
-function ExhaustionCallout({ log }: { log: DailyLogEntry }) {
+function ExhaustionCallout({ log, recoveryDays }: { log: DailyLogEntry; recoveryDays: number }) {
   if (log.exhaustedPlots.length === 0) return null;
   return (
     <div
@@ -113,13 +116,13 @@ function ExhaustionCallout({ log }: { log: DailyLogEntry }) {
       </span>
       <span className="text-farm-stone">
         {log.exhaustedPlots.map(id => `#${id + 1}`).join(', ')} — back in{' '}
-        {EXHAUSTION_RECOVERY_DAYS} days, or use Fertilizer.
+        {recoveryDays} days, or use Fertilizer.
       </span>
     </div>
   );
 }
 
-export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps) {
+export function DailyLog({ log, suppressDisasterStyling = false, recoveryDays = EXHAUSTION_RECOVERY_DAYS }: DailyLogProps) {
   const weather = WEATHER_DEFINITIONS[log.weatherId];
   return (
     <section
@@ -155,7 +158,7 @@ export function DailyLog({ log, suppressDisasterStyling = false }: DailyLogProps
         </div>
       )}
 
-      <ExhaustionCallout log={log} />
+      <ExhaustionCallout log={log} recoveryDays={recoveryDays} />
 
       {/* Harvest streak bonus */}
       {log.streakBonus > 0 && (

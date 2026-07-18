@@ -409,6 +409,7 @@ export function GameBoard({
         <DaySummaryModal
           log={daySummary}
           animateReveal={summaryAnimate}
+          recoveryDays={recoveryDays}
           onClose={() => setIsSummaryOpen(false)}
         />
       )}
