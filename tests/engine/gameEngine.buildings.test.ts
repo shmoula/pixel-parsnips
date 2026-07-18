@@ -150,3 +150,31 @@ describe('buildingsApplied log field (019)', () => {
     expect(processTurn(owned, 'sunny').log.buildingsApplied).toEqual([]);
   });
 });
+
+describe('Compost Bin — natural recovery (019)', () => {
+  /** A state whose plot 0 went exhausted on day `since`, currently at day `now`. */
+  const exhaustedState = (now: number, since: number): GameState => {
+    const s = initialGameState();
+    return {
+      ...s,
+      currentDay: now,
+      coinBalance: 1000,
+      plots: s.plots.map(p => (p.id === 0 ? { ...p, exhaustedSinceDay: since } : p)),
+    };
+  };
+
+  it('recovers after 3 days without the compost bin', () => {
+    // day 6 → turn completes into day 7; 7 - 4 = 3 >= 3 recovers
+    const { state } = processTurn(exhaustedState(6, 4), 'sunny');
+    expect(state.plots[0].exhaustedSinceDay).toBeNull();
+    // day 5 → day 6; 6 - 4 = 2 < 3 stays exhausted
+    const early = processTurn(exhaustedState(5, 4), 'sunny');
+    expect(early.state.plots[0].exhaustedSinceDay).toBe(4);
+  });
+
+  it('recovers after 2 days with the compost bin (immediate benefit mid-rest)', () => {
+    const owned = withBuildings(exhaustedState(5, 4), { compost_bin: true });
+    const { state } = processTurn(owned, 'sunny'); // day 5 → 6; 6 - 4 = 2 >= 2 recovers
+    expect(state.plots[0].exhaustedSinceDay).toBeNull();
+  });
+});

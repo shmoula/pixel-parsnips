@@ -501,9 +501,13 @@ export function processTurn(
     : flashDroughtDaysAfterEvent;
 
   // Step 8.5: Natural recovery — clear exhaustion after EXHAUSTION_RECOVERY_DAYS turns
+  // (Compost Bin shortens this to config.buildings.exhaustionRecoveryDays)
+  const effectiveRecoveryDays = state.buildings.compost_bin
+    ? config.buildings.exhaustionRecoveryDays
+    : config.exhaustionRecoveryDays;
   const recoveredPlots = harvestedPlots.map(plot => {
     if (plot.exhaustedSinceDay === null) return plot;
-    if (currentDay - plot.exhaustedSinceDay >= config.exhaustionRecoveryDays) {
+    if (currentDay - plot.exhaustedSinceDay >= effectiveRecoveryDays) {
       return { ...plot, exhaustedSinceDay: null, consecutiveHarvests: 0 };
     }
     return plot;
