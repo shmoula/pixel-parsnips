@@ -198,3 +198,54 @@ describe('useAnalyticsEvents run_ended', () => {
     expect(calls[0][1]).toMatchObject({ days_played: 9 });
   });
 });
+
+describe('useAnalyticsEvents shop_purchased (019)', () => {
+  it('fires for a seed purchase with prev-state pricing', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base as GameState },
+    });
+    const bought: GameState = {
+      ...base,
+      coinBalance: base.coinBalance - 10,
+      seedInventory: { ...base.seedInventory, radish: 2 },
+    };
+    rerender({ state: bought });
+    expect(track).toHaveBeenCalledWith('shop_purchased', expect.objectContaining({
+      item_type: 'seed', item_id: 'radish', quantity: 2, cost: 10, coin_balance_after: bought.coinBalance,
+    }));
+  });
+
+  it('fires for a building purchase with the definition cost', () => {
+    const base = { ...initialGameState(), currentDay: 21 } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    const bought: GameState = { ...base, buildings: { ...base.buildings, scarecrow: true } };
+    rerender({ state: bought });
+    expect(track).toHaveBeenCalledWith('shop_purchased', expect.objectContaining({
+      item_type: 'building', item_id: 'scarecrow', quantity: 1, cost: 220, season_number: 2,
+    }));
+  });
+
+  it('stays silent when inventory decreases (planting)', () => {
+    const base = { ...initialGameState(), seedInventory: { radish: 2, parsnip: 0, pumpkin: 0 } } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    track.mockClear();
+    rerender({ state: { ...base, seedInventory: { ...base.seedInventory, radish: 1 } } });
+    expect(track).not.toHaveBeenCalledWith('shop_purchased', expect.anything());
+  });
+
+  it('fires for a fertilizer purchase', () => {
+    const base = initialGameState() as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    rerender({ state: { ...base, fertilizerInventory: 1 } });
+    expect(track).toHaveBeenCalledWith('shop_purchased', expect.objectContaining({
+      item_type: 'fertilizer', item_id: 'fertilizer', quantity: 1, cost: 30,
+    }));
+  });
+});

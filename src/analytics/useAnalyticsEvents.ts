@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import type { GameState } from '../engine/types';
+import type { CropId, GameState } from '../engine/types';
 import { getSeasonForDay } from '../engine/seasons';
 import { DEFAULT_ECONOMY } from '../engine/economy';
-import { getNextPlotPrice } from '../engine/gameEngine';
+import { computeSeedCost, getNextPlotPrice } from '../engine/gameEngine';
 import { deriveMedal } from '../engine/medals';
 import { track } from './track';
 import { buildDayCompletedProps, buildRunEndedProps, runOutcomeForPhase } from './events';
@@ -101,6 +101,53 @@ function detectRunLifecycle(
   }
 }
 
+const CROP_IDS: CropId[] = ['radish', 'parsnip', 'pumpkin'];
+
+/** shop_purchased — any per-commit increase in a shop-panel inventory is a purchase.
+ *  Costs reconstruct from prev-state prices (each action commits separately, so the
+ *  prev state is exactly the state the purchase was priced against). Decreases
+ *  (planting, applying fertilizer) and run resets stay silent. */
+function detectShopPurchased(prev: GameState, state: GameState): void {
+  const common = {
+    day: state.currentDay,
+    season_number: getSeasonForDay(state.currentDay).number,
+    coin_balance_after: state.coinBalance,
+  };
+  for (const cropId of CROP_IDS) {
+    const delta = state.seedInventory[cropId] - prev.seedInventory[cropId];
+    if (delta > 0) {
+      track('shop_purchased', {
+        item_type: 'seed',
+        item_id: cropId,
+        quantity: delta,
+        cost: computeSeedCost(cropId, prev.buildings) * delta,
+        ...common,
+      });
+    }
+  }
+  const fertDelta = state.fertilizerInventory - prev.fertilizerInventory;
+  if (fertDelta > 0) {
+    track('shop_purchased', {
+      item_type: 'fertilizer',
+      item_id: 'fertilizer',
+      quantity: fertDelta,
+      cost: DEFAULT_ECONOMY.fertilizerCost * fertDelta,
+      ...common,
+    });
+  }
+  for (const def of DEFAULT_ECONOMY.buildings.definitions) {
+    if (state.buildings[def.id] && !prev.buildings[def.id]) {
+      track('shop_purchased', {
+        item_type: 'building',
+        item_id: def.id,
+        quantity: 1,
+        cost: def.cost,
+        ...common,
+      });
+    }
+  }
+}
+
 /** Fires all state-derived analytics events by diffing engine state across renders. */
 export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): void {
   const prevRef = useRef<GameState | null>(null);
@@ -117,5 +164,6 @@ export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): v
     detectSeason2(prev, state, firedMilestonesRef.current);
     detectSeasonCompleted(prev, state);
     detectRunLifecycle(prev, state, firedMilestonesRef.current, runEndedFiredRef.current);
+    detectShopPurchased(prev, state);
   }, [state]);
 }
