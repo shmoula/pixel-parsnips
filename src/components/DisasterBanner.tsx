@@ -21,7 +21,7 @@ const DISASTER_TITLE: Record<string, string> = {
   flash_drought: 'FLASH DROUGHT',
 };
 
-function bodyLines(log: DailyLogEntry): string[] {
+function baseLines(log: DailyLogEntry): string[] {
   switch (log.weatherId) {
     case 'blight':
       return log.harvests.length === 0
@@ -33,11 +33,26 @@ function bodyLines(log: DailyLogEntry): string[] {
       if (plots.length === 1) return [`Plot #${plots[0] + 1} destroyed by pests.`];
       return [`${plots.length} plots destroyed by pests: ${plots.map(id => `#${id + 1}`).join(', ')}.`];
     }
-    case 'flash_drought':
-      return ['Crops planted in the next 2 days grow at half speed.'];
+    case 'flash_drought': {
+      const days = log.flashDroughtDaysAfter;
+      return [`Crops planted in the next ${days} day${days === 1 ? '' : 's'} grow at half speed.`];
+    }
     default:
       return [];
   }
+}
+
+function bodyLines(log: DailyLogEntry): string[] {
+  const lines = baseLines(log);
+
+  // 019 — mitigation sub-lines for owned buildings that softened this disaster
+  if (log.buildingsApplied.includes('scarecrow')) {
+    lines.push('🎃 Your Scarecrow thinned the swarm — fewer plots were hit.');
+  }
+  if (log.buildingsApplied.includes('irrigation_well')) {
+    lines.push('⛲ Your Irrigation Well shortened the drought.');
+  }
+  return lines;
 }
 
 export function DisasterBanner({ log, animate = false }: DisasterBannerProps) {

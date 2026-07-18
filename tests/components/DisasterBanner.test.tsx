@@ -125,3 +125,34 @@ describe('DisasterBanner — accurate damage accounting (017 FR-019/FR-020)', ()
     );
   });
 });
+
+describe('DisasterBanner — building mitigation sub-lines (019)', () => {
+  it('appends the scarecrow line on a mitigated pest turn', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({ weatherId: 'pest_infestation', pestDestroyedPlots: [1], buildingsApplied: ['scarecrow'] })}
+      />,
+    );
+    expect(screen.getByText(/Your Scarecrow thinned the swarm/)).toBeInTheDocument();
+  });
+
+  it('derives the drought window from the log and appends the well line', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({ weatherId: 'flash_drought', flashDroughtDaysAfter: 1, buildingsApplied: ['irrigation_well'] })}
+      />,
+    );
+    expect(screen.getByText(/next 1 day grow at half speed/)).toBeInTheDocument();
+    expect(screen.getByText(/Your Irrigation Well shortened the drought/)).toBeInTheDocument();
+  });
+
+  it('shows no mitigation lines when buildingsApplied is empty', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({ weatherId: 'flash_drought', flashDroughtDaysAfter: 2, buildingsApplied: [] })}
+      />,
+    );
+    expect(screen.getByText(/next 2 days grow at half speed/)).toBeInTheDocument();
+    expect(screen.queryByText(/Irrigation Well/)).toBeNull();
+  });
+});
