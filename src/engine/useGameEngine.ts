@@ -12,7 +12,7 @@ import {
   getNextPlotPrice as engineGetNextPlotPrice,
   computeSeedCost,
 } from './gameEngine';
-import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
+import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION, NO_BUILDINGS } from './constants';
 import { DEFAULT_ECONOMY } from './economy';
 import type {
   GameState,
@@ -73,6 +73,19 @@ function normalizeMarket(raw: unknown): MarketState {
   return { active: null, pending: toPendingEvent(m.pending) };
 }
 
+/** Normalize a raw `buildings` value from a save: missing/malformed → all false. */
+function normalizeBuildings(raw: unknown): GameState['buildings'] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...NO_BUILDINGS };
+  const r = raw as Record<string, unknown>;
+  return {
+    toolshed: r.toolshed === true,
+    compost_bin: r.compost_bin === true,
+    irrigation_well: r.irrigation_well === true,
+    scarecrow: r.scarecrow === true,
+    farm_stand: r.farm_stand === true,
+  };
+}
+
 /**
  * Hardens a current-schema save against tampering/corruption before use.
  * Downstream code (state.plots.every, plots.map, getNextPlotPrice, market
@@ -89,11 +102,13 @@ function hardenCurrentSchema(st: Record<string, unknown>): GameState {
     Math.min(Number.isNaN(rawUnlocked) ? plots.length : rawUnlocked, plots.length),
   );
   const market = normalizeMarket(st.market);
+  const buildings = normalizeBuildings(st.buildings);
   return {
     ...(st as unknown as GameState),
     plots,
     unlockedPlots,
     market,
+    buildings,
     schemaVersion: SCHEMA_VERSION,
   } as GameState;
 }

@@ -1,6 +1,7 @@
 import {
   SCHEMA_VERSION,
   WEATHER_DEFINITIONS,
+  NO_BUILDINGS,
   coins,
 } from './constants';
 import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
@@ -56,6 +57,7 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     peakHarvestStreak: 0,
     unlockedPlots: config.startingPlots,
     market: EMPTY_MARKET,
+    buildings: { ...NO_BUILDINGS },
   };
 }
 

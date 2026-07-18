@@ -14,6 +14,13 @@ export type WeatherId =
 
 export type UpgradeTier = 0 | 1 | 2 | 3;
 
+export type BuildingId =
+  | 'toolshed'
+  | 'compost_bin'
+  | 'irrigation_well'
+  | 'scarecrow'
+  | 'farm_stand';
+
 export type MarketEventKind = 'shortage' | 'glut';
 
 /** A scheduled or active market event affecting one crop's yield. */
@@ -57,6 +64,17 @@ export interface UpgradeTierDefinition {
   label: string;
   cost: number;
   cumulativeDiscount: number;
+}
+
+export interface BuildingDefinition {
+  id: BuildingId;
+  name: string;
+  emoji: string;
+  cost: number;
+  /** Plain-language card copy, not percentages alone. */
+  description: string;
+  /** First season the building is purchasable; 1 = from day 1. */
+  unlockSeason: number;
 }
 
 // ── Mutable game state ────────────────────────────────────────────────────────
@@ -144,6 +162,8 @@ export interface GameState {
   unlockedPlots: number;
   /** Dynamic crop-pricing state (G7). At most one of active/pending is set. */
   market: MarketState;
+  /** One-time farm buildings owned this run (019). All false on a new run. */
+  buildings: Record<BuildingId, boolean>;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────
@@ -172,6 +192,10 @@ export type UpgradeResult =
 export type ClearPestDamageResult =
   | { ok: true; state: GameState }
   | { ok: false; error: 'plot_not_pest_damaged' | 'invalid_plot' };
+
+export type BuyBuildingResult =
+  | { ok: true; state: GameState }
+  | { ok: false; error: 'invalid_id' | 'already_owned' | 'not_unlocked' | 'insufficient_funds' };
 
 export interface TurnResult {
   state: GameState;

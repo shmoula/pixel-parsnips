@@ -4,6 +4,8 @@ import type {
   WeatherDefinition,
   WeatherId,
   UpgradeTierDefinition,
+  BuildingDefinition,
+  BuildingId,
 } from './types';
 
 // ── Scalar constants ──────────────────────────────────────────────────────────
@@ -26,6 +28,13 @@ export const MARKET_SHORTAGE_MULTIPLIER = 1.4;
 export const MARKET_GLUT_MULTIPLIER = 0.7;
 export const MARKET_DURATION_DAYS = 3;
 export const MARKET_ANNOUNCE_LEAD_DAYS = 1;
+export const PEST_DESTRUCTION_CHANCE = 0.5;
+export const FLASH_DROUGHT_WINDOW_DAYS = 2;
+export const BUILDING_SEED_DISCOUNT = 0.4;
+export const BUILDING_EXHAUSTION_RECOVERY_DAYS = 2;
+export const BUILDING_DROUGHT_WINDOW_DAYS = 1;
+export const BUILDING_PEST_DESTRUCTION_CHANCE = 0.25;
+export const BUILDING_YIELD_MULTIPLIER = 1.1;
 
 /** Integer rounding helper for all coin arithmetic. */
 export const coins = (n: number): number => Math.floor(n);
@@ -55,6 +64,25 @@ export const CROP_DEFINITIONS: Record<CropId, CropDefinition> = {
     baseYield: 65,
   },
 } as const;
+
+// ── Building definitions (019) ────────────────────────────────────────────────
+
+export const BUILDING_DEFINITIONS: BuildingDefinition[] = [
+  { id: 'toolshed',        name: 'Toolshed',        emoji: '🛠️', cost: 150, description: 'Seeds cost 40% less',                    unlockSeason: 1 },
+  { id: 'compost_bin',     name: 'Compost Bin',     emoji: '🍂', cost: 150, description: 'Exhausted plots rest 2 days instead of 3', unlockSeason: 2 },
+  { id: 'irrigation_well', name: 'Irrigation Well', emoji: '⛲', cost: 180, description: 'Flash droughts pass in 1 day instead of 2', unlockSeason: 2 },
+  { id: 'scarecrow',       name: 'Scarecrow',       emoji: '🎃', cost: 220, description: 'Pests destroy half as many plots',          unlockSeason: 2 },
+  { id: 'farm_stand',      name: 'Farm Stand',      emoji: '🧺', cost: 300, description: 'All harvests sell for 10% more',            unlockSeason: 2 },
+];
+
+/** Canonical "nothing owned" record — spread it, never mutate it. */
+export const NO_BUILDINGS: Record<BuildingId, boolean> = {
+  toolshed: false,
+  compost_bin: false,
+  irrigation_well: false,
+  scarecrow: false,
+  farm_stand: false,
+};
 
 // ── Weather definitions ───────────────────────────────────────────────────────
 
