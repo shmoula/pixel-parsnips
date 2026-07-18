@@ -22,11 +22,11 @@ export function BuildingCard({ def, owned, canAfford, onBuy }: BuildingCardProps
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 p-2 rounded bg-farm-parchment border border-farm-stone">
-      <div className="flex items-start gap-2">
-        <span aria-hidden="true" className="text-lg leading-none mt-0.5">{def.emoji}</span>
+    <div className="bg-[#261808] rounded-lg p-3 flex flex-col gap-1 border border-[#5C3D1E]/60">
+      <div className="flex items-center gap-2">
+        <span aria-hidden="true" className="text-lg">{def.emoji}</span>
         <div>
-          <p className="font-pixel text-body text-farm-ink">{def.name}</p>
+          <p className="font-pixel text-body text-farm-parchment/90">{def.name}</p>
           <p className="text-body text-farm-stone">{def.description}</p>
         </div>
       </div>
@@ -36,12 +36,11 @@ export function BuildingCard({ def, owned, canAfford, onBuy }: BuildingCardProps
         disabled={!canAfford}
         onClick={() => onBuy(def.id)}
         className="
-          px-2 py-1 min-h-[44px] md:min-h-0 rounded font-pixel text-body
+          w-full font-pixel text-body py-1.5 min-h-[44px] md:min-h-0 rounded
           bg-farm-gold text-farm-ink
-          hover:bg-farm-grass hover:text-farm-parchment
-          active:scale-95 active:brightness-90
+          hover:enabled:bg-farm-grass hover:enabled:text-farm-parchment
+          active:enabled:scale-95 transition-all
           disabled:opacity-40 disabled:cursor-not-allowed
-          transition-all shrink-0
         "
       >
         {def.cost}<Coin />
