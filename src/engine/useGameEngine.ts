@@ -13,6 +13,7 @@ import {
 } from './gameEngine';
 import { SCHEMA_VERSION, NO_BUILDINGS } from './constants';
 import { DEFAULT_ECONOMY } from './economy';
+import { resolveEconomy } from '../devFlags';
 import type {
   GameState,
   CropId,
@@ -31,6 +32,9 @@ import { trackPlayStartedOnce } from '../analytics/track';
 import { loadOnboarding } from './onboarding';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
+
+/** Resolved once per session; the URL can't change mid-session without a reload. */
+const ECONOMY = resolveEconomy();
 
 /** Minimal structural check that `state` looks like a GameState payload. */
 function isGameStateShape(state: unknown): state is Record<string, unknown> {
@@ -220,11 +224,11 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
 function loadState(): GameState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return initialGameState();
+    if (!raw) return initialGameState(ECONOMY);
     const parsed = JSON.parse(raw);
-    return migrateState(parsed) ?? initialGameState();
+    return migrateState(parsed) ?? initialGameState(ECONOMY);
   } catch {
-    return initialGameState();
+    return initialGameState(ECONOMY);
   }
 }
 
@@ -318,7 +322,7 @@ export function useGameEngine(): GameEngineHook {
 
     const { records, newBests } = recordRunEnd(state);
     const won = state.endlessMode || curr === 'season_4_won';
-    const seasonReached = getSeasonForDay(state.currentDay).number;
+    const seasonReached = getSeasonForDay(state.currentDay, ECONOMY).number;
     setEndOfRunRecap({
       records,
       newBests,
@@ -337,11 +341,11 @@ export function useGameEngine(): GameEngineHook {
     // updaters/reducers, and an impure call there can diverge between the kept
     // and discarded invocations. Read the authoritative snapshot from stateRef
     // and call processTurn exactly once, matching every other action below.
-    commitState(processTurn(stateRef.current, weatherOverride).state);
+    commitState(processTurn(stateRef.current, weatherOverride, undefined, undefined, ECONOMY).state);
   }, [commitState, signalPlayStarted]);
 
   const plant = useCallback((plotId: number, cropId: CropId): boolean => {
-    const result = plantSeed(stateRef.current, plotId, cropId);
+    const result = plantSeed(stateRef.current, plotId, cropId, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('plant');
     commitState(result.state);
@@ -349,7 +353,7 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const buySeed = useCallback((cropId: CropId, quantity: number): boolean => {
-    const result = engineBuySeed(stateRef.current, cropId, quantity);
+    const result = engineBuySeed(stateRef.current, cropId, quantity, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('buy_seed');
     commitState(result.state);
@@ -357,7 +361,7 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const buyFertilizer = useCallback((quantity: number): boolean => {
-    const result = engineBuyFertilizer(stateRef.current, quantity);
+    const result = engineBuyFertilizer(stateRef.current, quantity, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('buy_fertilizer');
     commitState(result.state);
@@ -365,7 +369,7 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const applyFertilizer = useCallback((plotId: number): boolean => {
-    const result = engineApplyFertilizer(stateRef.current, plotId);
+    const result = engineApplyFertilizer(stateRef.current, plotId, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('apply_fertilizer');
     commitState(result.state);
@@ -373,7 +377,7 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const clearPestDamage = useCallback((plotId: number): boolean => {
-    const result = engineClearPestDamage(stateRef.current, plotId);
+    const result = engineClearPestDamage(stateRef.current, plotId, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('clear_pest');
     commitState(result.state);
@@ -381,7 +385,7 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const buyPlot = useCallback((): boolean => {
-    const result = engineBuyPlot(stateRef.current);
+    const result = engineBuyPlot(stateRef.current, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('buy_plot');
     commitState(result.state);
@@ -389,11 +393,11 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const getNextPlotPrice = useCallback((): number | null => {
-    return engineGetNextPlotPrice(state);
+    return engineGetNextPlotPrice(state, ECONOMY);
   }, [state]);
 
   const restart = useCallback(() => {
-    const fresh = initialGameState();
+    const fresh = initialGameState(ECONOMY);
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
     commitState(fresh);
@@ -409,14 +413,14 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState]);
 
   const endRunVictory = useCallback(() => {
-    const fresh = initialGameState();
+    const fresh = initialGameState(ECONOMY);
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
     commitState(fresh);
   }, [commitState]);
 
   const getSeedPrice = useCallback(
-    (cropId: CropId): number => computeSeedCost(cropId, state.buildings),
+    (cropId: CropId): number => computeSeedCost(cropId, state.buildings, ECONOMY),
     [state.buildings]
   );
 
