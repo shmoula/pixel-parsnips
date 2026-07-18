@@ -133,8 +133,9 @@ export function Shop({
   buildingCards,
   onBuyBuilding,
 }: ShopProps) {
-  const ownedBuildings = buildingCards.filter(c => c.owned);
-  const shelfBuildings = buildingCards.filter(c => !c.owned && c.unlocked);
+  // Owned + purchasable buildings share one shelf, in definition order, so a
+  // building keeps its slot after purchase (it just swaps to the owned layout).
+  const shelfBuildings = buildingCards.filter(c => c.owned || c.unlocked);
   const hasLockedBuildings = buildingCards.some(c => !c.owned && !c.unlocked);
 
   return (
@@ -237,19 +238,7 @@ export function Shop({
         <ShelfLedge />
       </section>
 
-      {/* Active Buffs tray (019) — owned buildings, moved off the shelf */}
-      {ownedBuildings.length > 0 && (
-        <section aria-label="Active Buffs">
-          <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Active Buffs</p>
-          <div className="flex flex-col gap-1">
-            {ownedBuildings.map(c => (
-              <BuildingCard key={c.def.id} def={c.def} owned={true} canAfford={false} onBuy={() => {}} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Buildings shelf (019) */}
+      {/* Buildings shelf (019) — owned + purchasable buildings, in place */}
       {(shelfBuildings.length > 0 || hasLockedBuildings) && (
         <section aria-label="Buildings">
           <Awning />
@@ -259,7 +248,7 @@ export function Shop({
               <BuildingCard
                 key={c.def.id}
                 def={c.def}
-                owned={false}
+                owned={c.owned}
                 canAfford={coinBalance >= c.def.cost}
                 onBuy={onBuyBuilding}
               />
