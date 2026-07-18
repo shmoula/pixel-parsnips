@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { GameState } from '../engine/types';
 import { getSeasonForDay } from '../engine/seasons';
+import { DEFAULT_ECONOMY } from '../engine/economy';
 import { getNextPlotPrice } from '../engine/gameEngine';
 import { deriveMedal } from '../engine/medals';
 import { track } from './track';
@@ -21,7 +22,11 @@ function detectDayCompleted(prev: GameState, state: GameState): void {
   }
 }
 
-/** plot_unlocked + first_plot_unlocked milestone — on an unlockedPlots increment. */
+/**
+ * plot_unlocked + first_plot_unlocked milestone — on an unlockedPlots increment.
+ * Runs start at startingPlots (never 0), so the milestone's "first purchased
+ * plot" is the startingPlots -> startingPlots + 1 transition.
+ */
 function detectPlotUnlocked(prev: GameState, state: GameState, firedMilestones: Set<string>): void {
   if (state.unlockedPlots <= prev.unlockedPlots) return;
   const price = getNextPlotPrice(prev) ?? 0;
@@ -30,7 +35,7 @@ function detectPlotUnlocked(prev: GameState, state: GameState, firedMilestones: 
     price,
     coin_balance_after: state.coinBalance,
   });
-  if (prev.unlockedPlots === 0 && !firedMilestones.has('first_plot_unlocked')) {
+  if (prev.unlockedPlots === DEFAULT_ECONOMY.startingPlots && !firedMilestones.has('first_plot_unlocked')) {
     firedMilestones.add('first_plot_unlocked');
     track('milestone_reached', {
       milestone: 'first_plot_unlocked',

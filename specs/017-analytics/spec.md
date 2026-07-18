@@ -116,7 +116,8 @@ Global properties (above) attach to **every** event. Event-specific properties:
   wrappers (`plant`, `buySeed`, `buyPlot`, ...). Fires **once per browser session** (module flag).
   Props: `start_action`, `state.currentDay`, onboarding-active flag.
 - **`milestone_reached`** — `useAnalyticsEvents`:
-  - `first_plot_unlocked` when `unlockedPlots` transitions `0 -> 1` (first expansion).
+  - `first_plot_unlocked` when `unlockedPlots` transitions `startingPlots -> startingPlots + 1`
+    (first purchased plot — runs start with `startingPlots` free plots, never 0).
   - `season_2_reached` when `getSeasonForDay(currentDay).number` first reaches `2`.
   - Each fires **once per run**; guards reset on new-run detection (see below).
 - **`day_completed`** — `useAnalyticsEvents`, on `state.lastDailyLog` changing to a new non-null

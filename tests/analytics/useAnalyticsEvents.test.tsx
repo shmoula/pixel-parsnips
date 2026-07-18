@@ -5,7 +5,7 @@ const track = vi.hoisted(() => vi.fn());
 vi.mock('../../src/analytics/track', () => ({ track }));
 
 import { useAnalyticsEvents } from '../../src/analytics/useAnalyticsEvents';
-import { initialGameState } from '../../src/engine/gameEngine';
+import { buyPlot, initialGameState } from '../../src/engine/gameEngine';
 import type { DailyLogEntry, GameState } from '../../src/engine/types';
 
 function makeLog(day: number): DailyLogEntry {
@@ -63,29 +63,55 @@ describe('useAnalyticsEvents day_completed', () => {
 });
 
 describe('useAnalyticsEvents plot_unlocked + first-plot milestone', () => {
-  it('fires plot_unlocked with the paid price and the first-plot milestone once', () => {
-    const base = { ...initialGameState(), unlockedPlots: 0, currentDay: 4 } as GameState;
+  // Real play never sees unlockedPlots === 0: initialGameState() starts at
+  // startingPlots, so the first *purchase* is the startingPlots -> +1 transition.
+  function buyPlotOrThrow(state: GameState): GameState {
+    const result = buyPlot(state);
+    if (!result.ok) throw new Error(`buyPlot failed: ${result.error}`);
+    return result.state;
+  }
+
+  it('fires plot_unlocked with the paid price when a plot is bought', () => {
+    const base = initialGameState();
     const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
-      initialProps: { state: base },
+      initialProps: { state: base as GameState },
     });
     track.mockClear();
 
-    const after: GameState = { ...base, unlockedPlots: 1 };
+    const after = buyPlotOrThrow(base);
     rerender({ state: after });
 
     const plotCall = track.mock.calls.find(([n]) => n === 'plot_unlocked');
     expect(plotCall).toBeTruthy();
     expect(plotCall![1]).toMatchObject({
-      unlocked_plots_after: 1,
+      unlocked_plots_after: base.unlockedPlots + 1,
+      price: base.coinBalance - after.coinBalance,
       coin_balance_after: after.coinBalance,
     });
-    expect(typeof plotCall![1].price).toBe('number');
+  });
 
-    const milestoneCall = track.mock.calls.find(
+  it('fires the first_plot_unlocked milestone exactly once, on the first purchase of a run', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base as GameState },
+    });
+    track.mockClear();
+
+    const afterFirst = buyPlotOrThrow(base);
+    rerender({ state: afterFirst });
+    const afterSecond = buyPlotOrThrow(afterFirst);
+    rerender({ state: afterSecond });
+
+    const milestoneCalls = track.mock.calls.filter(
       ([n, p]) => n === 'milestone_reached' && p.milestone === 'first_plot_unlocked',
     );
-    expect(milestoneCall).toBeTruthy();
-    expect(milestoneCall![1]).toMatchObject({ milestone: 'first_plot_unlocked', day: 4 });
+    expect(milestoneCalls).toHaveLength(1);
+    expect(milestoneCalls[0][1]).toMatchObject({
+      milestone: 'first_plot_unlocked',
+      day: 1,
+      season_number: 1,
+    });
+    expect(track.mock.calls.filter(([n]) => n === 'plot_unlocked')).toHaveLength(2);
   });
 });
 
