@@ -375,11 +375,13 @@ export function processTurn(
   // Sub-step 3b: trigger exhaustion when consecutiveHarvests >= EXHAUSTION_THRESHOLD
   const harvests: HarvestEvent[] = [];
   const exhaustedPlots: number[] = [];
+  // 019: Farm Stand — flat +10% yield multiplier, applied inside the single floor below
+  const stallMod = state.buildings.farm_stand ? config.buildings.yieldMultiplier : 1;
   const harvestedPlots = plotsAfterPest.map(plot => {
     if (plot.cropId === null || plot.daysRemaining !== 0) return plot;
     const crop = config.crops[plot.cropId];
     const marketMod = marketMultiplierFor(activeMarket, plot.cropId);
-    const adjustedYield = coins(crop.baseYield * weather.multiplier * marketMod);
+    const adjustedYield = coins(crop.baseYield * weather.multiplier * marketMod * stallMod);
     harvests.push({
       plotId: plot.id,
       cropId: plot.cropId,

@@ -178,3 +178,28 @@ describe('Compost Bin — natural recovery (019)', () => {
     expect(state.plots[0].exhaustedSinceDay).toBeNull();
   });
 });
+
+describe('Farm Stand — yield multiplier (019)', () => {
+  it('multiplies harvest yield by 1.1 with a single floor at the end', () => {
+    // radish 12 × sunny 1.0 × 1.1 = 13.2 → 13
+    const s = withBuildings(planted(initialGameState()), { farm_stand: true });
+    const { log } = processTurn(s, 'sunny');
+    expect(log.harvests[0].adjustedYield).toBe(13);
+  });
+
+  it('stacks multiplicatively with weather and market', () => {
+    // radish 12 × warm_breeze 1.2 × shortage 1.4 × 1.1 = 22.176 → 22
+    const base = withBuildings(planted(initialGameState()), { farm_stand: true });
+    const s: GameState = {
+      ...base,
+      market: { active: { cropId: 'radish', kind: 'shortage', multiplier: 1.4, daysRemaining: 2 }, pending: null },
+    };
+    const { log } = processTurn(s, 'warm_breeze');
+    expect(log.harvests[0].adjustedYield).toBe(22);
+  });
+
+  it('leaves yields untouched without the farm stand', () => {
+    const { log } = processTurn(planted(initialGameState()), 'sunny');
+    expect(log.harvests[0].adjustedYield).toBe(12);
+  });
+});
