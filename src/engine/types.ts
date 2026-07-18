@@ -133,6 +133,10 @@ export interface DailyLogEntry {
   marketActive: ActiveMarketEvent | null;
   /** Event scheduled THIS turn to take effect next turn, or null. */
   marketAnnounced: MarketEvent | null;
+  /** Disaster mitigations in effect this turn: subset of {irrigation_well, scarecrow}.
+   *  Logged (not derived from live state) so reopening "Last Turn" after buying a
+   *  building can't show a mitigation that didn't happen. */
+  buildingsApplied: BuildingId[];
 }
 
 export interface GameState {

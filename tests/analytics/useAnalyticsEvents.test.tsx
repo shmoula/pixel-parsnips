@@ -29,6 +29,7 @@ function makeLog(day: number): DailyLogEntry {
     streakBonus: 0,
     marketActive: null,
     marketAnnounced: null,
+    buildingsApplied: [],
   };
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initialGameState, buyBuilding } from '../../src/engine/gameEngine';
+import { initialGameState, buyBuilding, processTurn, plantSeed, buySeed } from '../../src/engine/gameEngine';
 import { BUILDING_DEFINITIONS, NO_BUILDINGS } from '../../src/engine/constants';
 import { DEFAULT_ECONOMY } from '../../src/engine/economy';
 import type { GameState, BuildingId } from '../../src/engine/types';
@@ -85,5 +85,68 @@ describe('buyBuilding (019)', () => {
 
   it('is always unlocked in the endless-season range (day 81+)', () => {
     expect(buyBuilding(rich(85), 'farm_stand').ok).toBe(true);
+  });
+});
+
+/** Plants a radish on plot 0 of a rich state (buys the seed first). */
+function planted(state: GameState): GameState {
+  const bought = buySeed({ ...state, coinBalance: 1000 }, 'radish', 1);
+  if (!bought.ok) throw new Error('seed buy failed');
+  const p = plantSeed(bought.state, 0, 'radish');
+  if (!p.ok) throw new Error('plant failed');
+  return p.state;
+}
+
+describe('Scarecrow — pest destruction chance (019)', () => {
+  // rng() = 0.3 sits between the scarecrow chance (0.25) and the base (0.5):
+  // destroyed without a scarecrow, spared with one.
+  it('destroys the plot at the base 50% chance without a scarecrow', () => {
+    const { state } = processTurn(planted(initialGameState()), 'pest_infestation', undefined, undefined, DEFAULT_ECONOMY, () => 0.3);
+    expect(state.plots[0].pestDamaged).toBe(true);
+  });
+
+  it('spares the plot at the 25% chance with a scarecrow', () => {
+    const s = withBuildings(planted(initialGameState()), { scarecrow: true });
+    const { state } = processTurn(s, 'pest_infestation', undefined, undefined, DEFAULT_ECONOMY, () => 0.3);
+    expect(state.plots[0].pestDamaged).toBe(false);
+  });
+});
+
+describe('Irrigation Well — drought window (019)', () => {
+  it('adds +2 days without the well', () => {
+    const { state } = processTurn(planted(initialGameState()), 'flash_drought');
+    expect(state.flashDroughtDaysRemaining).toBe(2);
+  });
+
+  it('adds +1 day with the well', () => {
+    const s = withBuildings(planted(initialGameState()), { irrigation_well: true });
+    const { state } = processTurn(s, 'flash_drought');
+    expect(state.flashDroughtDaysRemaining).toBe(1);
+  });
+
+  it('buying the well mid-window does not shorten an active counter', () => {
+    const midWindow = { ...initialGameState(), coinBalance: 1000, currentDay: 21, flashDroughtDaysRemaining: 2 };
+    const r = buyBuilding(midWindow, 'irrigation_well');
+    expect(r.ok && r.state.flashDroughtDaysRemaining).toBe(2);
+  });
+});
+
+describe('buildingsApplied log field (019)', () => {
+  it('records scarecrow on an owned pest turn', () => {
+    const s = withBuildings(planted(initialGameState()), { scarecrow: true });
+    const { log } = processTurn(s, 'pest_infestation', [], undefined);
+    expect(log.buildingsApplied).toEqual(['scarecrow']);
+  });
+
+  it('records irrigation_well on an owned drought turn', () => {
+    const s = withBuildings(planted(initialGameState()), { irrigation_well: true });
+    const { log } = processTurn(s, 'flash_drought');
+    expect(log.buildingsApplied).toEqual(['irrigation_well']);
+  });
+
+  it('is empty on disaster turns without the matching building, and on sunny turns', () => {
+    expect(processTurn(planted(initialGameState()), 'pest_infestation', []).log.buildingsApplied).toEqual([]);
+    const owned = withBuildings(planted(initialGameState()), { scarecrow: true, irrigation_well: true });
+    expect(processTurn(owned, 'sunny').log.buildingsApplied).toEqual([]);
   });
 });

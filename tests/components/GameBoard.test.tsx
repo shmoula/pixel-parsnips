@@ -100,6 +100,7 @@ const sampleLog: DailyLogEntry = {
   exhaustedPlots: [],
   pestDestroyedPlots: [],
   flashDroughtDaysAfter: 0,
+  buildingsApplied: [],
 };
 
 describe('GameBoard — smoke tests (T047)', () => {

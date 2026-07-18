@@ -271,6 +271,31 @@ function computeStreakUpdate(
   };
 }
 
+/** Pest destruction roll threshold: lower with a scarecrow, base otherwise (019). */
+function pestDestructionChanceFor(state: GameState, config: EconomyConfig): number {
+  return state.buildings.scarecrow
+    ? config.buildings.pestDestructionChance
+    : config.pestDestructionChance;
+}
+
+/** Flash Drought window length: shorter with an irrigation well, base otherwise (019). */
+function droughtWindowDaysFor(state: GameState, config: EconomyConfig): number {
+  return state.buildings.irrigation_well
+    ? config.buildings.droughtWindowDays
+    : config.flashDroughtWindowDays;
+}
+
+/** Disaster mitigations in effect this turn, for the Day Summary banner (019). */
+function computeBuildingsApplied(
+  weatherId: WeatherId,
+  buildings: GameState['buildings'],
+): BuildingId[] {
+  const applied: BuildingId[] = [];
+  if (weatherId === 'pest_infestation' && buildings.scarecrow) applied.push('scarecrow');
+  if (weatherId === 'flash_drought' && buildings.irrigation_well) applied.push('irrigation_well');
+  return applied;
+}
+
 /**
  * Executes the full end-of-turn sequence (FR-002).
  * Pass `weatherRoll` in tests for deterministic weather; omit in production.
@@ -318,7 +343,7 @@ export function processTurn(
       if (plot.cropId === null) return plot; // empty/exhausted plots immune
       const isDestroyed = pestDestructionOverride !== undefined
         ? pestDestructionOverride.includes(plot.id)
-        : rng() < 0.5;
+        : rng() < pestDestructionChanceFor(state, config);
       if (isDestroyed) {
         pestDestroyedPlots.push(plot.id);
         return {
@@ -338,8 +363,11 @@ export function processTurn(
 
   // Step 2b: Flash Drought — set counter to +2 when event fires (stacks)
   const flashDroughtDaysAfterEvent = weatherId === 'flash_drought'
-    ? state.flashDroughtDaysRemaining + 2
+    ? state.flashDroughtDaysRemaining + droughtWindowDaysFor(state, config)
     : state.flashDroughtDaysRemaining;
+
+  // 019: disaster mitigations in effect this turn (for the Day Summary banner)
+  const buildingsApplied = computeBuildingsApplied(weatherId, state.buildings);
 
   // Step 3: Harvest all plots where daysRemaining === 0
   // Sub-step 3a: increment consecutiveHarvests per harvested plot
@@ -425,6 +453,7 @@ export function processTurn(
       streakBonus,
       marketActive: activeMarket,
       marketAnnounced: null,
+      buildingsApplied,
     };
     const bankruptState: GameState = {
       ...state,
@@ -513,6 +542,7 @@ export function processTurn(
     streakBonus,
     marketActive: activeMarket,
     marketAnnounced: scheduled,
+    buildingsApplied,
   };
 
   // Step 9.5: Increment disastersSurvived if this turn's weather was a disaster
