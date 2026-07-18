@@ -9,14 +9,18 @@ interface BuildingCardProps {
 }
 
 export function BuildingCard({ def, owned, canAfford, onBuy }: BuildingCardProps) {
-  // Compact tray-item style for owned buildings (Active Buffs section)
+  // Owned buildings (Active Buffs section): same card as the shop shelf,
+  // minus the buy button, tinted grass to signal the buff is active.
   if (owned) {
     return (
-      <div className="flex items-center gap-2 px-2 py-1 rounded bg-farm-grass/20 border border-farm-grass/40">
-        <span aria-hidden="true" className="text-farm-grass text-body">✓</span>
-        <span aria-hidden="true" className="text-body">{def.emoji}</span>
-        <p className="font-pixel text-body text-farm-parchment">{def.name}</p>
-        <p className="text-body text-farm-stone ml-auto">{def.description}</p>
+      <div className="bg-farm-grass/20 rounded-lg p-3 flex flex-col gap-1 border border-farm-grass/40">
+        <div className="flex items-center gap-2">
+          <span aria-hidden="true" className="text-lg">{def.emoji}</span>
+          <div>
+            <p className="font-pixel text-body text-farm-parchment">{def.name}</p>
+            <p className="text-body text-farm-stone">{def.description}</p>
+          </div>
+        </div>
       </div>
     );
   }
