@@ -320,7 +320,7 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, recove
     return (
       <ExhaustedPlot
         plot={plot}
-        daysUntilRecovery={recoveryDays - (currentDay - plot.exhaustedSinceDay)}
+        daysUntilRecovery={Math.max(0, recoveryDays - (currentDay - plot.exhaustedSinceDay))}
         hasFertilizer={fertilizerInventory > 0}
         onApplyFertilizer={onApplyFertilizer}
       />

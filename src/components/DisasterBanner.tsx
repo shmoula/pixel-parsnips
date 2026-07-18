@@ -30,7 +30,7 @@ const DISASTER_TITLE: Record<string, string> = {
  */
 function pestLines(log: DailyLogEntry): string[] {
   const destroyed = log.pestDestroyedPlots;
-  const hasScarecrow = log.buildingsApplied.includes('scarecrow');
+  const hasScarecrow = log.buildingsApplied?.includes('scarecrow');
 
   if (destroyed.length > 0) {
     const damage = destroyed.length === 1
@@ -74,7 +74,7 @@ function bodyLines(log: DailyLogEntry): string[] {
   // 019 — mitigation sub-lines for owned buildings that softened this disaster.
   // The scarecrow's pest line lives in pestLines (its wording depends on the
   // damage outcome); only the irrigation well is a simple always-append here.
-  if (log.buildingsApplied.includes('irrigation_well')) {
+  if (log.buildingsApplied?.includes('irrigation_well')) {
     lines.push('⛲ Your Irrigation Well shortened the drought.');
   }
   return lines;
