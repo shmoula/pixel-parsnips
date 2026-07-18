@@ -22,6 +22,8 @@ import type {
   TurnResult,
   DailyLogEntry,
   HarvestEvent,
+  BuildingId,
+  BuyBuildingResult,
 } from './types';
 
 // ── Factory ───────────────────────────────────────────────────────────────────
@@ -626,6 +628,41 @@ export function buyPlot(state: GameState, config: EconomyConfig = DEFAULT_ECONOM
       ...state,
       coinBalance: state.coinBalance - price,
       unlockedPlots: state.unlockedPlots + 1,
+    },
+  };
+}
+
+// ── buyBuilding (019) ─────────────────────────────────────────────────────────
+
+/**
+ * Purchases a one-time farm building. Pure — no mutations.
+ * Guard precedence (load-bearing): invalid_id → already_owned → not_unlocked →
+ * insufficient_funds.
+ */
+export function buyBuilding(
+  state: GameState,
+  id: BuildingId,
+  config: EconomyConfig = DEFAULT_ECONOMY,
+): BuyBuildingResult {
+  const def = config.buildings.definitions.find(d => d.id === id);
+  if (!def) {
+    return { ok: false, error: 'invalid_id' };
+  }
+  if (state.buildings[id]) {
+    return { ok: false, error: 'already_owned' };
+  }
+  if (getSeasonForDay(state.currentDay, config).number < def.unlockSeason) {
+    return { ok: false, error: 'not_unlocked' };
+  }
+  if (state.coinBalance < def.cost) {
+    return { ok: false, error: 'insufficient_funds' };
+  }
+  return {
+    ok: true,
+    state: {
+      ...state,
+      coinBalance: state.coinBalance - def.cost,
+      buildings: { ...state.buildings, [id]: true },
     },
   };
 }
