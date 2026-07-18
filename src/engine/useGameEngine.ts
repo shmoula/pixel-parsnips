@@ -272,6 +272,7 @@ export interface GameEngineHook {
   getSeedPrice: (cropId: CropId) => number;
   getNextPlotPrice: () => number | null;
   getOccupiedPlotCount: () => number;
+  getRecoveryDays: () => number;
 }
 
 export function useGameEngine(): GameEngineHook {
@@ -462,6 +463,13 @@ export function useGameEngine(): GameEngineHook {
     [state.fertilizerInventory]
   );
 
+  const getRecoveryDays = useCallback(
+    () => (state.buildings.compost_bin
+      ? ECONOMY.buildings.exhaustionRecoveryDays
+      : ECONOMY.exhaustionRecoveryDays),
+    [state.buildings.compost_bin]
+  );
+
   return {
     state,
     lastDailyLog: state.lastDailyLog,
@@ -482,5 +490,6 @@ export function useGameEngine(): GameEngineHook {
     getSeedPrice,
     getNextPlotPrice,
     getOccupiedPlotCount,
+    getRecoveryDays,
   };
 }

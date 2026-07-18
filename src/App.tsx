@@ -93,6 +93,7 @@ function App() {
         getSeedPrice={engine.getSeedPrice}
         onBuyPlot={engine.buyPlot}
         getNextPlotPrice={engine.getNextPlotPrice}
+        recoveryDays={engine.getRecoveryDays()}
         buildingCards={engine.getBuildingCards()}
         onBuyBuilding={engine.buyBuilding}
         onRestart={restart}

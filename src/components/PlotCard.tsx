@@ -61,6 +61,8 @@ interface PlotCardProps {
   plot: PlotState;
   currentDay?: number;
   fertilizerInventory?: number;
+  /** Effective natural-recovery period for exhausted plots (2 with Compost Bin, 3 without). */
+  recoveryDays?: number;
   locked?: boolean;
   /** Marks this tile as the onboarding 'plant' step's highlight target. */
   isPlantAnchor?: boolean;
@@ -296,7 +298,7 @@ function GrowingCropCard({ plot }: {
   );
 }
 
-export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked, isPlantAnchor, isNextPurchasable, plotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: PlotCardProps) {
+export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, recoveryDays = EXHAUSTION_RECOVERY_DAYS, locked, isPlantAnchor, isNextPurchasable, plotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: PlotCardProps) {
   if (locked) {
     return (
       <LockedPlot
@@ -318,7 +320,7 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, locked
     return (
       <ExhaustedPlot
         plot={plot}
-        daysUntilRecovery={EXHAUSTION_RECOVERY_DAYS - (currentDay - plot.exhaustedSinceDay)}
+        daysUntilRecovery={recoveryDays - (currentDay - plot.exhaustedSinceDay)}
         hasFertilizer={fertilizerInventory > 0}
         onApplyFertilizer={onApplyFertilizer}
       />

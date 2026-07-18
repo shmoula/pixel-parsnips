@@ -197,6 +197,8 @@ interface GameBoardProps {
   getSeedPrice: (cropId: CropId) => number;
   onBuyPlot: () => boolean;
   getNextPlotPrice: () => number | null;
+  /** Effective natural-recovery period for exhausted plots (2 with Compost Bin, 3 without). */
+  recoveryDays: number;
   buildingCards: BuildingCardData[];
   onBuyBuilding: (id: BuildingId) => boolean;
   /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
@@ -216,6 +218,7 @@ export function GameBoard({
   getSeedPrice,
   onBuyPlot,
   getNextPlotPrice,
+  recoveryDays,
   buildingCards,
   onBuyBuilding,
   onRestart,
@@ -346,6 +349,7 @@ export function GameBoard({
             plots={state.plots}
             currentDay={state.currentDay}
             fertilizerInventory={getFertilizerCount()}
+            recoveryDays={recoveryDays}
             onPlant={handlePlot}
             onApplyFertilizer={onApplyFertilizer}
             onClearPestDamage={onClearPestDamage}

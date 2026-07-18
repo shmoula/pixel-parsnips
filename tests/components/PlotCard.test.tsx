@@ -86,3 +86,17 @@ describe('PlotCard — growth-stage sprites (018)', () => {
     expect(container.querySelector('img')?.getAttribute('src')).toContain('radish_ready');
   });
 });
+
+describe('PlotCard — recovery countdown honors compost bin (019 T9)', () => {
+  it('shows the compost-shortened countdown when recoveryDays is 2', () => {
+    // plot exhausted on day 4, current day 5 → 2 - (5 - 4) = 1 day until recovery
+    render(
+      <PlotCard
+        plot={makePlot({ exhaustedSinceDay: 4 })}
+        currentDay={5}
+        recoveryDays={2}
+      />,
+    );
+    expect(screen.getByLabelText(/1 day until recovery/)).toBeInTheDocument();
+  });
+});
