@@ -112,6 +112,10 @@ export interface DailyLogEntry {
   exhaustedPlots: number[];
   /** Plot IDs destroyed by Pest Infestation this turn; empty array on non-pest turns. */
   pestDestroyedPlots: number[];
+  /** Occupied plots when Pest Infestation struck (before destruction); 0 on non-pest turns.
+   *  Lets the banner tell an empty board ("no crops were growing") apart from an
+   *  all-spared board ("every plot survived") when pestDestroyedPlots is empty. */
+  pestPlotsAtRisk: number;
   /** Value of flashDroughtDaysRemaining at end of turn processing; 0 when inactive. */
   flashDroughtDaysAfter: number;
   /** Value of harvestStreak at start of turn (before increment/reset). */

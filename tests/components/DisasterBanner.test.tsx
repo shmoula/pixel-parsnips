@@ -19,6 +19,7 @@ function makeLog(over: Partial<DailyLogEntry> = {}): DailyLogEntry {
     closingBalance: 81,
     exhaustedPlots: [],
     pestDestroyedPlots: [],
+    pestPlotsAtRisk: 0,
     flashDroughtDaysAfter: 0,
     streakBefore: 0,
     streakAfter: 0,
@@ -154,5 +155,76 @@ describe('DisasterBanner — building mitigation sub-lines (019)', () => {
     );
     expect(screen.getByText(/next 2 days grow at half speed/)).toBeInTheDocument();
     expect(screen.queryByText(/Irrigation Well/)).toBeNull();
+  });
+});
+
+describe('DisasterBanner — scarecrow pest copy is never self-contradictory (019 review fix)', () => {
+  it('empty board: shows "no crops were growing" and no scarecrow sub-line', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({
+          weatherId: 'pest_infestation',
+          pestDestroyedPlots: [],
+          pestPlotsAtRisk: 0,
+          buildingsApplied: ['scarecrow'],
+        })}
+      />,
+    );
+    const banner = screen.getByRole('alert');
+    expect(banner).toHaveTextContent('The pests found nothing to eat — no crops were growing.');
+    // The scarecrow "thinned the swarm" line would contradict "no crops were growing".
+    expect(screen.queryByText(/Scarecrow/)).toBeNull();
+  });
+
+  it('some destroyed: shows the destroyed line plus the scarecrow thinned sub-line', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({
+          weatherId: 'pest_infestation',
+          pestDestroyedPlots: [1],
+          pestPlotsAtRisk: 3,
+          buildingsApplied: ['scarecrow'],
+        })}
+      />,
+    );
+    const banner = screen.getByRole('alert');
+    expect(banner).toHaveTextContent('Plot #2 destroyed by pests.');
+    expect(screen.getByText(/Your Scarecrow thinned the swarm/)).toBeInTheDocument();
+  });
+
+  it('crops growing but all spared: shows a celebratory scarecrow line, not a contradiction', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({
+          weatherId: 'pest_infestation',
+          pestDestroyedPlots: [],
+          pestPlotsAtRisk: 4,
+          buildingsApplied: ['scarecrow'],
+        })}
+      />,
+    );
+    const banner = screen.getByRole('alert');
+    expect(screen.getByText(/Your Scarecrow spared every plot/)).toBeInTheDocument();
+    // Must not claim the board was empty.
+    expect(banner).not.toHaveTextContent(/no crops were growing/);
+    // Must not claim plots were hit.
+    expect(banner).not.toHaveTextContent(/thinned the swarm/);
+  });
+
+  it('all spared without a scarecrow: still avoids the empty-board wording', () => {
+    render(
+      <DisasterBanner
+        log={makeLog({
+          weatherId: 'pest_infestation',
+          pestDestroyedPlots: [],
+          pestPlotsAtRisk: 2,
+          buildingsApplied: [],
+        })}
+      />,
+    );
+    const banner = screen.getByRole('alert');
+    expect(banner).not.toHaveTextContent(/no crops were growing/);
+    expect(banner).not.toHaveTextContent(/Scarecrow/);
+    expect(banner).toHaveTextContent(/every crop was spared/);
   });
 });

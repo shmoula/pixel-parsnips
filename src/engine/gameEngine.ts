@@ -257,6 +257,14 @@ function droughtWindowDaysFor(state: GameState, config: EconomyConfig): number {
     : config.flashDroughtWindowDays;
 }
 
+/** Occupied plots a pest strike could have hit this turn (pre-destruction); 0 on
+ *  non-pest turns. Lets the banner tell an empty board apart from an all-spared one
+ *  when nothing was destroyed (019 review fix). */
+function pestPlotsAtRiskFor(weatherId: WeatherId, plots: PlotState[]): number {
+  if (weatherId !== 'pest_infestation') return 0;
+  return plots.filter(plot => plot.cropId !== null).length;
+}
+
 /** Disaster mitigations in effect this turn, for the Day Summary banner (019). */
 function computeBuildingsApplied(
   weatherId: WeatherId,
@@ -342,6 +350,10 @@ export function processTurn(
   // 019: disaster mitigations in effect this turn (for the Day Summary banner)
   const buildingsApplied = computeBuildingsApplied(weatherId, state.buildings);
 
+  // 019 review fix: occupied plots the pest could have hit (pre-destruction), so the
+  // banner tells an empty board apart from an all-spared one when nothing was destroyed.
+  const pestPlotsAtRisk = pestPlotsAtRiskFor(weatherId, plots);
+
   // Step 3: Harvest all plots where daysRemaining === 0
   // Sub-step 3a: increment consecutiveHarvests per harvested plot
   // Sub-step 3b: trigger exhaustion when consecutiveHarvests >= EXHAUSTION_THRESHOLD
@@ -422,6 +434,7 @@ export function processTurn(
       closingBalance: coinBalance,
       exhaustedPlots,
       pestDestroyedPlots,
+      pestPlotsAtRisk,
       flashDroughtDaysAfter: flashDroughtDaysAfterEvent,
       streakBefore,
       streakAfter,
@@ -515,6 +528,7 @@ export function processTurn(
     closingBalance: coinBalance,
     exhaustedPlots,
     pestDestroyedPlots,
+    pestPlotsAtRisk,
     flashDroughtDaysAfter: flashDroughtDaysRemaining,
     streakBefore,
     streakAfter: harvestStreakAfterSeason,

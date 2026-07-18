@@ -151,6 +151,30 @@ describe('buildingsApplied log field (019)', () => {
   });
 });
 
+describe('pestPlotsAtRisk log field (019 review fix)', () => {
+  it('counts the occupied plots at risk when pests strike but spare them all', () => {
+    // One radish planted; override says nothing is destroyed → all-spared, atRisk = 1.
+    const { log } = processTurn(planted(initialGameState()), 'pest_infestation', []);
+    expect(log.pestDestroyedPlots).toEqual([]);
+    expect(log.pestPlotsAtRisk).toBe(1);
+  });
+
+  it('counts occupied plots even when some are destroyed', () => {
+    const { log } = processTurn(planted(initialGameState()), 'pest_infestation', [0]);
+    expect(log.pestDestroyedPlots).toEqual([0]);
+    expect(log.pestPlotsAtRisk).toBe(1);
+  });
+
+  it('is 0 when the board is empty on a pest turn', () => {
+    const { log } = processTurn(initialGameState(), 'pest_infestation', []);
+    expect(log.pestPlotsAtRisk).toBe(0);
+  });
+
+  it('is 0 on non-pest turns', () => {
+    expect(processTurn(planted(initialGameState()), 'sunny').log.pestPlotsAtRisk).toBe(0);
+  });
+});
+
 describe('Compost Bin — natural recovery (019)', () => {
   /** A state whose plot 0 went exhausted on day `since`, currently at day `now`. */
   const exhaustedState = (now: number, since: number): GameState => {
