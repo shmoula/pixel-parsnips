@@ -10,7 +10,8 @@ export type OnboardingStep =
   | 'payoff'
   | 'done';
 
-const STEPS: readonly OnboardingStep[] = [
+/** Ordered steps of the guided flow; index = funnel position ('done' is terminal, never emitted). */
+export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   'welcome', 'open-shop', 'buy-radishes', 'plant', 'advance', 'payoff', 'done',
 ];
 
@@ -25,7 +26,7 @@ export interface OnboardingRecord {
 const DEFAULT_RECORD: OnboardingRecord = { schemaVersion: 1, completed: false, step: 'welcome' };
 
 function isStep(v: unknown): v is OnboardingStep {
-  return typeof v === 'string' && (STEPS as readonly string[]).includes(v);
+  return typeof v === 'string' && (ONBOARDING_STEPS as readonly string[]).includes(v);
 }
 
 /** Returns defaults when missing or malformed; never throws. */
