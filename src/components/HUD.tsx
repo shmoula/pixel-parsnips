@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TAX_RATE } from '../engine/constants';
 import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
+import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { Coin } from './Coin';
 import { EmojiIcon } from './EmojiIcon';
 import { MuteToggle } from './MuteToggle';
@@ -37,6 +38,15 @@ function getRepTitleClass(expanded: boolean): string {
   return `font-pixel text-caption text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
 }
 
+/** 021 — resolves the number the balance chip should animate toward: the held
+    (pre-turn) value while a Day Summary is holding the reveal, or the
+    committed `coinBalance` otherwise (including mid-tick, so the animation
+    lands on the real value). */
+function getDisplayBalanceTarget(coinBalance: number, heldBalance: number | null | undefined, tickBalance: boolean | undefined): number {
+  const holding = heldBalance !== null && heldBalance !== undefined && !tickBalance;
+  return holding ? heldBalance : coinBalance;
+}
+
 function getBalanceTextClass(danger: DangerLevel): string {
   // Lighter than farm-red so the "critical" balance keeps a ≥4.5:1 contrast
   // ratio against the dark #261808 chip (WCAG AA / Lighthouse a11y).
@@ -62,6 +72,12 @@ interface HUDProps {
   harvestStreak: number;
   /** False when advancing only burns lease+tax (no seeds, nothing growing). Drives the warning label. */
   canAdvanceProductively: boolean;
+  /** 021 — value shown instead of the committed balance while the Day Summary
+      holds the harvest reveal; null/undefined = show the committed balance. */
+  heldBalance?: number | null;
+  /** 021 — when true, the displayed balance rapid-ticks from the held value to
+      the committed balance (celebration coins are landing). */
+  tickBalance?: boolean;
 }
 
 export function HUD({
@@ -74,6 +90,8 @@ export function HUD({
   endlessMode,
   harvestStreak,
   canAdvanceProductively,
+  heldBalance,
+  tickBalance,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
   const reputation = getReputationTier(currentDay);
@@ -94,6 +112,9 @@ export function HUD({
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);
   const balanceTextClass = getBalanceTextClass(dangerLevel);
+
+  const displayTarget = getDisplayBalanceTarget(coinBalance, heldBalance, tickBalance);
+  const displayedBalance = useAnimatedNumber(displayTarget, Boolean(tickBalance));
 
   return (
     <header
@@ -135,7 +156,7 @@ export function HUD({
               className={`font-pixel text-title ${balanceTextClass}`}
               aria-label={`Coins: ${coinBalance}. Season goal: ${season.target} coins by day ${seasonLen} of the season.`}
             >
-              {coinBalance}
+              {displayedBalance}
             </span>
             <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
               <span className="sm:hidden">Goal {season.target}·D{seasonLen}</span>
