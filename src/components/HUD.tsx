@@ -4,6 +4,7 @@ import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
 import { Coin } from './Coin';
 import { EmojiIcon } from './EmojiIcon';
+import { MuteToggle } from './MuteToggle';
 import { nextDayLabel, nextDayText } from './nextDayCopy';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
@@ -190,6 +191,7 @@ export function HUD({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <MuteToggle />
           <button
             type="button"
             aria-label="View last turn summary"
