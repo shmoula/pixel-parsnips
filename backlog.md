@@ -42,11 +42,13 @@
 | # | Item | Priority | Effort | Refs | Notes |
 |---|------|----------|--------|------|-------|
 | F1 | **Juice pass — harvest moment** — coins fly to HUD with animation; counter ticks rapidly; per-crop harvest sounds | Medium | M | p2·E | Pure feedback layer. Validate after G1 ships — juice on a hollow loop is wasted effort. |
-| F2 | **Juice pass — disaster reveal** — reveal disasters last in Day Summary; pest "scurrying" animation; Blight uses heavier visual weight | Medium | S–M | p2·E | Small modal-order change + a couple animations. Maximizes "dread-then-hit" moment. |
+| F2 | ✅ **Juice pass — disaster reveal** — reveal disasters last in Day Summary; pest "scurrying" animation; Blight uses heavier visual weight | Medium | S–M | p2·E → **shipped as [013-disaster-reveal-juice](specs/013-disaster-reveal-juice/plan.md)** | **DONE (2026-06-19).** Staged "dread-then-hit" reveal in the Day Summary modal: opens neutral, then after ~700ms tints red and drops in a "Disaster!" badge + a single unified `DisasterBanner` (icon + title + body) shared by blight / pest / flash drought. Reopen via "Last Turn" or `prefers-reduced-motion` shows the resolved state immediately. New `useReducedMotion` + `useDisasterReveal` hooks; inline disaster lines removed from DailyLog (now in the banner); `role="alert"`/`aria-live` so the staged reveal is announced to screen readers. Pure presentation — no engine/type/schema change. Built via subagent-driven-development (two-stage review per task); 455 tests, lint green. PR #6. |
 | F3 | **Juice pass — weather flavor** — distinct background tint per weather type in modal | Low | S | p2·E | Pure CSS/animation work. Low effort, low-but-cumulative impact. |
 | F4 | **Bankruptcy "final day" sequence** — at 0–14 coins trigger a dramatic last-day playthrough instead of immediate end | Low | M | p2·E | Adds cinematic closure to runs. Requires state-machine work to defer end-of-run logic. |
 | F5 | ✅ **Player onboarding ("Your First Harvest")** — first-run guided overlay (fill plots with radishes → advance → payoff) + always-on empty-day safeguard + run-end "Replay tutorial". | High | M | UI.md #5 → shipped as [014-player-onboarding](specs/014-player-onboarding/spec.md) | **DONE.** Own localStorage key (survives Restart); turn-1 weather pinned safe; analytics deferred to A1. |
 | F6 | **Farm-scene building sprites** — owned 019 buildings get pixel sprites anchored on the 018 backdrop | Low | S–M | 019 follow-up | Pure presentation; shop cards + banner lines shipped in 019. |
+| F7 | **Mobile lease visibility** — surface the per-day lease at mobile widths (`HUD.tsx` Lease/Tax block is `hidden sm:flex`, so <640px players can't see `season.leasePerDay` before advancing). | Low | S | UI.md audit (open item) | The runaway-bankruptcy risk is already guarded by the 014 empty-day confirm + unwinnable banner, so this is now a *planning* affordance, not a safety fix. Suggested form: a compact `−15🪙/day` sub-label under the always-visible coin balance chip. |
+| F8 | **Autosave indicator** — a subtle "Saved ✓" flash in the HUD after significant actions (Next Day, plant, purchase), ~1s then fade. | Low | S | UI.md audit (open item) | The game already autosaves to localStorage after every action; players have no signal it happens. Pure feedback layer — reduces "closed the tab, did I lose my run?" anxiety. |
 
 ---
 
@@ -86,13 +88,32 @@ This is the measurement tool that should gate **all future balance work** (G5 cr
 
 ---
 
+## Backlog — Analytics & Instrumentation (prepare as one batch)
+
+> Decision (2026-06-26, onboarding brainstorm): **do not** wire analytics piecemeal per feature.
+> Stand up one event/telemetry layer and instrument all events together, then design the event
+> schema (`name` + typed property bag + per-event version) so call sites never change when the sink does.
+>
+> **Update (2026-07): the shared layer shipped as [017-analytics](specs/017-analytics/spec.md)** — and
+> went past the originally-planned "local logging" v1 to a real privacy-first **PostHog** sink (EU host,
+> no-op when no project key is set, `Do-Not-Track` + local opt-out both honored via `isTrackingAllowed`,
+> `AnalyticsOptOutToggle` UI). So the batch is now: **layer + core gameplay funnel = done; the
+> onboarding-specific step funnel (A1) is the remaining piece.**
+
+| # | Item | Priority | Effort | Refs | Notes |
+|---|------|----------|--------|------|-------|
+| A0 | ✅ **Privacy-first analytics layer + core gameplay funnel** — shared event layer plus the P0+P1 gameplay events | — | M | 2026-06-26 batch decision → **shipped as [017-analytics](specs/017-analytics/spec.md)** | **DONE.** `src/analytics/` (config · consent · track · events · globals · `useAnalyticsEvents`). Ships these events: `page_loaded`, `play_started` (carries `onboarding_active`), `milestone_reached` (`first_plot_unlocked` / `season_2_reached`), `day_completed`, `plot_unlocked`, `season_completed`, `run_ended`. State-derived via a render-diff hook, once-per-run guards, per-event schema versions (`ANALYTICS_SCHEMA_VERSION`). This is the shared layer A1 was waiting on. |
+| A1 | **Onboarding funnel events** — the granular step funnel on top of A0's layer. Track: step reached (`welcome`/`open-shop`/`buy-radish`/`plant`/`advance`/`payoff`/`done`), skip point (which step the player skipped from), completion, and tutorial replay. Plus the empty-Next-Day **safeguard trigger** (how often players hit the bankruptcy guard). | Medium | S | player-onboarding skill (references: `onboarding-analytics`, `metrics-blind-onboarding`) | **Blocker resolved, feature still open.** A0/017 shipped the layer and a coarse `play_started {onboarding_active}` signal, but the per-step funnel, skip-point, replay, and safeguard-trigger events are **not** wired yet — the onboarding step machine (014) already has the obvious emit points. Effort drops to **S** now that the layer exists. Answers "where do new players drop off?" and "is the safeguard firing a lot?". |
+
+---
+
 ## Suggested Phasing
 
 **Phase 1 — "Give the run a shape"** ✅ shipped 2026-06-03 as [006-season-system](specs/006-season-system/spec.md) + 2026-06-04 as [007-enriched-run-summary](specs/007-enriched-run-summary/spec.md)
 ~~G1 Season System~~ ✅ + ~~G2 Escalating Difficulty~~ ✅ + ~~G3 Enriched Summary~~ ✅ + G5 Parsnip rebalance (deferred)
 
-**Phase 2 — "Give each day a hook"** ✅ core shipped
-~~G4 Daily Objectives~~ (deferred 2026-06-05) + ~~G12 Harvest Streak~~ ✅ (shipped 2026-06-06) + ~~G13 Reputation Tier~~ ✅ (shipped 2026-06-16 as [011](specs/011-farm-reputation-tier/spec.md)) + F2 Disaster reveal juice + G5 Parsnip rebalance (still trivial, can slot anywhere). The per-day hook gap is now filled by G12.
+**Phase 2 — "Give each day a hook"** ✅ shipped
+~~G4 Daily Objectives~~ (deferred 2026-06-05) + ~~G12 Harvest Streak~~ ✅ (shipped 2026-06-06) + ~~G13 Reputation Tier~~ ✅ (shipped 2026-06-16 as [011](specs/011-farm-reputation-tier/spec.md)) + ~~F2 Disaster reveal juice~~ ✅ (shipped 2026-06-19 as [013](specs/013-disaster-reveal-juice/plan.md)) + G5 Parsnip rebalance (still trivial, can slot anywhere). The per-day hook gap is now filled by G12.
 
 **Phase 3 — "Give wealth somewhere to go"** (target: 1–2 sprints) — *partially shipped* ← **next up**
 ~~G10 Plot unlocking~~ ✅ (shipped 2026-06-08 as [010](specs/010-plot-progression-rebalance/spec.md); escalating plot prices are now the primary scaling capital sink) + the simulator-tuned economy rebalance ([009](specs/009-balance-simulator/spec.md)+010). ~~G7 Market Events~~ ✅ (shipped 2026-06-17 as [012](specs/012-market-events/spec.md) — late-game variance regulator). ~~G8 Infrastructure Upgrades~~ ✅ (shipped 2026-07-19 as [019-farm-buildings](specs/019-farm-buildings/spec.md)). Still open: G9 Farm Expansion + G6 Rotation Bonus.
@@ -114,4 +135,4 @@ M1 Rewarded Ads → M2 Founder's Pack → M3 Cosmetic Themes → (later) M4/M5
 
 ---
 
-*Generated 2026-06-02 from p1–p6 analyses. Updated 2026-06-03 after shipping 006-season-system, then 2026-06-04 after shipping 007-enriched-run-summary, then 2026-06-05 after deferring G4 (Daily Objectives / Milestones / Contracts), then 2026-06-08 after shipping 009-balance-simulator (tooling) + 010-plot-progression-rebalance (G10 plot unlocking + simulator-tuned economy), then 2026-06-16 after shipping 011-farm-reputation-tier (G13), then 2026-06-17 after shipping 012-market-events (G7), then 2026-06-26 after shipping 014-player-onboarding (F5).*
+*Generated 2026-06-02 from p1–p6 analyses. Updated 2026-06-03 after shipping 006-season-system, then 2026-06-04 after shipping 007-enriched-run-summary, then 2026-06-05 after deferring G4 (Daily Objectives / Milestones / Contracts), then 2026-06-08 after shipping 009-balance-simulator (tooling) + 010-plot-progression-rebalance (G10 plot unlocking + simulator-tuned economy), then 2026-06-16 after shipping 011-farm-reputation-tier (G13), then 2026-06-17 after shipping 012-market-events (G7), then 2026-06-19 after shipping 013-disaster-reveal-juice (F2), then 2026-06-26 after shipping 014-player-onboarding (F5), then 2026-07 after shipping 015-mobile-ux-polish + 016-ux-ui-polish (UI.md audit fixes — empty-plot affordance, reduced-motion, low-balance warning, shop discoverability, disaster/drought banners, upgrade contrast, semantic type scale) + 017-analytics (A0 analytics layer + core gameplay funnel; A1 onboarding funnel still open) + 018-prettier-assets (crop art, illustrated backdrop, wooden shop), then 2026-07-19 after shipping 019-farm-buildings (G8 Infrastructure upgrades — unified Buildings track, Toolshed collapse, Farm Stand, Season-2 gate, schema 8→9).*
