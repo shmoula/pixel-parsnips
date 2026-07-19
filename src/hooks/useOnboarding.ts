@@ -4,8 +4,11 @@ import {
   loadOnboarding,
   saveOnboarding,
   markOnboardingComplete,
+  ONBOARDING_STEPS,
   type OnboardingStep,
 } from '../engine/onboarding';
+import { track } from '../analytics/track';
+import type { OnboardingFunnelStep } from '../analytics/events';
 
 export interface UseOnboardingResult {
   active: boolean;
@@ -64,6 +67,11 @@ export function useOnboarding(state: GameState, { isShopVisible }: Opts): UseOnb
   const initRef = useRef(false);
   const [active, setActive] = useState(false);
   const [step, setStep] = useState<OnboardingStep>('welcome');
+  // Highest ONBOARDING_STEPS index already emitted as onboarding_step_reached.
+  // Every emission path walks from ref + 1 to its target, so cascade jumps emit
+  // intermediates, resume never re-emits earlier steps, and StrictMode's double
+  // effect invocation is a no-op on the second pass.
+  const emittedThroughRef = useRef(ONBOARDING_STEPS.length - 1);
 
   if (!initRef.current) {
     initRef.current = true;
@@ -77,24 +85,46 @@ export function useOnboarding(state: GameState, { isShopVisible }: Opts): UseOnb
       // Fresh first run.
       // (setState during render init is fine; React applies before commit.)
     }
-    setActive(!rec.completed && state.currentDay <= 1);
+    const willBeActive = !rec.completed && state.currentDay <= 1;
+    setActive(willBeActive);
     setStep(rec.completed ? 'done' : rec.step);
+    // 'welcome' (the default/replayed record) starts below 0 so the entry step
+    // emits; resuming at a later step counts that step as already emitted.
+    emittedThroughRef.current = !willBeActive
+      ? ONBOARDING_STEPS.length - 1
+      : rec.step === 'welcome' ? -1 : ONBOARDING_STEPS.indexOf(rec.step);
   }
+
+  const emitStepsThrough = useCallback((toIndex: number) => {
+    for (let i = emittedThroughRef.current + 1; i <= toIndex; i++) {
+      const s = ONBOARDING_STEPS[i];
+      if (s === 'done') break; // terminal outcome is onboarding_completed/_skipped, never a step
+      track('onboarding_step_reached', { step: s as OnboardingFunnelStep, step_index: i });
+    }
+    if (toIndex > emittedThroughRef.current) emittedThroughRef.current = toIndex;
+  }, []);
+
+  // welcome — the entry step of a fresh (or replayed) tutorial pass.
+  useEffect(() => {
+    if (active && step === 'welcome') emitStepsThrough(0);
+  }, [active, step, emitStepsThrough]);
 
   // Goal-driven forward advancement for auto steps.
   useEffect(() => {
     if (!active) return;
     const next = deriveStep(step, state, isShopVisible);
     if (next !== step) {
+      emitStepsThrough(ONBOARDING_STEPS.indexOf(next));
       setStep(next);
       saveOnboarding({ schemaVersion: 1, completed: false, step: next });
     }
-  }, [active, step, state, isShopVisible]);
+  }, [active, step, state, isShopVisible, emitStepsThrough]);
 
   const onStart = useCallback(() => {
+    emitStepsThrough(1);
     setStep('open-shop');
     saveOnboarding({ schemaVersion: 1, completed: false, step: 'open-shop' });
-  }, []);
+  }, [emitStepsThrough]);
 
   const finish = useCallback(() => {
     markOnboardingComplete();
@@ -102,8 +132,19 @@ export function useOnboarding(state: GameState, { isShopVisible }: Opts): UseOnb
     setActive(false);
   }, []);
 
-  const onSkip = useCallback(finish, [finish]);
-  const onDismissPayoff = useCallback(finish, [finish]);
+  const onSkip = useCallback(() => {
+    // step can't be 'done' here: finish() deactivates before the overlay unmounts.
+    track('onboarding_skipped', {
+      from_step: step as OnboardingFunnelStep,
+      from_step_index: ONBOARDING_STEPS.indexOf(step),
+    });
+    finish();
+  }, [step, finish]);
+
+  const onDismissPayoff = useCallback(() => {
+    track('onboarding_completed', {});
+    finish();
+  }, [finish]);
 
   return {
     active,
