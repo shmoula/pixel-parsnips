@@ -46,6 +46,13 @@ Open the local dev URL printed by Vite (typically `http://localhost:5173`).
 - `npm run test:watch` — run tests in watch mode
 - `npm run test:coverage` — run tests with coverage
 
+### Dev flags
+
+Append `?dev=<flags>` to the local dev URL (comma-separated; ignored in production builds):
+
+- `buildings-s1` — unlock all farm buildings in Season 1 for playtesting
+  (e.g. `http://localhost:5173/?dev=buildings-s1`).
+
 ## Persistence
 
 Game state is saved to localStorage under the key `pixel-parsnips-state` (schema version 3). To reset the game, clear that key in your browser storage.

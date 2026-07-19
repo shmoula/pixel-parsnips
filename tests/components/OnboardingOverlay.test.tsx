@@ -304,6 +304,29 @@ describe('OnboardingOverlay — live anchor tracking (017 FR-001/FR-002)', () =>
 
     document.body.removeChild(el);
   });
+
+  it('hides the highlight and copy while the anchor is scrolled fully out of the viewport', () => {
+    // Anchor sits below the fold (top 900 > the 768 jsdom viewport height).
+    const el = stubAnchor({ top: 900, bottom: 940, left: 10, right: 110 });
+    const { container } = render(
+      <OnboardingOverlay step="buy-radishes" harvestIncome={0} netIncome={0}
+        onStart={noop} onSkip={noop} onDismissPayoff={noop} />,
+    );
+    flushFrame(); // measure: target off-screen
+
+    // "Hide until visible" — no detached bottom-center bubble, no stale off-screen ring.
+    expect(container.querySelector('[role="status"]')).toBeNull();
+    expect(container.querySelector('.ring-farm-gold')).toBeNull();
+
+    // Scroll it back into view → highlight + copy return.
+    el.getBoundingClientRect = () =>
+      ({ x: 10, y: 300, top: 300, bottom: 340, left: 10, right: 110, width: 100, height: 40 }) as DOMRect;
+    flushFrame();
+    expect(container.querySelector('[role="status"]')).toBeTruthy();
+    expect(container.querySelector('.ring-farm-gold')).toBeTruthy();
+
+    document.body.removeChild(el);
+  });
 });
 
 describe('OnboardingOverlay — skip chip positioning (017 FR-003)', () => {

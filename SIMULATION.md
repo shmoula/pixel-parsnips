@@ -80,10 +80,14 @@ fill the board while reserving enough coins to cover the day's land lease.
 ## Presets
 
 Economy presets live in [`scripts/sim/economyPresets.ts`](scripts/sim/economyPresets.ts).
-Today there is one:
+Today there are three:
 
-- **`baseline`** — the current live economy (`DEFAULT_ECONOMY`). This is the
-  reference point every rebalance is measured against.
+- **`baseline`** — the original pre-010 economy, frozen (12 plots from day 1, no
+  buildings purchasable). The trivially-easy reference point.
+- **`proposed`** — the 010 economy as shipped (4-plot start, plot-purchase sink),
+  with no buildings. The no-buildings control for the 019 retune.
+- **`buildings019`** — `proposed` plus the full farm-buildings catalog. The live
+  019 candidate; `smartMixed` sits in the tuned difficulty band on this preset.
 
 ### Adding a preset
 
@@ -160,7 +164,7 @@ completely unaffected — they simply never pass the extra arguments.
 
 The simulator is covered by `tests/sim/`. Of note,
 `tests/sim/runner.test.ts` includes a **characterization** test that locks in the
-known baseline difficulty (smartMixed wins >90%, pumpkinOnly bankrupts >95%) — so
+known baseline difficulty (smartMixed wins >80%, pumpkinOnly bankrupts >95%) — so
 any future engine change that silently alters difficulty fails CI.
 
 ```bash

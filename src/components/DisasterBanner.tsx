@@ -21,23 +21,63 @@ const DISASTER_TITLE: Record<string, string> = {
   flash_drought: 'FLASH DROUGHT',
 };
 
-function bodyLines(log: DailyLogEntry): string[] {
+/**
+ * Pest Infestation copy. Three cases, so the scarecrow line can never contradict
+ * the base line (019 review fix):
+ *   • some plots destroyed → damage line + "thinned the swarm" (if a scarecrow helped)
+ *   • crops were growing but all survived → a celebratory "spared" line
+ *   • the board was empty → "no crops were growing" (no scarecrow line — nothing to thin)
+ */
+function pestLines(log: DailyLogEntry): string[] {
+  const destroyed = log.pestDestroyedPlots;
+  const hasScarecrow = log.buildingsApplied?.includes('scarecrow');
+
+  if (destroyed.length > 0) {
+    const damage = destroyed.length === 1
+      ? `Plot #${destroyed[0] + 1} destroyed by pests.`
+      : `${destroyed.length} plots destroyed by pests: ${destroyed.map(id => `#${id + 1}`).join(', ')}.`;
+    return hasScarecrow
+      ? [damage, '🎃 Your Scarecrow thinned the swarm — fewer plots were hit.']
+      : [damage];
+  }
+
+  // Nothing destroyed: distinguish an all-spared board from an empty one so the
+  // message keys off what was actually at risk, not just the (empty) casualty list.
+  if (log.pestPlotsAtRisk === 0) {
+    return ['The pests found nothing to eat — no crops were growing.'];
+  }
+  return hasScarecrow
+    ? ['🎃 Your Scarecrow spared every plot — the swarm found nothing to take.']
+    : ['The pests swept through, but every crop was spared.'];
+}
+
+function baseLines(log: DailyLogEntry): string[] {
   switch (log.weatherId) {
     case 'blight':
       return log.harvests.length === 0
         ? [WEATHER_DEFINITIONS.blight.description, 'Nothing was due for harvest — no coins were lost.']
         : [WEATHER_DEFINITIONS.blight.description];
-    case 'pest_infestation': {
-      const plots = log.pestDestroyedPlots;
-      if (plots.length === 0) return ['The pests found nothing to eat — no crops were growing.'];
-      if (plots.length === 1) return [`Plot #${plots[0] + 1} destroyed by pests.`];
-      return [`${plots.length} plots destroyed by pests: ${plots.map(id => `#${id + 1}`).join(', ')}.`];
+    case 'pest_infestation':
+      return pestLines(log);
+    case 'flash_drought': {
+      const days = log.flashDroughtDaysAfter;
+      return [`Crops planted in the next ${days} day${days === 1 ? '' : 's'} grow at half speed.`];
     }
-    case 'flash_drought':
-      return ['Crops planted in the next 2 days grow at half speed.'];
     default:
       return [];
   }
+}
+
+function bodyLines(log: DailyLogEntry): string[] {
+  const lines = baseLines(log);
+
+  // 019 — mitigation sub-lines for owned buildings that softened this disaster.
+  // The scarecrow's pest line lives in pestLines (its wording depends on the
+  // damage outcome); only the irrigation well is a simple always-append here.
+  if (log.buildingsApplied?.includes('irrigation_well')) {
+    lines.push('⛲ Your Irrigation Well shortened the drought.');
+  }
+  return lines;
 }
 
 export function DisasterBanner({ log, animate = false }: DisasterBannerProps) {

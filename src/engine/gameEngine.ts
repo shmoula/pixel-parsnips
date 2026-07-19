@@ -1,6 +1,7 @@
 import {
   SCHEMA_VERSION,
   WEATHER_DEFINITIONS,
+  NO_BUILDINGS,
   coins,
 } from './constants';
 import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
@@ -11,16 +12,16 @@ import type {
   PlotState,
   CropId,
   WeatherId,
-  UpgradeTier,
   PlantResult,
   BuyPlotResult,
   BuyResult,
-  UpgradeResult,
   FertilizerResult,
   ClearPestDamageResult,
   TurnResult,
   DailyLogEntry,
   HarvestEvent,
+  BuildingId,
+  BuyBuildingResult,
 } from './types';
 
 // ── Factory ───────────────────────────────────────────────────────────────────
@@ -44,7 +45,6 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     coinBalance: config.startingBalance,
     plots,
     seedInventory: { radish: 0, parsnip: 0, pumpkin: 0 },
-    upgradeTier: 0,
     lastDailyLog: null,
     phase: 'playing',
     peakBalance: config.startingBalance,
@@ -56,6 +56,7 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     peakHarvestStreak: 0,
     unlockedPlots: config.startingPlots,
     market: EMPTY_MARKET,
+    buildings: { ...NO_BUILDINGS },
   };
 }
 
@@ -139,14 +140,15 @@ export function plantSeed(
 
 // ── T029: computeSeedCost ─────────────────────────────────────────────────────
 
-/** Returns the current purchase price for one seed, applying upgrade discount. */
+/** Returns the current purchase price for one seed, applying the Toolshed discount. */
 export function computeSeedCost(
-  cropId: CropId, upgradeTier: UpgradeTier, config: EconomyConfig = DEFAULT_ECONOMY,
+  cropId: CropId,
+  buildings: GameState['buildings'],
+  config: EconomyConfig = DEFAULT_ECONOMY,
 ): number {
   const crop = config.crops[cropId];
-  if (upgradeTier === 0) return crop.baseSeedCost;
-  const def = config.upgrades[upgradeTier - 1];
-  return coins(crop.baseSeedCost * (1 - def.cumulativeDiscount));
+  if (!buildings.toolshed) return crop.baseSeedCost;
+  return coins(crop.baseSeedCost * (1 - config.buildings.seedDiscount));
 }
 
 // ── T029: buySeed ─────────────────────────────────────────────────────────────
@@ -161,7 +163,7 @@ export function buySeed(
   if (!Number.isInteger(quantity) || quantity < 1) {
     return { ok: false, error: 'invalid_quantity' };
   }
-  const unitCost = computeSeedCost(cropId, state.upgradeTier, config);
+  const unitCost = computeSeedCost(cropId, state.buildings, config);
   const totalCost = unitCost * quantity;
 
   if (state.coinBalance < totalCost) {
@@ -182,32 +184,6 @@ export function buySeed(
         ...state.seedInventory,
         [cropId]: state.seedInventory[cropId] + quantity,
       },
-    },
-  };
-}
-
-// ── T029: buyUpgrade ──────────────────────────────────────────────────────────
-
-/** Purchases the next tool upgrade tier. Pure — no mutations. */
-export function buyUpgrade(state: GameState, config: EconomyConfig = DEFAULT_ECONOMY): UpgradeResult {
-  const maxTier = config.upgrades.length;
-  if (state.upgradeTier >= maxTier) {
-    return { ok: false, error: 'max_tier_reached' };
-  }
-
-  const nextTier = (state.upgradeTier + 1) as UpgradeTier;
-  const def = config.upgrades[nextTier - 1];
-
-  if (state.coinBalance < def.cost) {
-    return { ok: false, error: 'insufficient_funds' };
-  }
-
-  return {
-    ok: true,
-    state: {
-      ...state,
-      upgradeTier: nextTier,
-      coinBalance: state.coinBalance - def.cost,
     },
   };
 }
@@ -267,6 +243,39 @@ function computeStreakUpdate(
   };
 }
 
+/** Pest destruction roll threshold: lower with a scarecrow, base otherwise (019). */
+function pestDestructionChanceFor(state: GameState, config: EconomyConfig): number {
+  return state.buildings.scarecrow
+    ? config.buildings.pestDestructionChance
+    : config.pestDestructionChance;
+}
+
+/** Flash Drought window length: shorter with an irrigation well, base otherwise (019). */
+function droughtWindowDaysFor(state: GameState, config: EconomyConfig): number {
+  return state.buildings.irrigation_well
+    ? config.buildings.droughtWindowDays
+    : config.flashDroughtWindowDays;
+}
+
+/** Occupied plots a pest strike could have hit this turn (pre-destruction); 0 on
+ *  non-pest turns. Lets the banner tell an empty board apart from an all-spared one
+ *  when nothing was destroyed (019 review fix). */
+function pestPlotsAtRiskFor(weatherId: WeatherId, plots: PlotState[]): number {
+  if (weatherId !== 'pest_infestation') return 0;
+  return plots.filter(plot => plot.cropId !== null).length;
+}
+
+/** Disaster mitigations in effect this turn, for the Day Summary banner (019). */
+function computeBuildingsApplied(
+  weatherId: WeatherId,
+  buildings: GameState['buildings'],
+): BuildingId[] {
+  const applied: BuildingId[] = [];
+  if (weatherId === 'pest_infestation' && buildings.scarecrow) applied.push('scarecrow');
+  if (weatherId === 'flash_drought' && buildings.irrigation_well) applied.push('irrigation_well');
+  return applied;
+}
+
 /**
  * Executes the full end-of-turn sequence (FR-002).
  * Pass `weatherRoll` in tests for deterministic weather; omit in production.
@@ -314,7 +323,7 @@ export function processTurn(
       if (plot.cropId === null) return plot; // empty/exhausted plots immune
       const isDestroyed = pestDestructionOverride !== undefined
         ? pestDestructionOverride.includes(plot.id)
-        : rng() < 0.5;
+        : rng() < pestDestructionChanceFor(state, config);
       if (isDestroyed) {
         pestDestroyedPlots.push(plot.id);
         return {
@@ -332,21 +341,38 @@ export function processTurn(
     });
   })();
 
-  // Step 2b: Flash Drought — set counter to +2 when event fires (stacks)
+  // Step 2b: Flash Drought — extend counter when event fires (stacks); window is
+  // shortened with an irrigation well (019)
   const flashDroughtDaysAfterEvent = weatherId === 'flash_drought'
-    ? state.flashDroughtDaysRemaining + 2
+    ? state.flashDroughtDaysRemaining + droughtWindowDaysFor(state, config)
     : state.flashDroughtDaysRemaining;
+
+  // 019: disaster mitigations in effect this turn (for the Day Summary banner)
+  const buildingsApplied = computeBuildingsApplied(weatherId, state.buildings);
+
+  // 019: effective exhaustion-recovery period this turn (Compost Bin shortens it).
+  // Snapshotted onto the log so reopening "Last Turn" after buying a Compost Bin
+  // still shows the period that actually applied when the plots were exhausted.
+  const effectiveRecoveryDays = state.buildings.compost_bin
+    ? config.buildings.exhaustionRecoveryDays
+    : config.exhaustionRecoveryDays;
+
+  // 019 review fix: occupied plots the pest could have hit (pre-destruction), so the
+  // banner tells an empty board apart from an all-spared one when nothing was destroyed.
+  const pestPlotsAtRisk = pestPlotsAtRiskFor(weatherId, plots);
 
   // Step 3: Harvest all plots where daysRemaining === 0
   // Sub-step 3a: increment consecutiveHarvests per harvested plot
   // Sub-step 3b: trigger exhaustion when consecutiveHarvests >= EXHAUSTION_THRESHOLD
   const harvests: HarvestEvent[] = [];
   const exhaustedPlots: number[] = [];
+  // 019: Farm Stand — flat +10% yield multiplier, applied inside the single floor below
+  const stallMod = state.buildings.farm_stand ? config.buildings.yieldMultiplier : 1;
   const harvestedPlots = plotsAfterPest.map(plot => {
     if (plot.cropId === null || plot.daysRemaining !== 0) return plot;
     const crop = config.crops[plot.cropId];
     const marketMod = marketMultiplierFor(activeMarket, plot.cropId);
-    const adjustedYield = coins(crop.baseYield * weather.multiplier * marketMod);
+    const adjustedYield = coins(crop.baseYield * weather.multiplier * marketMod * stallMod);
     harvests.push({
       plotId: plot.id,
       cropId: plot.cropId,
@@ -415,12 +441,15 @@ export function processTurn(
       closingBalance: coinBalance,
       exhaustedPlots,
       pestDestroyedPlots,
+      pestPlotsAtRisk,
       flashDroughtDaysAfter: flashDroughtDaysAfterEvent,
       streakBefore,
       streakAfter,
       streakBonus,
       marketActive: activeMarket,
       marketAnnounced: null,
+      buildingsApplied,
+      recoveryDays: effectiveRecoveryDays,
     };
     const bankruptState: GameState = {
       ...state,
@@ -466,10 +495,11 @@ export function processTurn(
     ? flashDroughtDaysAfterEvent - 1
     : flashDroughtDaysAfterEvent;
 
-  // Step 8.5: Natural recovery — clear exhaustion after EXHAUSTION_RECOVERY_DAYS turns
+  // Step 8.5: Natural recovery — clear exhaustion after effectiveRecoveryDays turns
+  // (Compost Bin shortens this; effectiveRecoveryDays computed above at Step 2).
   const recoveredPlots = harvestedPlots.map(plot => {
     if (plot.exhaustedSinceDay === null) return plot;
-    if (currentDay - plot.exhaustedSinceDay >= config.exhaustionRecoveryDays) {
+    if (currentDay - plot.exhaustedSinceDay >= effectiveRecoveryDays) {
       return { ...plot, exhaustedSinceDay: null, consecutiveHarvests: 0 };
     }
     return plot;
@@ -503,12 +533,15 @@ export function processTurn(
     closingBalance: coinBalance,
     exhaustedPlots,
     pestDestroyedPlots,
+    pestPlotsAtRisk,
     flashDroughtDaysAfter: flashDroughtDaysRemaining,
     streakBefore,
     streakAfter: harvestStreakAfterSeason,
     streakBonus,
     marketActive: activeMarket,
     marketAnnounced: scheduled,
+    buildingsApplied,
+    recoveryDays: effectiveRecoveryDays,
   };
 
   // Step 9.5: Increment disastersSurvived if this turn's weather was a disaster
@@ -624,6 +657,41 @@ export function buyPlot(state: GameState, config: EconomyConfig = DEFAULT_ECONOM
       ...state,
       coinBalance: state.coinBalance - price,
       unlockedPlots: state.unlockedPlots + 1,
+    },
+  };
+}
+
+// ── buyBuilding (019) ─────────────────────────────────────────────────────────
+
+/**
+ * Purchases a one-time farm building. Pure — no mutations.
+ * Guard precedence (load-bearing): invalid_id → already_owned → not_unlocked →
+ * insufficient_funds.
+ */
+export function buyBuilding(
+  state: GameState,
+  id: BuildingId,
+  config: EconomyConfig = DEFAULT_ECONOMY,
+): BuyBuildingResult {
+  const def = config.buildings.definitions.find(d => d.id === id);
+  if (!def) {
+    return { ok: false, error: 'invalid_id' };
+  }
+  if (state.buildings[id]) {
+    return { ok: false, error: 'already_owned' };
+  }
+  if (getSeasonForDay(state.currentDay, config).number < def.unlockSeason) {
+    return { ok: false, error: 'not_unlocked' };
+  }
+  if (state.coinBalance < def.cost) {
+    return { ok: false, error: 'insufficient_funds' };
+  }
+  return {
+    ok: true,
+    state: {
+      ...state,
+      coinBalance: state.coinBalance - def.cost,
+      buildings: { ...state.buildings, [id]: true },
     },
   };
 }

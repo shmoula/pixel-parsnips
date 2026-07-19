@@ -12,7 +12,12 @@ export type WeatherId =
   | 'pest_infestation'
   | 'flash_drought';
 
-export type UpgradeTier = 0 | 1 | 2 | 3;
+export type BuildingId =
+  | 'toolshed'
+  | 'compost_bin'
+  | 'irrigation_well'
+  | 'scarecrow'
+  | 'farm_stand';
 
 export type MarketEventKind = 'shortage' | 'glut';
 
@@ -52,11 +57,15 @@ export interface WeatherDefinition {
   description: string;
 }
 
-export interface UpgradeTierDefinition {
-  tier: 1 | 2 | 3;
-  label: string;
+export interface BuildingDefinition {
+  id: BuildingId;
+  name: string;
+  emoji: string;
   cost: number;
-  cumulativeDiscount: number;
+  /** Plain-language card copy, not percentages alone. */
+  description: string;
+  /** First season the building is purchasable; 1 = from day 1. */
+  unlockSeason: number;
 }
 
 // ── Mutable game state ────────────────────────────────────────────────────────
@@ -103,6 +112,10 @@ export interface DailyLogEntry {
   exhaustedPlots: number[];
   /** Plot IDs destroyed by Pest Infestation this turn; empty array on non-pest turns. */
   pestDestroyedPlots: number[];
+  /** Occupied plots when Pest Infestation struck (before destruction); 0 on non-pest turns.
+   *  Lets the banner tell an empty board ("no crops were growing") apart from an
+   *  all-spared board ("every plot survived") when pestDestroyedPlots is empty. */
+  pestPlotsAtRisk: number;
   /** Value of flashDroughtDaysRemaining at end of turn processing; 0 when inactive. */
   flashDroughtDaysAfter: number;
   /** Value of harvestStreak at start of turn (before increment/reset). */
@@ -115,6 +128,15 @@ export interface DailyLogEntry {
   marketActive: ActiveMarketEvent | null;
   /** Event scheduled THIS turn to take effect next turn, or null. */
   marketAnnounced: MarketEvent | null;
+  /** Disaster mitigations in effect this turn: subset of {irrigation_well, scarecrow}.
+   *  Logged (not derived from live state) so reopening "Last Turn" after buying a
+   *  building can't show a mitigation that didn't happen. */
+  buildingsApplied: BuildingId[];
+  /** Effective exhaustion-recovery period (in days) in force the turn this log was
+   *  written: 2 with a Compost Bin, 3 without. Snapshotted (not derived from live
+   *  state) so reopening "Last Turn" after buying a Compost Bin still shows the
+   *  period that actually applied. Optional for pre-schema-9 logs that predate it. */
+  recoveryDays?: number;
 }
 
 export interface GameState {
@@ -123,7 +145,6 @@ export interface GameState {
   coinBalance: number;
   plots: PlotState[];
   seedInventory: SeedInventory;
-  upgradeTier: UpgradeTier;
   lastDailyLog: DailyLogEntry | null;
   phase: 'playing' | 'bankrupt'
        | 'season_passed' | 'season_4_won' | 'season_failed';
@@ -144,6 +165,8 @@ export interface GameState {
   unlockedPlots: number;
   /** Dynamic crop-pricing state (G7). At most one of active/pending is set. */
   market: MarketState;
+  /** One-time farm buildings owned this run (019). All false on a new run. */
+  buildings: Record<BuildingId, boolean>;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────
@@ -165,13 +188,13 @@ export type BuyResult =
   | { ok: false; error: 'insufficient_funds'; cost: number; balance: number }
   | { ok: false; error: 'invalid_quantity' };
 
-export type UpgradeResult =
-  | { ok: true; state: GameState }
-  | { ok: false; error: 'insufficient_funds' | 'max_tier_reached' };
-
 export type ClearPestDamageResult =
   | { ok: true; state: GameState }
   | { ok: false; error: 'plot_not_pest_damaged' | 'invalid_plot' };
+
+export type BuyBuildingResult =
+  | { ok: true; state: GameState }
+  | { ok: false; error: 'invalid_id' | 'already_owned' | 'not_unlocked' | 'insufficient_funds' };
 
 export interface TurnResult {
   state: GameState;

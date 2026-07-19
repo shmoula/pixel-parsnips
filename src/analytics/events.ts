@@ -45,6 +45,15 @@ export interface EventPropsMap {
     peak_harvest_streak: number;
     medal: Medal;
   };
+  shop_purchased: {
+    item_type: 'seed' | 'fertilizer' | 'building';
+    item_id: string;
+    quantity: number;
+    cost: number;
+    day: number;
+    season_number: number;
+    coin_balance_after: number;
+  };
 }
 
 export type AnalyticsEventName = keyof EventPropsMap;
@@ -58,6 +67,7 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   plot_unlocked: 1,
   season_completed: 1,
   run_ended: 1,
+  shop_purchased: 1,
 };
 
 export function buildDayCompletedProps(

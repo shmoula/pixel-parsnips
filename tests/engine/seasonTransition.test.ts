@@ -99,14 +99,13 @@ describe('processTurn — bankruptcy dominates season_failed', () => {
 });
 
 describe('processTurn — 80-day deterministic run canary (regression)', () => {
-  it('a player who plants Pumpkins every turn at Tier 3 reaches season_4_won by Day 80', () => {
+  it('a player who plants Pumpkins every turn reaches season_4_won by Day 80', () => {
     // This canary characterizes the ORIGINAL (pre-010) economy: 12 starting plots,
     // 5% tax, and the old lease/target table. The expected closing balance (1277) is
     // tied to those numbers, so we drive every engine call with the frozen `baseline`
     // preset rather than the (now rebalanced) DEFAULT_ECONOMY.
     let state: GameState = {
       ...initialGameState(baseline),
-      upgradeTier: 3,
       coinBalance: 500,
       seedInventory: { radish: 0, parsnip: 0, pumpkin: 200 },
     };

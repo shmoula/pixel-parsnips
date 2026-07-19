@@ -72,15 +72,16 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null; on
     onNextDay: vi.fn(),
     onPlantSeed: vi.fn().mockReturnValue(false),
     onBuySeed: vi.fn(),
-    onBuyUpgrade: vi.fn(),
     onBuyFertilizer: vi.fn(),
     onApplyFertilizer: vi.fn(),
     onClearPestDamage: vi.fn(),
     getFertilizerCount: () => 0,
     getSeedPrice: () => 5,
-    getNextUpgradeCost: () => 50 as number | null,
     onBuyPlot: vi.fn().mockReturnValue(false),
     getNextPlotPrice: () => null as number | null,
+    recoveryDays: 3,
+    buildingCards: [],
+    onBuyBuilding: vi.fn().mockReturnValue(false),
     onRestart: overrides.onRestart ?? vi.fn(),
   };
 }
@@ -100,6 +101,7 @@ const sampleLog: DailyLogEntry = {
   exhaustedPlots: [],
   pestDestroyedPlots: [],
   flashDroughtDaysAfter: 0,
+  buildingsApplied: [],
 };
 
 describe('GameBoard — smoke tests (T047)', () => {

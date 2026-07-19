@@ -5,6 +5,8 @@ interface FarmGridProps {
   plots: PlotState[];
   currentDay?: number;
   fertilizerInventory?: number;
+  /** Effective natural-recovery period for exhausted plots (2 with Compost Bin, 3 without). */
+  recoveryDays?: number;
   unlockedPlots?: number;
   nextPlotPrice?: number | null;
   canAffordPlot?: boolean;
@@ -26,7 +28,7 @@ function firstPlantablePlotId(plots: PlotState[], unlockedPlots: number): number
   return plot ? plot.id : null;
 }
 
-export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, unlockedPlots, nextPlotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: FarmGridProps) {
+export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, recoveryDays, unlockedPlots, nextPlotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: FarmGridProps) {
   const plantAnchorId = firstPlantablePlotId(plots, unlockedPlots ?? plots.length);
   return (
     // T017 — textured farm canvas: dark tilled soil + grain filter + fence border + decor
@@ -102,6 +104,7 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, unloc
                 plot={plot}
                 currentDay={currentDay}
                 fertilizerInventory={fertilizerInventory}
+                recoveryDays={recoveryDays}
                 isPlantAnchor={plot.id === plantAnchorId}
                 locked={locked}
                 isNextPurchasable={locked && isNextPurchasable}

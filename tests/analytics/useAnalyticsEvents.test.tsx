@@ -5,7 +5,7 @@ const track = vi.hoisted(() => vi.fn());
 vi.mock('../../src/analytics/track', () => ({ track }));
 
 import { useAnalyticsEvents } from '../../src/analytics/useAnalyticsEvents';
-import { initialGameState } from '../../src/engine/gameEngine';
+import { buyPlot, initialGameState } from '../../src/engine/gameEngine';
 import type { DailyLogEntry, GameState } from '../../src/engine/types';
 
 function makeLog(day: number): DailyLogEntry {
@@ -29,6 +29,7 @@ function makeLog(day: number): DailyLogEntry {
     streakBonus: 0,
     marketActive: null,
     marketAnnounced: null,
+    buildingsApplied: [],
   };
 }
 
@@ -63,29 +64,55 @@ describe('useAnalyticsEvents day_completed', () => {
 });
 
 describe('useAnalyticsEvents plot_unlocked + first-plot milestone', () => {
-  it('fires plot_unlocked with the paid price and the first-plot milestone once', () => {
-    const base = { ...initialGameState(), unlockedPlots: 0, currentDay: 4 } as GameState;
+  // Real play never sees unlockedPlots === 0: initialGameState() starts at
+  // startingPlots, so the first *purchase* is the startingPlots -> +1 transition.
+  function buyPlotOrThrow(state: GameState): GameState {
+    const result = buyPlot(state);
+    if (!result.ok) throw new Error(`buyPlot failed: ${result.error}`);
+    return result.state;
+  }
+
+  it('fires plot_unlocked with the paid price when a plot is bought', () => {
+    const base = initialGameState();
     const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
-      initialProps: { state: base },
+      initialProps: { state: base as GameState },
     });
     track.mockClear();
 
-    const after: GameState = { ...base, unlockedPlots: 1 };
+    const after = buyPlotOrThrow(base);
     rerender({ state: after });
 
     const plotCall = track.mock.calls.find(([n]) => n === 'plot_unlocked');
     expect(plotCall).toBeTruthy();
     expect(plotCall![1]).toMatchObject({
-      unlocked_plots_after: 1,
+      unlocked_plots_after: base.unlockedPlots + 1,
+      price: base.coinBalance - after.coinBalance,
       coin_balance_after: after.coinBalance,
     });
-    expect(typeof plotCall![1].price).toBe('number');
+  });
 
-    const milestoneCall = track.mock.calls.find(
+  it('fires the first_plot_unlocked milestone exactly once, on the first purchase of a run', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base as GameState },
+    });
+    track.mockClear();
+
+    const afterFirst = buyPlotOrThrow(base);
+    rerender({ state: afterFirst });
+    const afterSecond = buyPlotOrThrow(afterFirst);
+    rerender({ state: afterSecond });
+
+    const milestoneCalls = track.mock.calls.filter(
       ([n, p]) => n === 'milestone_reached' && p.milestone === 'first_plot_unlocked',
     );
-    expect(milestoneCall).toBeTruthy();
-    expect(milestoneCall![1]).toMatchObject({ milestone: 'first_plot_unlocked', day: 4 });
+    expect(milestoneCalls).toHaveLength(1);
+    expect(milestoneCalls[0][1]).toMatchObject({
+      milestone: 'first_plot_unlocked',
+      day: 1,
+      season_number: 1,
+    });
+    expect(track.mock.calls.filter(([n]) => n === 'plot_unlocked')).toHaveLength(2);
   });
 });
 
@@ -169,5 +196,56 @@ describe('useAnalyticsEvents run_ended', () => {
     const calls = track.mock.calls.filter(([n]) => n === 'run_ended');
     expect(calls).toHaveLength(1);
     expect(calls[0][1]).toMatchObject({ days_played: 9 });
+  });
+});
+
+describe('useAnalyticsEvents shop_purchased (019)', () => {
+  it('fires for a seed purchase with prev-state pricing', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base as GameState },
+    });
+    const bought: GameState = {
+      ...base,
+      coinBalance: base.coinBalance - 10,
+      seedInventory: { ...base.seedInventory, radish: 2 },
+    };
+    rerender({ state: bought });
+    expect(track).toHaveBeenCalledWith('shop_purchased', expect.objectContaining({
+      item_type: 'seed', item_id: 'radish', quantity: 2, cost: 10, coin_balance_after: bought.coinBalance,
+    }));
+  });
+
+  it('fires for a building purchase with the definition cost', () => {
+    const base = { ...initialGameState(), currentDay: 21 } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    const bought: GameState = { ...base, buildings: { ...base.buildings, scarecrow: true } };
+    rerender({ state: bought });
+    expect(track).toHaveBeenCalledWith('shop_purchased', expect.objectContaining({
+      item_type: 'building', item_id: 'scarecrow', quantity: 1, cost: 150, season_number: 2,
+    }));
+  });
+
+  it('stays silent when inventory decreases (planting)', () => {
+    const base = { ...initialGameState(), seedInventory: { radish: 2, parsnip: 0, pumpkin: 0 } } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    track.mockClear();
+    rerender({ state: { ...base, seedInventory: { ...base.seedInventory, radish: 1 } } });
+    expect(track).not.toHaveBeenCalledWith('shop_purchased', expect.anything());
+  });
+
+  it('fires for a fertilizer purchase', () => {
+    const base = initialGameState() as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    rerender({ state: { ...base, fertilizerInventory: 1 } });
+    expect(track).toHaveBeenCalledWith('shop_purchased', expect.objectContaining({
+      item_type: 'fertilizer', item_id: 'fertilizer', quantity: 1, cost: 30,
+    }));
   });
 });

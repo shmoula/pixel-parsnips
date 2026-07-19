@@ -86,15 +86,16 @@ function App() {
         onNextDay={engine.nextDay}
         onPlantSeed={engine.plantSeed}
         onBuySeed={cropId => engine.buySeed(cropId, 1)}
-        onBuyUpgrade={engine.buyUpgrade}
         onBuyFertilizer={() => engine.buyFertilizer(1)}
         onApplyFertilizer={engine.applyFertilizer}
         onClearPestDamage={engine.clearPestDamage}
         getFertilizerCount={engine.getFertilizerCount}
         getSeedPrice={engine.getSeedPrice}
-        getNextUpgradeCost={engine.getNextUpgradeCost}
         onBuyPlot={engine.buyPlot}
         getNextPlotPrice={engine.getNextPlotPrice}
+        recoveryDays={engine.getRecoveryDays()}
+        buildingCards={engine.getBuildingCards()}
+        onBuyBuilding={engine.buyBuilding}
         onRestart={restart}
       />
       {transitionVariant && (

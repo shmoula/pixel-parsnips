@@ -12,9 +12,11 @@ interface DaySummaryModalProps {
   /** True on the auto-open after advancing a day (plays the staged reveal);
       false when reopened via "Last Turn" (show the resolved state at once). */
   animateReveal?: boolean;
+  /** Effective natural-recovery period for exhausted plots (2 with Compost Bin, 3 without). */
+  recoveryDays?: number;
 }
 
-export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySummaryModalProps) {
+export function DaySummaryModal({ log, onClose, animateReveal = true, recoveryDays }: DaySummaryModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const { showDisasterChrome, suppressDisasterStyling, animate } = useDisasterReveal(log, animateReveal);
   const isQuietDay =
@@ -57,7 +59,7 @@ export function DaySummaryModal({ log, onClose, animateReveal = true }: DaySumma
             </p>
           )}
 
-          <DailyLog log={log} suppressDisasterStyling={suppressDisasterStyling} />
+          <DailyLog log={log} suppressDisasterStyling={suppressDisasterStyling} recoveryDays={recoveryDays} />
 
           {showDisasterChrome && (
             <DisasterBanner log={log} animate={animate} />

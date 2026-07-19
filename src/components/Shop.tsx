@@ -1,9 +1,10 @@
-import type { CropId, UpgradeTier, GameState, ActiveMarketEvent } from '../engine/types';
+import type { CropId, GameState, ActiveMarketEvent, BuildingId } from '../engine/types';
 import { Coin } from './Coin';
-import { UPGRADE_TIER_DEFINITIONS, FERTILIZER_COST } from '../engine/constants';
+import { FERTILIZER_COST } from '../engine/constants';
 import { SeedCard } from './SeedCard';
-import { UpgradeCard } from './UpgradeCard';
+import { BuildingCard } from './BuildingCard';
 import { woodPlanksUrl } from './decorAssets';
+import type { BuildingCardData } from '../engine/useGameEngine';
 
 const CROP_IDS: CropId[] = ['radish', 'parsnip', 'pumpkin'];
 
@@ -105,41 +106,42 @@ function SignHeader() {
 
 interface ShopProps {
   coinBalance: number;
-  upgradeTier: UpgradeTier;
   seedInventory: GameState['seedInventory'];
   fertilizerInventory: number;
   selectedCrop: CropId | null;
   getSeedPrice: (cropId: CropId) => number;
   onBuySeed: (cropId: CropId) => void;
   onSelectCrop: (cropId: CropId) => void;
-  onBuyUpgrade: () => void;
   onBuyFertilizer: () => void;
-  getNextUpgradeCost: () => number | null;
   marketActive: ActiveMarketEvent | null;
   dimNonRadish?: boolean;
+  buildingCards: BuildingCardData[];
+  onBuyBuilding: (id: BuildingId) => void;
 }
 
 export function Shop({
   coinBalance,
-  upgradeTier,
   seedInventory,
   fertilizerInventory,
   selectedCrop,
   getSeedPrice,
   onBuySeed,
   onSelectCrop,
-  onBuyUpgrade,
   onBuyFertilizer,
-  getNextUpgradeCost,
   marketActive,
   dimNonRadish,
+  buildingCards,
+  onBuyBuilding,
 }: ShopProps) {
-  const nextUpgradeCost = getNextUpgradeCost();
-
-  // T020 — split upgrade tiers into owned / next purchasable / future locked
-  const ownedTiers = UPGRADE_TIER_DEFINITIONS.filter(d => upgradeTier >= d.tier);
-  const nextTier = UPGRADE_TIER_DEFINITIONS.find(d => upgradeTier === d.tier - 1);
-  const futureTiers = UPGRADE_TIER_DEFINITIONS.filter(d => upgradeTier < d.tier - 1);
+  // Owned + purchasable buildings share one shelf, in definition order, so a
+  // building keeps its slot after purchase (it just swaps to the owned layout).
+  const shelfBuildings = buildingCards.filter(c => c.owned || c.unlocked);
+  const lockedBuildings = buildingCards.filter(c => !c.owned && !c.unlocked);
+  const hasLockedBuildings = lockedBuildings.length > 0;
+  // The earliest season any still-locked building becomes available.
+  const nextBuildingSeason = hasLockedBuildings
+    ? Math.min(...lockedBuildings.map(c => c.def.unlockSeason))
+    : 0;
 
   return (
     // T021 — wood-grain texture on sidebar wrapper
@@ -241,51 +243,29 @@ export function Shop({
         <ShelfLedge />
       </section>
 
-      {/* T020b — Active Buffs tray: only shown when at least one tool is owned */}
-      {ownedTiers.length > 0 && (
-        <section aria-label="Active Buffs">
-          <p className="font-pixel text-caption text-farm-gold/60 tracking-widest uppercase mb-2">Active Buffs</p>
-          <div className="flex flex-col gap-1">
-            {ownedTiers.map(def => (
-              <UpgradeCard
-                key={def.tier}
-                def={def}
-                isOwned={true}
-                isNext={false}
-                canAfford={false}
-                onBuy={() => {}}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* T020c — Tools section: next purchasable + future locked only (no owned tiers) */}
-      {(nextTier !== undefined || futureTiers.length > 0) && (
-        <section aria-label="Tool upgrades">
+      {/* Buildings shelf (019) — owned + purchasable buildings, in place */}
+      {(shelfBuildings.length > 0 || hasLockedBuildings) && (
+        <section aria-label="Buildings">
           <Awning />
-          <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Tools</p>
+          <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Buildings</p>
           <div className="flex flex-col gap-2">
-            {nextTier && (
-              <UpgradeCard
-                key={nextTier.tier}
-                def={nextTier}
-                isOwned={false}
-                isNext={true}
-                canAfford={nextUpgradeCost !== null && coinBalance >= nextUpgradeCost}
-                onBuy={onBuyUpgrade}
-              />
-            )}
-            {futureTiers.map(def => (
-              <UpgradeCard
-                key={def.tier}
-                def={def}
-                isOwned={false}
-                isNext={false}
-                canAfford={false}
-                onBuy={() => {}}
+            {shelfBuildings.map(c => (
+              <BuildingCard
+                key={c.def.id}
+                def={c.def}
+                owned={c.owned}
+                canAfford={coinBalance >= c.def.cost}
+                onBuy={onBuyBuilding}
               />
             ))}
+            {hasLockedBuildings && (
+              <div className="bg-[#261808]/60 rounded-lg p-3 flex items-center gap-2 border border-dashed border-[#5C3D1E]">
+                <span aria-hidden="true" className="text-lg">🔒</span>
+                <p className="text-body text-farm-stone">
+                  New buildings unlock in Season {nextBuildingSeason}
+                </p>
+              </div>
+            )}
           </div>
           <ShelfLedge />
         </section>

@@ -3,18 +3,18 @@ import type {
   CropId,
   WeatherDefinition,
   WeatherId,
-  UpgradeTierDefinition,
+  BuildingDefinition,
+  BuildingId,
 } from './types';
 
 // ── Scalar constants ──────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 export const STARTING_BALANCE = 130;
 export const PLOT_COUNT = 12;
 export const STARTING_PLOTS = 4;
 export const PLOT_PRICES = [30, 55, 85, 120, 160, 210, 280, 360];
 export const TAX_RATE = 0.06;
-export const MAX_UPGRADE_TIER = 3;
 export const EXHAUSTION_THRESHOLD = 3;
 export const EXHAUSTION_RECOVERY_DAYS = 3;
 export const FERTILIZER_COST = 30;
@@ -26,6 +26,13 @@ export const MARKET_SHORTAGE_MULTIPLIER = 1.4;
 export const MARKET_GLUT_MULTIPLIER = 0.7;
 export const MARKET_DURATION_DAYS = 3;
 export const MARKET_ANNOUNCE_LEAD_DAYS = 1;
+export const PEST_DESTRUCTION_CHANCE = 0.5;
+export const FLASH_DROUGHT_WINDOW_DAYS = 2;
+export const BUILDING_SEED_DISCOUNT = 0.4;
+export const BUILDING_EXHAUSTION_RECOVERY_DAYS = 2;
+export const BUILDING_DROUGHT_WINDOW_DAYS = 1;
+export const BUILDING_PEST_DESTRUCTION_CHANCE = 0.25;
+export const BUILDING_YIELD_MULTIPLIER = 1.1;
 
 /** Integer rounding helper for all coin arithmetic. */
 export const coins = (n: number): number => Math.floor(n);
@@ -55,6 +62,25 @@ export const CROP_DEFINITIONS: Record<CropId, CropDefinition> = {
     baseYield: 65,
   },
 } as const;
+
+// ── Building definitions (019) ────────────────────────────────────────────────
+
+export const BUILDING_DEFINITIONS: BuildingDefinition[] = [
+  { id: 'toolshed',        name: 'Toolshed',        emoji: '🛠️', cost: 100, description: 'Seeds cost 40% less',                    unlockSeason: 1 },
+  { id: 'compost_bin',     name: 'Compost Bin',     emoji: '🍂', cost: 100, description: 'Exhausted plots rest 2 days instead of 3', unlockSeason: 2 },
+  { id: 'irrigation_well', name: 'Irrigation Well', emoji: '⛲', cost: 130, description: 'Flash droughts pass in 1 day instead of 2', unlockSeason: 2 },
+  { id: 'scarecrow',       name: 'Scarecrow',       emoji: '🎃', cost: 150, description: 'Pests destroy half as many plots',          unlockSeason: 2 },
+  { id: 'farm_stand',      name: 'Farm Stand',      emoji: '🧺', cost: 200, description: 'All harvests sell for 10% more',            unlockSeason: 2 },
+];
+
+/** Canonical "nothing owned" record — spread it, never mutate it. */
+export const NO_BUILDINGS: Record<BuildingId, boolean> = {
+  toolshed: false,
+  compost_bin: false,
+  irrigation_well: false,
+  scarecrow: false,
+  farm_stand: false,
+};
 
 // ── Weather definitions ───────────────────────────────────────────────────────
 
@@ -124,12 +150,4 @@ export const WEATHER_PROBABILITY_BANDS: Array<{ threshold: number; id: WeatherId
   { threshold: 0.66, id: 'sunny' },
   { threshold: 0.83, id: 'warm_breeze' },
   { threshold: 1.00, id: 'perfect_sun' },
-];
-
-// ── Upgrade tier definitions ──────────────────────────────────────────────────
-
-export const UPGRADE_TIER_DEFINITIONS: UpgradeTierDefinition[] = [
-  { tier: 1, label: 'Rusty Trowel',  cost: 50,  cumulativeDiscount: 0.20 },
-  { tier: 2, label: 'Iron Hoe',      cost: 120, cumulativeDiscount: 0.40 },
-  { tier: 3, label: 'Golden Spade',  cost: 250, cumulativeDiscount: 0.60 },
 ];

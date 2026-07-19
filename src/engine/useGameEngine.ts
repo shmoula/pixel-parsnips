@@ -4,16 +4,17 @@ import {
   plantSeed,
   processTurn,
   buySeed as engineBuySeed,
-  buyUpgrade as engineBuyUpgrade,
   buyFertilizer as engineBuyFertilizer,
   applyFertilizer as engineApplyFertilizer,
   clearPestDamage as engineClearPestDamage,
   buyPlot as engineBuyPlot,
   getNextPlotPrice as engineGetNextPlotPrice,
+  buyBuilding as engineBuyBuilding,
   computeSeedCost,
 } from './gameEngine';
-import { UPGRADE_TIER_DEFINITIONS, MAX_UPGRADE_TIER, SCHEMA_VERSION } from './constants';
+import { SCHEMA_VERSION, NO_BUILDINGS } from './constants';
 import { DEFAULT_ECONOMY } from './economy';
+import { resolveEconomy } from '../devFlags';
 import type {
   GameState,
   CropId,
@@ -23,6 +24,8 @@ import type {
   ActiveMarketEvent,
   MarketEventKind,
   WeatherId,
+  BuildingId,
+  BuildingDefinition,
 } from './types';
 import { recordRunEnd, type PersonalBests } from './records';
 import { deriveMedal, type Medal } from './medals';
@@ -32,6 +35,9 @@ import { trackPlayStartedOnce } from '../analytics/track';
 import { loadOnboarding } from './onboarding';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
+
+/** Resolved once per session; the URL can't change mid-session without a reload. */
+const ECONOMY = resolveEconomy();
 
 /** Minimal structural check that `state` looks like a GameState payload. */
 function isGameStateShape(state: unknown): state is Record<string, unknown> {
@@ -73,6 +79,26 @@ function normalizeMarket(raw: unknown): MarketState {
   return { active: null, pending: toPendingEvent(m.pending) };
 }
 
+/** Normalize a raw `buildings` value from a save: missing/malformed → all false. */
+function normalizeBuildings(raw: unknown): GameState['buildings'] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...NO_BUILDINGS };
+  const r = raw as Record<string, unknown>;
+  return {
+    toolshed: r.toolshed === true,
+    compost_bin: r.compost_bin === true,
+    irrigation_well: r.irrigation_well === true,
+    scarecrow: r.scarecrow === true,
+    farm_stand: r.farm_stand === true,
+  };
+}
+
+/** v8 → v9: any owned tool tier becomes the Toolshed; the tier field is dropped. */
+function migrateLadderToBuildings(st: Record<string, unknown>): Record<string, unknown> {
+  const tier = typeof st.upgradeTier === 'number' ? st.upgradeTier : 0;
+  const { upgradeTier: _dropped, ...rest } = st;
+  return { ...rest, buildings: { ...NO_BUILDINGS, toolshed: tier >= 1 } };
+}
+
 /**
  * Hardens a current-schema save against tampering/corruption before use.
  * Downstream code (state.plots.every, plots.map, getNextPlotPrice, market
@@ -89,11 +115,13 @@ function hardenCurrentSchema(st: Record<string, unknown>): GameState {
     Math.min(Number.isNaN(rawUnlocked) ? plots.length : rawUnlocked, plots.length),
   );
   const market = normalizeMarket(st.market);
+  const buildings = normalizeBuildings(st.buildings);
   return {
     ...(st as unknown as GameState),
     plots,
     unlockedPlots,
     market,
+    buildings,
     schemaVersion: SCHEMA_VERSION,
   } as GameState;
 }
@@ -110,39 +138,48 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     return null;
   }
 
-  // Schema 8 — current. Harden tampered/corrupt fields in place.
+  // Schema 9 — current. Harden tampered/corrupt fields in place.
   if (parsed.schemaVersion === SCHEMA_VERSION) {
     return hardenCurrentSchema(parsed.state as Record<string, unknown>);
   }
 
-  // Schema 7 → 8 — add market (existing runs continue with no event)
+  // Schema 8 → 9 — collapse the tool ladder into the Toolshed building (019)
+  if (parsed.schemaVersion === 8) {
+    console.info('[PixelParsnips] Migrating save from v8 to v9 (Farm Buildings — tool tiers become the Toolshed; T1 owners gain a little, T3 owners lose the last 20%).');
+    return hardenCurrentSchema({
+      ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
+      schemaVersion: SCHEMA_VERSION,
+    });
+  }
+
+  // Schema 7 → 9 — add market (existing runs continue with no event) + ladder collapse
   if (parsed.schemaVersion === 7) {
-    console.info('[PixelParsnips] Migrating save from v7 to v8 (Market Events).');
+    console.info('[PixelParsnips] Migrating save from v7 to v9 (Market Events + Farm Buildings).');
     const st = parsed.state as Record<string, unknown>;
     return hardenCurrentSchema({
-      ...st,
+      ...migrateLadderToBuildings(st),
       schemaVersion: SCHEMA_VERSION,
       market: { active: null, pending: null },
     });
   }
 
-  // Schema 6 → 8 — add unlockedPlots (existing runs keep all plots unlocked) + market
+  // Schema 6 → 9 — add unlockedPlots (existing runs keep all plots unlocked) + market + ladder collapse
   if (parsed.schemaVersion === 6) {
-    console.info('[PixelParsnips] Migrating save from v6 to v8 (Plot Progression + Market Events).');
+    console.info('[PixelParsnips] Migrating save from v6 to v9 (Plot Progression + Market Events + Farm Buildings).');
     const st = parsed.state as Record<string, unknown>;
     return hardenCurrentSchema({
-      ...st,
+      ...migrateLadderToBuildings(st),
       schemaVersion: SCHEMA_VERSION,
       unlockedPlots: Array.isArray(st.plots) ? st.plots.length : DEFAULT_ECONOMY.maxPlots,
       market: { active: null, pending: null },
     });
   }
 
-  // Schema 5 → 8 — add harvestStreak, peakHarvestStreak, unlockedPlots, and market
+  // Schema 5 → 9 — add harvestStreak, peakHarvestStreak, unlockedPlots, market, and ladder collapse
   if (parsed.schemaVersion === 5) {
-    console.info('[PixelParsnips] Migrating save from v5 to v8 (Harvest Streak + Plot Progression + Market Events).');
+    console.info('[PixelParsnips] Migrating save from v5 to v9 (Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
     return hardenCurrentSchema({
-      ...(parsed.state as Record<string, unknown>),
+      ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
       harvestStreak: 0,
       peakHarvestStreak: 0,
@@ -151,11 +188,11 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     });
   }
 
-  // Schema 4 → 8 — chained: add disastersSurvived + streak fields + unlockedPlots + market
+  // Schema 4 → 9 — chained: add disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
   if (parsed.schemaVersion === 4) {
-    console.info('[PixelParsnips] Migrating save from v4 to v8.');
+    console.info('[PixelParsnips] Migrating save from v4 to v9.');
     return hardenCurrentSchema({
-      ...(parsed.state as Record<string, unknown>),
+      ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
       disastersSurvived: 0,
       harvestStreak: 0,
@@ -165,11 +202,11 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     });
   }
 
-  // Schema 3 → 8 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots + market
+  // Schema 3 → 9 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
   if (parsed.schemaVersion === 3) {
-    console.info('[PixelParsnips] Migrating save from v3 to v8 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression + Market Events).');
+    console.info('[PixelParsnips] Migrating save from v3 to v9 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
     return hardenCurrentSchema({
-      ...(parsed.state as Record<string, unknown>),
+      ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
       endlessMode: false,
       disastersSurvived: 0,
@@ -190,11 +227,11 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
 function loadState(): GameState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return initialGameState();
+    if (!raw) return initialGameState(ECONOMY);
     const parsed = JSON.parse(raw);
-    return migrateState(parsed) ?? initialGameState();
+    return migrateState(parsed) ?? initialGameState(ECONOMY);
   } catch {
-    return initialGameState();
+    return initialGameState(ECONOMY);
   }
 }
 
@@ -209,6 +246,12 @@ export interface EndOfRunRecap {
   seasonReached: number;
 }
 
+export interface BuildingCardData {
+  def: BuildingDefinition;
+  owned: boolean;
+  unlocked: boolean;
+}
+
 export interface GameEngineHook {
   state: GameState;
   lastDailyLog: DailyLogEntry | null;
@@ -216,19 +259,20 @@ export interface GameEngineHook {
   nextDay: (weatherOverride?: WeatherId) => void;
   plantSeed: (plotId: number, cropId: CropId) => boolean;
   buySeed: (cropId: CropId, quantity: number) => boolean;
-  buyUpgrade: () => boolean;
   buyFertilizer: (quantity: number) => boolean;
   applyFertilizer: (plotId: number) => boolean;
   clearPestDamage: (plotId: number) => boolean;
   buyPlot: () => boolean;
+  buyBuilding: (id: BuildingId) => boolean;
+  getBuildingCards: () => BuildingCardData[];
   getFertilizerCount: () => number;
   restart: () => void;
   continueSeason: () => void;
   endRunVictory: () => void;
   getSeedPrice: (cropId: CropId) => number;
-  getNextUpgradeCost: () => number | null;
   getNextPlotPrice: () => number | null;
   getOccupiedPlotCount: () => number;
+  getRecoveryDays: () => number;
 }
 
 export function useGameEngine(): GameEngineHook {
@@ -290,7 +334,7 @@ export function useGameEngine(): GameEngineHook {
 
     const { records, newBests } = recordRunEnd(state);
     const won = state.endlessMode || curr === 'season_4_won';
-    const seasonReached = getSeasonForDay(state.currentDay).number;
+    const seasonReached = getSeasonForDay(state.currentDay, ECONOMY).number;
     setEndOfRunRecap({
       records,
       newBests,
@@ -309,11 +353,11 @@ export function useGameEngine(): GameEngineHook {
     // updaters/reducers, and an impure call there can diverge between the kept
     // and discarded invocations. Read the authoritative snapshot from stateRef
     // and call processTurn exactly once, matching every other action below.
-    commitState(processTurn(stateRef.current, weatherOverride).state);
+    commitState(processTurn(stateRef.current, weatherOverride, undefined, undefined, ECONOMY).state);
   }, [commitState, signalPlayStarted]);
 
   const plant = useCallback((plotId: number, cropId: CropId): boolean => {
-    const result = plantSeed(stateRef.current, plotId, cropId);
+    const result = plantSeed(stateRef.current, plotId, cropId, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('plant');
     commitState(result.state);
@@ -321,23 +365,15 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const buySeed = useCallback((cropId: CropId, quantity: number): boolean => {
-    const result = engineBuySeed(stateRef.current, cropId, quantity);
+    const result = engineBuySeed(stateRef.current, cropId, quantity, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('buy_seed');
     commitState(result.state);
     return true;
   }, [commitState, signalPlayStarted]);
 
-  const buyUpgrade = useCallback((): boolean => {
-    const result = engineBuyUpgrade(stateRef.current);
-    if (!result.ok) return false;
-    signalPlayStarted('buy_upgrade');
-    commitState(result.state);
-    return true;
-  }, [commitState, signalPlayStarted]);
-
   const buyFertilizer = useCallback((quantity: number): boolean => {
-    const result = engineBuyFertilizer(stateRef.current, quantity);
+    const result = engineBuyFertilizer(stateRef.current, quantity, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('buy_fertilizer');
     commitState(result.state);
@@ -345,7 +381,7 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const applyFertilizer = useCallback((plotId: number): boolean => {
-    const result = engineApplyFertilizer(stateRef.current, plotId);
+    const result = engineApplyFertilizer(stateRef.current, plotId, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('apply_fertilizer');
     commitState(result.state);
@@ -353,7 +389,7 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const clearPestDamage = useCallback((plotId: number): boolean => {
-    const result = engineClearPestDamage(stateRef.current, plotId);
+    const result = engineClearPestDamage(stateRef.current, plotId, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('clear_pest');
     commitState(result.state);
@@ -361,7 +397,7 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const buyPlot = useCallback((): boolean => {
-    const result = engineBuyPlot(stateRef.current);
+    const result = engineBuyPlot(stateRef.current, ECONOMY);
     if (!result.ok) return false;
     signalPlayStarted('buy_plot');
     commitState(result.state);
@@ -369,11 +405,28 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState, signalPlayStarted]);
 
   const getNextPlotPrice = useCallback((): number | null => {
-    return engineGetNextPlotPrice(state);
+    return engineGetNextPlotPrice(state, ECONOMY);
   }, [state]);
 
+  const buyBuilding = useCallback((id: BuildingId): boolean => {
+    const result = engineBuyBuilding(stateRef.current, id, ECONOMY);
+    if (!result.ok) return false;
+    signalPlayStarted('buy_building');
+    commitState(result.state);
+    return true;
+  }, [commitState, signalPlayStarted]);
+
+  const getBuildingCards = useCallback((): BuildingCardData[] => {
+    const season = getSeasonForDay(state.currentDay, ECONOMY).number;
+    return ECONOMY.buildings.definitions.map(def => ({
+      def,
+      owned: state.buildings[def.id],
+      unlocked: season >= def.unlockSeason,
+    }));
+  }, [state.currentDay, state.buildings]);
+
   const restart = useCallback(() => {
-    const fresh = initialGameState();
+    const fresh = initialGameState(ECONOMY);
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
     commitState(fresh);
@@ -389,21 +442,16 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState]);
 
   const endRunVictory = useCallback(() => {
-    const fresh = initialGameState();
+    const fresh = initialGameState(ECONOMY);
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
     commitState(fresh);
   }, [commitState]);
 
   const getSeedPrice = useCallback(
-    (cropId: CropId): number => computeSeedCost(cropId, state.upgradeTier),
-    [state.upgradeTier]
+    (cropId: CropId): number => computeSeedCost(cropId, state.buildings, ECONOMY),
+    [state.buildings]
   );
-
-  const getNextUpgradeCost = useCallback((): number | null => {
-    if (state.upgradeTier >= MAX_UPGRADE_TIER) return null;
-    return UPGRADE_TIER_DEFINITIONS[state.upgradeTier].cost;
-  }, [state.upgradeTier]);
 
   const getOccupiedPlotCount = useCallback(
     () => state.plots.filter(p => p.cropId !== null).length,
@@ -415,6 +463,13 @@ export function useGameEngine(): GameEngineHook {
     [state.fertilizerInventory]
   );
 
+  const getRecoveryDays = useCallback(
+    () => (state.buildings.compost_bin
+      ? ECONOMY.buildings.exhaustionRecoveryDays
+      : ECONOMY.exhaustionRecoveryDays),
+    [state.buildings.compost_bin]
+  );
+
   return {
     state,
     lastDailyLog: state.lastDailyLog,
@@ -422,18 +477,19 @@ export function useGameEngine(): GameEngineHook {
     nextDay,
     plantSeed: plant,
     buySeed,
-    buyUpgrade,
     buyFertilizer,
     applyFertilizer,
     clearPestDamage,
     buyPlot,
+    buyBuilding,
+    getBuildingCards,
     getFertilizerCount,
     restart,
     continueSeason,
     endRunVictory,
     getSeedPrice,
-    getNextUpgradeCost,
     getNextPlotPrice,
     getOccupiedPlotCount,
+    getRecoveryDays,
   };
 }

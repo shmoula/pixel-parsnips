@@ -29,6 +29,7 @@ function makeLog(over: Partial<DailyLogEntry> = {}): DailyLogEntry {
     streakBonus: 0,
     marketActive: null,
     marketAnnounced: null,
+    buildingsApplied: [],
     ...over,
   };
 }

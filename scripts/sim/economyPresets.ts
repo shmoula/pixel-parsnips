@@ -21,6 +21,9 @@ export const baseline: EconomyConfig = {
     { number: 3, name: 'Autumn Pressure', startDay: 41, endDay: 60, leasePerDay: 25, disasterTotalPct: 0.28, target: 400 },
     { number: 4, name: 'Winter Crunch',   startDay: 61, endDay: 80, leasePerDay: 30, disasterTotalPct: 0.35, target: 600 },
   ],
+  // 019: frozen pre-buildings baseline — no buildings purchasable, ladder-era economics
+  // are approximated by definitions: [] (bots can't buy anything, incl. the toolshed).
+  buildings: { ...DEFAULT_ECONOMY.buildings, definitions: [] },
 };
 
 /**
@@ -51,4 +54,10 @@ export const proposed: EconomyConfig = {
   ],
 };
 
-export const PRESETS: Record<string, EconomyConfig> = { baseline, proposed };
+/** 019 candidate — the live economy with the full building catalog enabled. */
+export const buildings019: EconomyConfig = {
+  ...proposed,
+  buildings: DEFAULT_ECONOMY.buildings,
+};
+
+export const PRESETS: Record<string, EconomyConfig> = { baseline, proposed, buildings019 };

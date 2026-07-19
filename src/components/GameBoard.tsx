@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameState, CropId, DailyLogEntry, WeatherId } from '../engine/types';
+import type { GameState, CropId, DailyLogEntry, WeatherId, BuildingId } from '../engine/types';
+import type { BuildingCardData } from '../engine/useGameEngine';
 import { canAdvanceProductively } from '../engine/gameEngine';
 import { useOnboarding, buyRadishesNeeded } from '../hooks/useOnboarding';
 import type { OnboardingStep } from '../engine/onboarding';
@@ -189,15 +190,17 @@ interface GameBoardProps {
   onNextDay: (weatherOverride?: WeatherId) => void;
   onPlantSeed: (plotId: number, cropId: CropId) => boolean;
   onBuySeed: (cropId: CropId) => void;
-  onBuyUpgrade: () => void;
   onBuyFertilizer: () => void;
   onApplyFertilizer: (plotId: number) => void;
   onClearPestDamage: (plotId: number) => void;
   getFertilizerCount: () => number;
   getSeedPrice: (cropId: CropId) => number;
-  getNextUpgradeCost: () => number | null;
   onBuyPlot: () => boolean;
   getNextPlotPrice: () => number | null;
+  /** Effective natural-recovery period for exhausted plots (2 with Compost Bin, 3 without). */
+  recoveryDays: number;
+  buildingCards: BuildingCardData[];
+  onBuyBuilding: (id: BuildingId) => boolean;
   /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
   onRestart: () => void;
 }
@@ -208,15 +211,16 @@ export function GameBoard({
   onNextDay,
   onPlantSeed,
   onBuySeed,
-  onBuyUpgrade,
   onBuyFertilizer,
   onApplyFertilizer,
   onClearPestDamage,
   getFertilizerCount,
   getSeedPrice,
-  getNextUpgradeCost,
   onBuyPlot,
   getNextPlotPrice,
+  recoveryDays,
+  buildingCards,
+  onBuyBuilding,
   onRestart,
 }: GameBoardProps) {
   const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
@@ -345,6 +349,7 @@ export function GameBoard({
             plots={state.plots}
             currentDay={state.currentDay}
             fertilizerInventory={getFertilizerCount()}
+            recoveryDays={recoveryDays}
             onPlant={handlePlot}
             onApplyFertilizer={onApplyFertilizer}
             onClearPestDamage={onClearPestDamage}
@@ -384,18 +389,17 @@ export function GameBoard({
         >
           <Shop
             coinBalance={state.coinBalance}
-            upgradeTier={state.upgradeTier}
             seedInventory={state.seedInventory}
             fertilizerInventory={getFertilizerCount()}
             selectedCrop={selectedCrop}
             getSeedPrice={getSeedPrice}
             onBuySeed={handleBuySeed}
             onSelectCrop={setSelectedCrop}
-            onBuyUpgrade={onBuyUpgrade}
             onBuyFertilizer={onBuyFertilizer}
-            getNextUpgradeCost={getNextUpgradeCost}
             marketActive={state.market.active}
             dimNonRadish={onboarding.active && onboarding.step === 'buy-radishes'}
+            buildingCards={buildingCards}
+            onBuyBuilding={onBuyBuilding}
           />
         </div>
       </div>
@@ -405,6 +409,7 @@ export function GameBoard({
         <DaySummaryModal
           log={daySummary}
           animateReveal={summaryAnimate}
+          recoveryDays={recoveryDays}
           onClose={() => setIsSummaryOpen(false)}
         />
       )}

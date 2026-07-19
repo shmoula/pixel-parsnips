@@ -1,4 +1,4 @@
-import type { CropDefinition, CropId, UpgradeTierDefinition } from './types';
+import type { CropDefinition, CropId, BuildingDefinition } from './types';
 import {
   STARTING_BALANCE, PLOT_COUNT, STARTING_PLOTS, PLOT_PRICES, TAX_RATE, FERTILIZER_COST,
   EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS,
@@ -6,7 +6,11 @@ import {
   MARKET_CADENCE_DAYS, MARKET_FIRE_CHANCE,
   MARKET_SHORTAGE_MULTIPLIER, MARKET_GLUT_MULTIPLIER,
   MARKET_DURATION_DAYS, MARKET_ANNOUNCE_LEAD_DAYS,
-  CROP_DEFINITIONS, UPGRADE_TIER_DEFINITIONS,
+  PEST_DESTRUCTION_CHANCE, FLASH_DROUGHT_WINDOW_DAYS,
+  BUILDING_SEED_DISCOUNT, BUILDING_EXHAUSTION_RECOVERY_DAYS,
+  BUILDING_DROUGHT_WINDOW_DAYS, BUILDING_PEST_DESTRUCTION_CHANCE,
+  BUILDING_YIELD_MULTIPLIER, BUILDING_DEFINITIONS,
+  CROP_DEFINITIONS,
 } from './constants';
 import type { SeasonConfig } from './seasons';
 
@@ -39,6 +43,20 @@ export interface MarketConfig {
   announceLeadDays: number;
 }
 
+export interface BuildingsConfig {
+  definitions: BuildingDefinition[];
+  /** Toolshed: flat seed-cost discount (0..1). */
+  seedDiscount: number;
+  /** Compost Bin: natural recovery period when owned (base: EconomyConfig.exhaustionRecoveryDays). */
+  exhaustionRecoveryDays: number;
+  /** Irrigation Well: drought-window days added per event when owned (base: flashDroughtWindowDays). */
+  droughtWindowDays: number;
+  /** Scarecrow: per-plot pest destruction chance when owned (base: pestDestructionChance). */
+  pestDestructionChance: number;
+  /** Farm Stand: multiplicative yield factor when owned. */
+  yieldMultiplier: number;
+}
+
 export interface EconomyConfig {
   startingBalance: number;
   startingPlots: number; // 010 activates plot gating; in 009 == maxPlots
@@ -46,7 +64,6 @@ export interface EconomyConfig {
   plotPrices: number[];  // unused in 009; 010 reads it
   taxRate: number;
   crops: Record<CropId, CropDefinition>;
-  upgrades: UpgradeTierDefinition[];
   seasons: SeasonConfig[];
   endless: EndlessFormula;
   exhaustionThreshold: number;
@@ -55,6 +72,11 @@ export interface EconomyConfig {
   streakBonusPerLevel: number;
   streakBonusCap: number;
   market: MarketConfig;
+  /** Base per-plot destruction chance on a Pest Infestation turn (no Scarecrow). */
+  pestDestructionChance: number;
+  /** Base days added to the drought window per Flash Drought event (no Well). */
+  flashDroughtWindowDays: number;
+  buildings: BuildingsConfig;
 }
 
 export const DEFAULT_ECONOMY: EconomyConfig = {
@@ -64,7 +86,6 @@ export const DEFAULT_ECONOMY: EconomyConfig = {
   plotPrices: PLOT_PRICES,
   taxRate: TAX_RATE,
   crops: CROP_DEFINITIONS,
-  upgrades: UPGRADE_TIER_DEFINITIONS,
   seasons: SEASON_TABLE,
   endless: {
     leaseBase: 30, leasePerSeason: 2,
@@ -83,5 +104,15 @@ export const DEFAULT_ECONOMY: EconomyConfig = {
     glutMultiplier: MARKET_GLUT_MULTIPLIER,
     durationDays: MARKET_DURATION_DAYS,
     announceLeadDays: MARKET_ANNOUNCE_LEAD_DAYS,
+  },
+  pestDestructionChance: PEST_DESTRUCTION_CHANCE,
+  flashDroughtWindowDays: FLASH_DROUGHT_WINDOW_DAYS,
+  buildings: {
+    definitions: BUILDING_DEFINITIONS,
+    seedDiscount: BUILDING_SEED_DISCOUNT,
+    exhaustionRecoveryDays: BUILDING_EXHAUSTION_RECOVERY_DAYS,
+    droughtWindowDays: BUILDING_DROUGHT_WINDOW_DAYS,
+    pestDestructionChance: BUILDING_PEST_DESTRUCTION_CHANCE,
+    yieldMultiplier: BUILDING_YIELD_MULTIPLIER,
   },
 };
