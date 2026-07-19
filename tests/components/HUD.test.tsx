@@ -181,3 +181,10 @@ describe('HUD — empty-day safeguard label', () => {
     expect(container.querySelector('[data-onboarding="balance-chip"]')).toBeTruthy();
   });
 });
+
+describe('HUD — 021 celebration anchors', () => {
+  it('marks the balance chip with data-coin-target', () => {
+    const { container } = render(<HUD {...baseProps} currentDay={1} coinBalance={100} />);
+    expect(container.querySelector('[data-coin-target]')).not.toBeNull();
+  });
+});

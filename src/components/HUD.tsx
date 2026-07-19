@@ -128,7 +128,7 @@ export function HUD({
             <span className="hidden sm:inline">Season {season.number} · {season.name}</span>
           </span>
         </button>
-        <div data-onboarding="balance-chip" className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
+        <div data-onboarding="balance-chip" data-coin-target className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
           <div className="flex flex-col justify-center leading-tight">
             <span
