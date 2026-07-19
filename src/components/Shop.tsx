@@ -136,7 +136,12 @@ export function Shop({
   // Owned + purchasable buildings share one shelf, in definition order, so a
   // building keeps its slot after purchase (it just swaps to the owned layout).
   const shelfBuildings = buildingCards.filter(c => c.owned || c.unlocked);
-  const hasLockedBuildings = buildingCards.some(c => !c.owned && !c.unlocked);
+  const lockedBuildings = buildingCards.filter(c => !c.owned && !c.unlocked);
+  const hasLockedBuildings = lockedBuildings.length > 0;
+  // The earliest season any still-locked building becomes available.
+  const nextBuildingSeason = hasLockedBuildings
+    ? Math.min(...lockedBuildings.map(c => c.def.unlockSeason))
+    : 0;
 
   return (
     // T021 — wood-grain texture on sidebar wrapper
@@ -254,8 +259,11 @@ export function Shop({
               />
             ))}
             {hasLockedBuildings && (
-              <div className="flex items-center justify-center p-3 rounded bg-[#261808]/60 border border-dashed border-[#5C3D1E] text-farm-stone text-body">
-                🔒 New stock arrives in Season 2
+              <div className="bg-[#261808]/60 rounded-lg p-3 flex items-center gap-2 border border-dashed border-[#5C3D1E]">
+                <span aria-hidden="true" className="text-lg">🔒</span>
+                <p className="text-body text-farm-stone">
+                  New buildings unlock in Season {nextBuildingSeason}
+                </p>
               </div>
             )}
           </div>

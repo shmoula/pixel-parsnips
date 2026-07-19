@@ -27,14 +27,14 @@ describe('Shop — buildings shelf (019)', () => {
   it('season 1: shows the toolshed and one teaser cell, no gated buildings', () => {
     render(<Shop {...shopProps(cards(1))} />);
     expect(screen.getByText('Toolshed')).toBeInTheDocument();
-    expect(screen.getByText(/New stock arrives in Season 2/)).toBeInTheDocument();
+    expect(screen.getByText(/New buildings unlock in Season 2/)).toBeInTheDocument();
     expect(screen.queryByText('Scarecrow')).toBeNull();
   });
 
   it('season 2: shows all five, teaser gone', () => {
     render(<Shop {...shopProps(cards(2))} />);
     expect(screen.getByText('Scarecrow')).toBeInTheDocument();
-    expect(screen.queryByText(/New stock arrives/)).toBeNull();
+    expect(screen.queryByText(/New buildings unlock/)).toBeNull();
   });
 
   it('owned buildings stay on the Buildings shelf, swapped to the owned variant', () => {
