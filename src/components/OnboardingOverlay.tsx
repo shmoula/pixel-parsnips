@@ -58,6 +58,8 @@ function measureOccluderTop(anchorEl: Element | null): number | null {
 /**
  * Centred fallback for when the anchor offers no usable position: pin the bubble
  * just above whatever covers the bottom of the screen so the copy stays readable.
+ * Used when the anchor element is missing entirely (no rect) — the copy still
+ * guides even though there is nothing on-screen to point at.
  */
 function centeredStyle(occluderTop: number | null): CSSProperties {
   const safeBottom = occluderTop ?? window.innerHeight;
@@ -65,17 +67,27 @@ function centeredStyle(occluderTop: number | null): CSSProperties {
 }
 
 /**
+ * True when the anchor is measured with a real size but sits entirely outside the
+ * usable band — scrolled above the fold, or below the viewport / action bar. The
+ * coach-mark is hidden in that case rather than floating detached at the bottom of
+ * the screen. A missing or zero-size anchor is NOT treated as off-screen: it has no
+ * known position to be "away" from, so its copy still shows via the centred fallback.
+ */
+function isAnchorOffScreen(rect: DOMRect | null, occluderTop: number | null): boolean {
+  if (!rect || (rect.width === 0 && rect.height === 0)) return false;
+  const safeBottom = occluderTop ?? window.innerHeight;
+  return rect.bottom <= 0 || rect.top >= safeBottom;
+}
+
+/**
  * Place the copy bubble near the anchor while keeping it fully on-screen: clamp the
  * left edge within the viewport, and flip above the anchor when there's no room below.
+ * The caller only renders the bubble for an on-screen anchor (see isAnchorOffScreen),
+ * so the rect here always overlaps the usable band.
  */
 function bubbleStyle(rect: DOMRect, occluderTop: number | null): CSSProperties {
   const vw = window.innerWidth;
   const safeBottom = occluderTop ?? window.innerHeight;
-  // Anchor entirely out of usable space (mid-animation, scrolled away, or behind
-  // the action bar).
-  if (rect.bottom <= 0 || rect.top >= safeBottom) {
-    return centeredStyle(occluderTop);
-  }
   const left = Math.min(
     Math.max(EDGE_MARGIN, rect.left),
     Math.max(EDGE_MARGIN, vw - BUBBLE_WIDTH - EDGE_MARGIN),
@@ -284,8 +296,9 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
       )}
 
       {/* Anchored bubble: open-shop / buy-radishes / plant / advance.
-          activeAnchor() returns null while the shop sheet covers this anchor. */}
-      {anchor && (
+          activeAnchor() returns null while the shop sheet covers this anchor;
+          isAnchorOffScreen() hides it while the target is scrolled out of view. */}
+      {anchor && !isAnchorOffScreen(rect, occluderTop) && (
         <AnchoredBubble anchor={anchor} rect={rect} occluderTop={occluderTop} step={step} buyProgress={buyProgress} ringPulse={ringPulse} />
       )}
     </div>
