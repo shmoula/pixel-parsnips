@@ -119,6 +119,27 @@ describe('useOnboarding tracking — step progression', () => {
     expect(emittedSteps()).toEqual(['plant']);
     expect(track).toHaveBeenCalledWith('onboarding_step_reached', { step: 'plant', step_index: 3 });
   });
+
+  it('collapses a multi-hop cascade into a single advancement-effect pass, emitting every intermediate in order', () => {
+    // Resume at 'open-shop' with a state that already satisfies every downstream
+    // auto-gate at once (radishes bought, all plots planted, a day already logged).
+    // The very first advancement effect must derive open-shop -> buy-radishes ->
+    // plant -> advance -> payoff in ONE deriveStep pass. Only steps after the
+    // resumed 'open-shop' (already counted as emitted) should fire, in order.
+    localStorage.setItem(
+      'pixel-parsnips-onboarding',
+      JSON.stringify({ schemaVersion: 1, completed: false, step: 'open-shop' }),
+    );
+    let state = day1();
+    state = plantAll({ ...state, seedInventory: { ...state.seedInventory, radish: 4 } });
+    state = { ...state, lastDailyLog: { totalHarvestIncome: 48 } as GameState['lastDailyLog'] };
+
+    renderHook(() => useOnboarding(state, { isShopVisible: true }));
+
+    expect(emittedSteps()).toEqual(['buy-radishes', 'plant', 'advance', 'payoff']);
+    expect(emittedSteps()).not.toContain('open-shop');
+    expect(emittedSteps()).not.toContain('done');
+  });
 });
 
 describe('useOnboarding tracking — skip and completion exclusivity', () => {

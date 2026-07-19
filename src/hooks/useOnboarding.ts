@@ -99,7 +99,7 @@ export function useOnboarding(state: GameState, { isShopVisible }: Opts): UseOnb
     for (let i = emittedThroughRef.current + 1; i <= toIndex; i++) {
       const s = ONBOARDING_STEPS[i];
       if (s === 'done') break; // terminal outcome is onboarding_completed/_skipped, never a step
-      track('onboarding_step_reached', { step: s as OnboardingFunnelStep, step_index: i });
+      track('onboarding_step_reached', { step: s, step_index: i });
     }
     if (toIndex > emittedThroughRef.current) emittedThroughRef.current = toIndex;
   }, []);
