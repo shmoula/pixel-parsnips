@@ -103,6 +103,9 @@ function MarketLines({ log }: { log: DailyLogEntry }) {
 
 function ExhaustionCallout({ log, recoveryDays }: { log: DailyLogEntry; recoveryDays: number }) {
   if (log.exhaustedPlots.length === 0) return null;
+  // Prefer the period snapshotted on the log (correct for reopened prior turns);
+  // fall back to the live prop for pre-schema-9 logs that predate the field.
+  const effectiveRecoveryDays = log.recoveryDays ?? recoveryDays;
   return (
     <div
       role="note"
@@ -116,7 +119,7 @@ function ExhaustionCallout({ log, recoveryDays }: { log: DailyLogEntry; recovery
       </span>
       <span className="text-farm-stone">
         {log.exhaustedPlots.map(id => `#${id + 1}`).join(', ')} — back in{' '}
-        {recoveryDays} days, or use Fertilizer.
+        {effectiveRecoveryDays} days, or use Fertilizer.
       </span>
     </div>
   );

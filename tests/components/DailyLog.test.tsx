@@ -183,6 +183,16 @@ describe('DailyLog — recovery help text honors compost bin (019 code review)',
     render(<DailyLog log={makeLog({ exhaustedPlots: [0] })} recoveryDays={2} />);
     expect(screen.getByLabelText(/plots exhausted/i)).toHaveTextContent('back in 2 days');
   });
+
+  it('honors the log snapshot over the live prop when reopening a prior turn', () => {
+    // Exhaustion happened when the effective period was 3 days; the player has
+    // since bought a Compost Bin (live prop is now 2). Reopening "Last Turn"
+    // must reflect the period that actually applied, not the current one.
+    render(
+      <DailyLog log={makeLog({ exhaustedPlots: [0], recoveryDays: 3 })} recoveryDays={2} />,
+    );
+    expect(screen.getByLabelText(/plots exhausted/i)).toHaveTextContent('back in 3 days');
+  });
 });
 
 // ── Icon optical alignment ────────────────────────────────────────────────────

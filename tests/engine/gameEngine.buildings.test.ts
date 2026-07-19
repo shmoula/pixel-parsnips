@@ -201,6 +201,14 @@ describe('Compost Bin — natural recovery (019)', () => {
     const { state } = processTurn(owned, 'sunny'); // day 5 → 6; 6 - 4 = 2 >= 2 recovers
     expect(state.plots[0].exhaustedSinceDay).toBeNull();
   });
+
+  it('snapshots the effective recovery period onto the log', () => {
+    // Without the bin the log records 3; with the bin it records 2 — so reopening
+    // a prior turn later shows the period that actually applied that turn.
+    expect(processTurn(exhaustedState(5, 4), 'sunny').log.recoveryDays).toBe(3);
+    const owned = withBuildings(exhaustedState(5, 4), { compost_bin: true });
+    expect(processTurn(owned, 'sunny').log.recoveryDays).toBe(2);
+  });
 });
 
 describe('Farm Stand — yield multiplier (019)', () => {

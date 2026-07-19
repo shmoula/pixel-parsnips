@@ -132,6 +132,11 @@ export interface DailyLogEntry {
    *  Logged (not derived from live state) so reopening "Last Turn" after buying a
    *  building can't show a mitigation that didn't happen. */
   buildingsApplied: BuildingId[];
+  /** Effective exhaustion-recovery period (in days) in force the turn this log was
+   *  written: 2 with a Compost Bin, 3 without. Snapshotted (not derived from live
+   *  state) so reopening "Last Turn" after buying a Compost Bin still shows the
+   *  period that actually applied. Optional for pre-schema-9 logs that predate it. */
+  recoveryDays?: number;
 }
 
 export interface GameState {

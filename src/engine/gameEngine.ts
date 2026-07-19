@@ -350,6 +350,13 @@ export function processTurn(
   // 019: disaster mitigations in effect this turn (for the Day Summary banner)
   const buildingsApplied = computeBuildingsApplied(weatherId, state.buildings);
 
+  // 019: effective exhaustion-recovery period this turn (Compost Bin shortens it).
+  // Snapshotted onto the log so reopening "Last Turn" after buying a Compost Bin
+  // still shows the period that actually applied when the plots were exhausted.
+  const effectiveRecoveryDays = state.buildings.compost_bin
+    ? config.buildings.exhaustionRecoveryDays
+    : config.exhaustionRecoveryDays;
+
   // 019 review fix: occupied plots the pest could have hit (pre-destruction), so the
   // banner tells an empty board apart from an all-spared one when nothing was destroyed.
   const pestPlotsAtRisk = pestPlotsAtRiskFor(weatherId, plots);
@@ -442,6 +449,7 @@ export function processTurn(
       marketActive: activeMarket,
       marketAnnounced: null,
       buildingsApplied,
+      recoveryDays: effectiveRecoveryDays,
     };
     const bankruptState: GameState = {
       ...state,
@@ -487,11 +495,8 @@ export function processTurn(
     ? flashDroughtDaysAfterEvent - 1
     : flashDroughtDaysAfterEvent;
 
-  // Step 8.5: Natural recovery — clear exhaustion after EXHAUSTION_RECOVERY_DAYS turns
-  // (Compost Bin shortens this to config.buildings.exhaustionRecoveryDays)
-  const effectiveRecoveryDays = state.buildings.compost_bin
-    ? config.buildings.exhaustionRecoveryDays
-    : config.exhaustionRecoveryDays;
+  // Step 8.5: Natural recovery — clear exhaustion after effectiveRecoveryDays turns
+  // (Compost Bin shortens this; effectiveRecoveryDays computed above at Step 2).
   const recoveredPlots = harvestedPlots.map(plot => {
     if (plot.exhaustedSinceDay === null) return plot;
     if (currentDay - plot.exhaustedSinceDay >= effectiveRecoveryDays) {
@@ -536,6 +541,7 @@ export function processTurn(
     marketActive: activeMarket,
     marketAnnounced: scheduled,
     buildingsApplied,
+    recoveryDays: effectiveRecoveryDays,
   };
 
   // Step 9.5: Increment disastersSurvived if this turn's weather was a disaster
