@@ -1,11 +1,15 @@
 import type { DailyLogEntry, GameState, WeatherId } from '../engine/types';
 import type { Medal } from '../engine/medals';
+import type { OnboardingStep } from '../engine/onboarding';
 
 export const ANALYTICS_SCHEMA_VERSION = 1;
 
 export type MilestoneId = 'first_plot_unlocked' | 'season_2_reached';
 export type RunOutcome = 'bankrupt' | 'season_failed' | 'won';
 export type SeasonOutcome = 'season_passed' | 'season_failed' | 'season_4_won';
+
+/** Tutorial steps that appear in the funnel — every step except the terminal 'done'. */
+export type OnboardingFunnelStep = Exclude<OnboardingStep, 'done'>;
 
 /** The full P0+P1 event surface. Property bags are event-specific; globals are merged in `track`. */
 export interface EventPropsMap {
@@ -54,6 +58,16 @@ export interface EventPropsMap {
     season_number: number;
     coin_balance_after: number;
   };
+  onboarding_step_reached: { step: OnboardingFunnelStep; step_index: number };
+  onboarding_completed: Record<string, never>;
+  onboarding_skipped: { from_step: OnboardingFunnelStep; from_step_index: number };
+  onboarding_replay_requested: Record<string, never>;
+  empty_day_safeguard: {
+    action: 'advanced' | 'cancelled';
+    onboarding_active: boolean;
+    day: number;
+    coin_balance: number;
+  };
 }
 
 export type AnalyticsEventName = keyof EventPropsMap;
@@ -68,6 +82,11 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   season_completed: 1,
   run_ended: 1,
   shop_purchased: 1,
+  onboarding_step_reached: 1,
+  onboarding_completed: 1,
+  onboarding_skipped: 1,
+  onboarding_replay_requested: 1,
+  empty_day_safeguard: 1,
 };
 
 export function buildDayCompletedProps(
