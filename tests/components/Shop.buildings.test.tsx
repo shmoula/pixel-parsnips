@@ -11,6 +11,7 @@ function shopProps(buildingCards: BuildingCardData[]) {
     fertilizerInventory: 0,
     selectedCrop: null,
     getSeedPrice: () => 5,
+    seedYieldMultiplier: 1,
     onBuySeed: vi.fn(),
     onSelectCrop: vi.fn(),
     onBuyFertilizer: vi.fn(),

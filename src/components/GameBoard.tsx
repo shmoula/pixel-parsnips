@@ -264,6 +264,8 @@ interface GameBoardProps {
   onClearPestDamage: (plotId: number) => void;
   getFertilizerCount: () => number;
   getSeedPrice: (cropId: CropId) => number;
+  /** Owned-building yield factor (Farm Stand = 1.1, else 1) shown in seed-card stats. */
+  seedYieldMultiplier: number;
   onBuyPlot: () => boolean;
   getNextPlotPrice: () => number | null;
   /** Effective natural-recovery period for exhausted plots (2 with Compost Bin, 3 without). */
@@ -285,6 +287,7 @@ export function GameBoard({
   onClearPestDamage,
   getFertilizerCount,
   getSeedPrice,
+  seedYieldMultiplier,
   onBuyPlot,
   getNextPlotPrice,
   recoveryDays,
@@ -486,6 +489,7 @@ export function GameBoard({
             fertilizerInventory={getFertilizerCount()}
             selectedCrop={selectedCrop}
             getSeedPrice={getSeedPrice}
+            seedYieldMultiplier={seedYieldMultiplier}
             onBuySeed={handleBuySeed}
             onSelectCrop={setSelectedCrop}
             onBuyFertilizer={onBuyFertilizer}

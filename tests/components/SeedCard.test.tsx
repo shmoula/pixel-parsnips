@@ -14,7 +14,10 @@ const byText = (target: string) => (_: string, node: Element | null): boolean =>
   return has(node) && !Array.from(node.children).some(has);
 };
 
-function renderCard(marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number }) {
+function renderCard(
+  marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number },
+  yieldMultiplier?: number,
+) {
   render(
     <SeedCard
       cropId="pumpkin"
@@ -25,6 +28,7 @@ function renderCard(marketEvent?: { kind: 'shortage' | 'glut'; multiplier: numbe
       canAfford
       isSelected={false}
       marketEvent={marketEvent}
+      yieldMultiplier={yieldMultiplier}
     />,
   );
 }
@@ -66,6 +70,29 @@ describe('SeedCard — market-adjusted yield/profit', () => {
 
   it('shows plain yield/profit with no strikethrough when the market is quiet', () => {
     renderCard(undefined);
+    expect(screen.getByText(byText('65🪙 yield')).className).not.toContain('line-through');
+    expect(screen.getByText(byText('Est. profit: +45🪙'))).toBeInTheDocument();
+  });
+
+  it('strikes through base yield/profit and shows boosted values with the Farm Stand buff', () => {
+    // farm stand +10%, no market: adjusted yield floor(65 * 1.1) = 71, profit 71 - 20 = 51
+    renderCard(undefined, 1.1);
+    expect(screen.getByText(byText('65🪙')).className).toContain('line-through');
+    expect(screen.getByText(byText('71🪙'))).toBeInTheDocument();
+    expect(screen.getByText(byText('+45🪙')).className).toContain('line-through');
+    expect(screen.getByText(byText('+51🪙'))).toBeInTheDocument();
+  });
+
+  it('compounds the Farm Stand buff with an active market event (single floor)', () => {
+    // shortage 1.4 × farm stand 1.1: floor(65 * 1.4 * 1.1) = floor(100.1) = 100, profit 80
+    renderCard({ kind: 'shortage', multiplier: 1.4 }, 1.1);
+    expect(screen.getByText(byText('65🪙')).className).toContain('line-through');
+    expect(screen.getByText(byText('100🪙'))).toBeInTheDocument();
+    expect(screen.getByText(byText('+80🪙'))).toBeInTheDocument();
+  });
+
+  it('shows plain yield/profit when the Farm Stand is not owned (multiplier 1)', () => {
+    renderCard(undefined, 1);
     expect(screen.getByText(byText('65🪙 yield')).className).not.toContain('line-through');
     expect(screen.getByText(byText('Est. profit: +45🪙'))).toBeInTheDocument();
   });

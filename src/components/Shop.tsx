@@ -110,6 +110,8 @@ interface ShopProps {
   fertilizerInventory: number;
   selectedCrop: CropId | null;
   getSeedPrice: (cropId: CropId) => number;
+  /** Owned-building yield factor (Farm Stand = 1.1, else 1) folded into each card's stats. */
+  seedYieldMultiplier: number;
   onBuySeed: (cropId: CropId) => void;
   onSelectCrop: (cropId: CropId) => void;
   onBuyFertilizer: () => void;
@@ -125,6 +127,7 @@ export function Shop({
   fertilizerInventory,
   selectedCrop,
   getSeedPrice,
+  seedYieldMultiplier,
   onBuySeed,
   onSelectCrop,
   onBuyFertilizer,
@@ -188,6 +191,7 @@ export function Shop({
                 onSelect={onSelectCrop}
                 canAfford={coinBalance >= price}
                 isSelected={selectedCrop === cropId}
+                yieldMultiplier={seedYieldMultiplier}
                 marketEvent={
                   marketActive && marketActive.cropId === cropId
                     ? { kind: marketActive.kind, multiplier: marketActive.multiplier }
