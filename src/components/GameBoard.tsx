@@ -5,7 +5,9 @@ import { canAdvanceProductively } from '../engine/gameEngine';
 import { useOnboarding, buyRadishesNeeded } from '../hooks/useOnboarding';
 import type { OnboardingStep } from '../engine/onboarding';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { BottomActionBar } from './BottomActionBar';
+import { HarvestCelebration } from './HarvestCelebration';
 import { HUD } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
@@ -13,6 +15,49 @@ import { EmojiIcon } from './EmojiIcon';
 import { PageBackdrop } from './PageBackdrop';
 import { DaySummaryModal } from './DaySummaryModal';
 import { OnboardingOverlay } from './OnboardingOverlay';
+
+/** 021 — harvest-celebration flow. `holding`: fresh summary modal is open and
+    the HUD is holding the pre-turn balance. `celebrating`: modal closed, the
+    coin-flight overlay is mounted; `ticking` flips when the first coin lands. */
+type CelebrationState =
+  | { kind: 'idle' }
+  | { kind: 'holding'; log: DailyLogEntry }
+  | { kind: 'celebrating'; log: DailyLogEntry; ticking: boolean };
+
+/** 021 — a freshly auto-opened summary holds & celebrates only when it has
+    harvests and the game is still in normal play (not a season-boundary turn). */
+function shouldHoldForCelebration(log: DailyLogEntry, phase: GameState['phase']): boolean {
+  return log.harvests.length > 0 && phase === 'playing';
+}
+
+/** 021 — close the fresh summary: promote holding → celebrating; else unchanged. */
+function beginCelebrating(c: CelebrationState): CelebrationState {
+  return c.kind === 'holding' ? { kind: 'celebrating', log: c.log, ticking: false } : c;
+}
+
+/** 021 — first coin landed: flip ticking on so the HUD balance rapid-ticks. */
+function startTicking(c: CelebrationState): CelebrationState {
+  return c.kind === 'celebrating' ? { ...c, ticking: true } : c;
+}
+
+/** 021 — HUD balance hold/tick derived from the celebration state. Reduced
+    motion never holds or ticks: the balance shows the committed value at once. */
+function getCelebrationHud(
+  celebration: CelebrationState,
+  reducedMotion: boolean,
+): { heldBalance: number | null; tickBalance: boolean } {
+  if (reducedMotion || celebration.kind === 'idle') {
+    return { heldBalance: null, tickBalance: false };
+  }
+  if (celebration.kind === 'holding') {
+    return { heldBalance: celebration.log.openingBalance, tickBalance: false };
+  }
+  // celebrating: hold the pre-turn balance until the first coin lands, then tick.
+  return {
+    heldBalance: celebration.ticking ? null : celebration.log.openingBalance,
+    tickBalance: celebration.ticking,
+  };
+}
 
 function canAfford(balance: number, price: number | null): boolean {
   if (price === null) return false;
@@ -184,6 +229,21 @@ function EmptyDayConfirm({ onCancel, onAdvance }: { onCancel: () => void; onAdva
   );
 }
 
+/** 021 — coin-flight overlay wrapper: renders the celebration only while the
+    flow is in the `celebrating` phase (mounts once the fresh summary closes). */
+function CelebrationOverlay({
+  celebration,
+  onArriving,
+  onDone,
+}: {
+  celebration: CelebrationState;
+  onArriving: () => void;
+  onDone: () => void;
+}) {
+  if (celebration.kind !== 'celebrating') return null;
+  return <HarvestCelebration log={celebration.log} onCoinsArriving={onArriving} onDone={onDone} />;
+}
+
 interface GameBoardProps {
   state: GameState;
   lastDailyLog: DailyLogEntry | null;
@@ -236,6 +296,11 @@ export function GameBoard({
   // Ref flag: set true when we want the next lastDailyLog update to open the modal
   const awaitingModalRef = useRef(false);
 
+  // 021 — harvest-celebration state machine (idle → holding → celebrating → idle).
+  const [celebration, setCelebration] = useState<CelebrationState>({ kind: 'idle' });
+  const reducedMotion = useReducedMotion();
+  const celebrationHud = getCelebrationHud(celebration, reducedMotion);
+
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const isShopVisible = isDesktop || isShopOpen;
   const onboarding = useOnboarding(state, { isShopVisible });
@@ -256,8 +321,14 @@ export function GameBoard({
       setSummaryAnimate(true);
       setIsSummaryOpen(true);
       setIsProcessing(false);
+      // 021 — a fresh-open harvest-day summary holds the pre-turn balance; the
+      // celebration then plays when the modal closes. Season-boundary turns and
+      // quiet (no-harvest) days do not celebrate.
+      if (shouldHoldForCelebration(lastDailyLog, state.phase)) {
+        setCelebration({ kind: 'holding', log: lastDailyLog });
+      }
     }
-  }, [lastDailyLog]);
+  }, [lastDailyLog, state.phase]);
 
   // Auto-deselect when the selected crop's inventory runs out.
   useEffect(() => {
@@ -286,6 +357,8 @@ export function GameBoard({
   function doAdvance() {
     if (isProcessing) return;
     setIsProcessing(true);
+    // 021 — cancel any running celebration before the new turn begins.
+    setCelebration({ kind: 'idle' });
     awaitingModalRef.current = true;
     onNextDay(onboarding.shouldPinWeather ? 'sunny' : undefined);
   }
@@ -323,6 +396,12 @@ export function GameBoard({
         coinBalance={state.coinBalance}
         onNextDay={handleNextDay}
         onLastTurn={() => {
+          // Reopen the previous turn's summary. Source it from lastDailyLog (the
+          // button is only enabled when that is non-null) so a reopen works even
+          // if daySummary was never populated by the auto-open effect. This is a
+          // no-op in the normal flow, where daySummary already equals lastDailyLog.
+          // A Last-Turn reopen never enters the celebration flow (no `holding`).
+          if (lastDailyLog !== null) setDaySummary(lastDailyLog);
           setSummaryAnimate(false);
           setIsSummaryOpen(true);
         }}
@@ -331,6 +410,8 @@ export function GameBoard({
         endlessMode={state.endlessMode}
         harvestStreak={state.harvestStreak}
         canAdvanceProductively={canAdvance}
+        heldBalance={celebrationHud.heldBalance}
+        tickBalance={celebrationHud.tickBalance}
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}
@@ -410,9 +491,19 @@ export function GameBoard({
           log={daySummary}
           animateReveal={summaryAnimate}
           recoveryDays={recoveryDays}
-          onClose={() => setIsSummaryOpen(false)}
+          onClose={() => {
+            setIsSummaryOpen(false);
+            setCelebration(beginCelebrating);
+          }}
         />
       )}
+
+      {/* 021 — coin-flight overlay: mounts once the fresh harvest summary closes. */}
+      <CelebrationOverlay
+        celebration={celebration}
+        onArriving={() => setCelebration(startTicking)}
+        onDone={() => setCelebration({ kind: 'idle' })}
+      />
 
       {onboarding.active && (
         <OnboardingOverlay
