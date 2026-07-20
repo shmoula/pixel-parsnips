@@ -67,3 +67,12 @@ describe('FarmGrid — mobile columns (017 FR-021)', () => {
     expect(grid?.className).toContain('lg:grid-cols-6');
   });
 });
+
+describe('FarmGrid — 021 celebration anchors', () => {
+  it('wraps every plot in an element carrying data-plot-id', () => {
+    const plots: PlotState[] = mkPlots(2);
+    const { container } = render(<FarmGrid plots={plots} />);
+    expect(container.querySelector('[data-plot-id="0"]')).not.toBeNull();
+    expect(container.querySelector('[data-plot-id="1"]')).not.toBeNull();
+  });
+});

@@ -31,6 +31,12 @@ interface SeedCardProps {
   isSelected: boolean;
   /** Active market event for THIS crop, if any (drives the price-direction badge). */
   marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number };
+  /**
+   * Owned-building yield factor applied to every crop (Farm Stand = 1.1, else 1).
+   * Folded into the displayed yield/profit so the shop matches what the harvest
+   * engine actually pays out (gameEngine `stallMod`). Defaults to 1.
+   */
+  yieldMultiplier?: number;
   dimmed?: boolean;
   /** When true, BUY/Plant are disabled (e.g. non-radish cards during the tutorial buy step). */
   interactionDisabled?: boolean;
@@ -60,26 +66,61 @@ function formatMarketBadge(
   return `${arrow} ${pct >= 0 ? '+' : ''}${pct}%`;
 }
 
+/** Signed prefix for a coin amount: "+" for zero/positive, "" for negative (the
+ * minus sign is already part of the number). */
+function sign(n: number): string {
+  return n >= 0 ? '+' : '';
+}
+
+interface AdjustedStats {
+  netProfit: number;
+  /** Adjusted yield/profit, or null when no buff/event moves the numbers. */
+  adjustedYield: number | null;
+  adjustedProfit: number | null;
+  /** Direction tint for the adjusted values (down = red, up = grass). */
+  tint: string;
+}
+
 /**
- * Grow / yield / est.-profit stats. Under an active market event, the base yield and
- * profit are struck through and the market-adjusted values shown alongside, tinted by
- * direction (shortage = positive/grass, glut = negative/red).
+ * Combine the market event and the Farm Stand buff into a single yield factor and
+ * derive the adjusted yield/profit. Applied in one coins() floor so the shop matches
+ * the harvest engine exactly (gameEngine multiplies base × weather × market × stall
+ * under one floor). `adjusted*` stay null when the net factor is 1 (nothing to show).
+ */
+function computeAdjustedStats(
+  crop: CropDefinition,
+  price: number,
+  yieldMultiplier: number,
+  marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number },
+): AdjustedStats {
+  const effectiveMultiplier = (marketEvent?.multiplier ?? 1) * yieldMultiplier;
+  const adjustedYield =
+    effectiveMultiplier !== 1 ? coins(crop.baseYield * effectiveMultiplier) : null;
+  const adjustedProfit = adjustedYield !== null ? adjustedYield - price : null;
+  const tint = adjustedYield !== null && adjustedYield < crop.baseYield
+    ? 'text-farm-red'
+    : 'text-farm-grass';
+  return { netProfit: crop.baseYield - price, adjustedYield, adjustedProfit, tint };
+}
+
+/**
+ * Grow / yield / est.-profit stats. When a market event or the Farm Stand buff moves
+ * the numbers, the base yield and profit are struck through and the adjusted values
+ * shown alongside, tinted by direction (up = grass, down = red).
  */
 function CropStats({
   crop,
   price,
   marketEvent,
+  yieldMultiplier = 1,
 }: {
   crop: CropDefinition;
   price: number;
   marketEvent?: { kind: 'shortage' | 'glut'; multiplier: number };
+  yieldMultiplier?: number;
 }) {
-  // T018a — net profit per seed after buy cost
-  const netProfit = crop.baseYield - price;
-  // G7 — market-adjusted yield/profit (floor-rounded to match the engine's coins()).
-  const adjustedYield = marketEvent ? coins(crop.baseYield * marketEvent.multiplier) : null;
-  const adjustedProfit = adjustedYield !== null ? adjustedYield - price : null;
-  const tint = marketEvent?.kind === 'glut' ? 'text-farm-red' : 'text-farm-grass';
+  const { netProfit, adjustedYield, adjustedProfit, tint } =
+    computeAdjustedStats(crop, price, yieldMultiplier, marketEvent);
 
   return (
     <>
@@ -101,13 +142,13 @@ function CropStats({
         {adjustedProfit !== null ? (
           <span>
             Est. profit:{' '}
-            <span className="line-through opacity-60">{netProfit >= 0 ? '+' : ''}{netProfit}<Coin /></span>{' '}
+            <span className="line-through opacity-60">{sign(netProfit)}{netProfit}<Coin /></span>{' '}
             <span className={tint}>
-              {adjustedProfit >= 0 ? '+' : ''}{adjustedProfit}<Coin />
+              {sign(adjustedProfit)}{adjustedProfit}<Coin />
             </span>
           </span>
         ) : (
-          <span>Est. profit: {netProfit >= 0 ? '+' : ''}{netProfit}<Coin /></span>
+          <span>Est. profit: {sign(netProfit)}{netProfit}<Coin /></span>
         )}
       </p>
     </>
@@ -123,6 +164,7 @@ export function SeedCard({
   canAfford,
   isSelected,
   marketEvent,
+  yieldMultiplier,
   dimmed,
   interactionDisabled,
 }: SeedCardProps) {
@@ -190,7 +232,7 @@ export function SeedCard({
 
       <p className="font-pixel text-body text-farm-parchment/90">{crop.name}</p>
 
-      <CropStats crop={crop} price={price} marketEvent={marketEvent} />
+      <CropStats crop={crop} price={price} marketEvent={marketEvent} yieldMultiplier={yieldMultiplier} />
 
       {/* T018d,e — BUY prefix + active:scale-95 press feedback */}
       <button

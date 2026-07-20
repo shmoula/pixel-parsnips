@@ -270,6 +270,7 @@ export interface GameEngineHook {
   continueSeason: () => void;
   endRunVictory: () => void;
   getSeedPrice: (cropId: CropId) => number;
+  getSeedYieldMultiplier: () => number;
   getNextPlotPrice: () => number | null;
   getOccupiedPlotCount: () => number;
   getRecoveryDays: () => number;
@@ -470,6 +471,13 @@ export function useGameEngine(): GameEngineHook {
     [state.buildings.compost_bin]
   );
 
+  // Flat yield factor the shop applies to displayed yield/profit so cards match
+  // the harvest engine's Farm Stand `stallMod` (gameEngine). 1 when not owned.
+  const getSeedYieldMultiplier = useCallback(
+    () => (state.buildings.farm_stand ? ECONOMY.buildings.yieldMultiplier : 1),
+    [state.buildings.farm_stand]
+  );
+
   return {
     state,
     lastDailyLog: state.lastDailyLog,
@@ -488,6 +496,7 @@ export function useGameEngine(): GameEngineHook {
     continueSeason,
     endRunVictory,
     getSeedPrice,
+    getSeedYieldMultiplier,
     getNextPlotPrice,
     getOccupiedPlotCount,
     getRecoveryDays,

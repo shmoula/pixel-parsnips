@@ -210,6 +210,22 @@ describe('useGameEngine — full turn sequence integration (T046)', () => {
     expect(withShed.current.getSeedPrice('radish')).toBe(3);
   });
 
+  it('the Farm Stand exposes a +10% yield multiplier for the shop display', () => {
+    // No buildings: multiplier is a no-op 1
+    const { result, unmount } = renderHook(() => useGameEngine());
+    expect(result.current.getSeedYieldMultiplier()).toBe(1);
+    unmount();
+
+    // With the Farm Stand owned: shop cards reflect the same +10% the harvest engine pays
+    const withStand = {
+      ...initialGameState(),
+      buildings: { ...initialGameState().buildings, farm_stand: true },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: withStand }));
+    const { result: withFarmStand } = renderHook(() => useGameEngine());
+    expect(withFarmStand.current.getSeedYieldMultiplier()).toBe(1.1);
+  });
+
   it('restart resets state to day 1 with starting balance', () => {
     const { result } = renderHook(() => useGameEngine());
 

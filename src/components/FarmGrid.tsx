@@ -99,22 +99,23 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, recov
             const locked = plot.id >= (unlockedPlots ?? plots.length);
             const isNextPurchasable = plot.id === (unlockedPlots ?? plots.length);
             return (
-              <PlotCard
-                key={plot.id}
-                plot={plot}
-                currentDay={currentDay}
-                fertilizerInventory={fertilizerInventory}
-                recoveryDays={recoveryDays}
-                isPlantAnchor={plot.id === plantAnchorId}
-                locked={locked}
-                isNextPurchasable={locked && isNextPurchasable}
-                plotPrice={nextPlotPrice ?? undefined}
-                canAffordPlot={canAffordPlot}
-                onPlant={onPlant}
-                onApplyFertilizer={onApplyFertilizer}
-                onClearPestDamage={onClearPestDamage}
-                onBuyPlot={onBuyPlot}
-              />
+              <div key={plot.id} data-plot-id={plot.id}>
+                <PlotCard
+                  plot={plot}
+                  currentDay={currentDay}
+                  fertilizerInventory={fertilizerInventory}
+                  recoveryDays={recoveryDays}
+                  isPlantAnchor={plot.id === plantAnchorId}
+                  locked={locked}
+                  isNextPurchasable={locked && isNextPurchasable}
+                  plotPrice={nextPlotPrice ?? undefined}
+                  canAffordPlot={canAffordPlot}
+                  onPlant={onPlant}
+                  onApplyFertilizer={onApplyFertilizer}
+                  onClearPestDamage={onClearPestDamage}
+                  onBuyPlot={onBuyPlot}
+                />
+              </div>
             );
           })}
         </div>

@@ -181,3 +181,32 @@ describe('HUD — empty-day safeguard label', () => {
     expect(container.querySelector('[data-onboarding="balance-chip"]')).toBeTruthy();
   });
 });
+
+describe('HUD — 021 celebration anchors', () => {
+  it('marks the balance chip with data-coin-target', () => {
+    const { container } = render(<HUD {...baseProps} currentDay={1} coinBalance={100} />);
+    expect(container.querySelector('[data-coin-target]')).not.toBeNull();
+  });
+});
+
+describe('HUD — 021 held/ticking balance', () => {
+  it('displays heldBalance instead of the committed balance', () => {
+    render(<HUD {...baseProps} currentDay={3} coinBalance={93} heldBalance={100} />);
+    const coins = screen.getByLabelText(/coins: 93/i);
+    expect(coins).toHaveTextContent('100');
+    expect(coins).not.toHaveTextContent('93');
+  });
+
+  it('keeps aria-label and danger styling on the committed balance while holding', () => {
+    // committed 10 vs Season-1 lease 15 → critical; held value is comfortable.
+    render(<HUD {...baseProps} currentDay={3} coinBalance={10} heldBalance={500} />);
+    const coins = screen.getByLabelText(/coins: 10/i);
+    expect(coins).toHaveTextContent('500');
+    expect(coins.className).toContain('text-[#EB6A5C]'); // critical text color
+  });
+
+  it('shows the committed balance when heldBalance is null', () => {
+    render(<HUD {...baseProps} currentDay={3} coinBalance={93} heldBalance={null} />);
+    expect(screen.getByLabelText(/coins: 93/i)).toHaveTextContent('93');
+  });
+});

@@ -91,6 +91,7 @@ function App() {
         onClearPestDamage={engine.clearPestDamage}
         getFertilizerCount={engine.getFertilizerCount}
         getSeedPrice={engine.getSeedPrice}
+        seedYieldMultiplier={engine.getSeedYieldMultiplier()}
         onBuyPlot={engine.buyPlot}
         getNextPlotPrice={engine.getNextPlotPrice}
         recoveryDays={engine.getRecoveryDays()}

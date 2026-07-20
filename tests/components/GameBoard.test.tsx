@@ -77,6 +77,7 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null; on
     onClearPestDamage: vi.fn(),
     getFertilizerCount: () => 0,
     getSeedPrice: () => 5,
+    seedYieldMultiplier: 1,
     onBuyPlot: vi.fn().mockReturnValue(false),
     getNextPlotPrice: () => null as number | null,
     recoveryDays: 3,
