@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   ONBOARDING_KEY,
+  ONBOARDING_STEPS,
   loadOnboarding,
   saveOnboarding,
   markOnboardingComplete,
@@ -44,5 +45,13 @@ describe('requestOnboardingReplay', () => {
     markOnboardingComplete();
     requestOnboardingReplay();
     expect(loadOnboarding()).toEqual({ schemaVersion: 1, completed: false, step: 'welcome' });
+  });
+});
+
+describe('ONBOARDING_STEPS', () => {
+  it('is the full ordered flow with done last', () => {
+    expect(ONBOARDING_STEPS).toEqual([
+      'welcome', 'open-shop', 'buy-radishes', 'plant', 'advance', 'payoff', 'done',
+    ]);
   });
 });

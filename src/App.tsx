@@ -5,7 +5,7 @@ import { BankruptcyScreen } from './components/BankruptcyScreen';
 import { SeasonTransitionModal } from './components/SeasonTransitionModal';
 import { requestOnboardingReplay } from './engine/onboarding';
 import type { PersonalBests } from './engine/records';
-import { initAnalytics } from './analytics/track';
+import { initAnalytics, track } from './analytics/track';
 import { useAnalyticsEvents } from './analytics/useAnalyticsEvents';
 import { AnalyticsOptOutToggle } from './components/AnalyticsOptOutToggle';
 
@@ -63,7 +63,7 @@ function App() {
           newBests={newBests}
           lastDailyLog={state.lastDailyLog}
           onRestart={restart}
-          onReplayTutorial={() => { requestOnboardingReplay(); restart(); }}
+          onReplayTutorial={() => { track('onboarding_replay_requested', {}); requestOnboardingReplay(); restart(); }}
         />
         <AnalyticsOptOutToggle />
       </>

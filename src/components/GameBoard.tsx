@@ -15,6 +15,7 @@ import { EmojiIcon } from './EmojiIcon';
 import { PageBackdrop } from './PageBackdrop';
 import { DaySummaryModal } from './DaySummaryModal';
 import { OnboardingOverlay } from './OnboardingOverlay';
+import { track } from '../analytics/track';
 
 /** 021 — harvest-celebration flow. `holding`: fresh summary modal is open and
     the HUD is holding the pre-turn balance. `celebrating`: modal closed, the
@@ -384,6 +385,16 @@ export function GameBoard({
     doAdvance();
   }
 
+  /** 020 A1 — one emission per safeguard encounter, on resolution (spec: never on display). */
+  function trackSafeguard(action: 'advanced' | 'cancelled') {
+    track('empty_day_safeguard', {
+      action,
+      onboarding_active: onboarding.active,
+      day: state.currentDay,
+      coin_balance: state.coinBalance,
+    });
+  }
+
   function handlePlot(plotId: number) {
     if (!selectedCrop) {
       onSeedlessPlotTap({ seedInventory: state.seedInventory, isDesktop, showSeedHint, openShop });
@@ -536,8 +547,12 @@ export function GameBoard({
 
       {showEmptyConfirm && (
         <EmptyDayConfirm
-          onCancel={() => setShowEmptyConfirm(false)}
+          onCancel={() => {
+            trackSafeguard('cancelled');
+            setShowEmptyConfirm(false);
+          }}
           onAdvance={() => {
+            trackSafeguard('advanced');
             setShowEmptyConfirm(false);
             setHasConfirmedEmptyDay(true);
             doAdvance();

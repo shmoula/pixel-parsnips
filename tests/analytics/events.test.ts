@@ -40,6 +40,14 @@ describe('events schema', () => {
     expect(EVENT_VERSIONS.day_completed).toBeGreaterThanOrEqual(1);
     expect(EVENT_VERSIONS.run_ended).toBeGreaterThanOrEqual(1);
   });
+
+  it('versions the 020 onboarding-funnel events', () => {
+    expect(EVENT_VERSIONS.onboarding_step_reached).toBe(1);
+    expect(EVENT_VERSIONS.onboarding_completed).toBe(1);
+    expect(EVENT_VERSIONS.onboarding_skipped).toBe(1);
+    expect(EVENT_VERSIONS.onboarding_replay_requested).toBe(1);
+    expect(EVENT_VERSIONS.empty_day_safeguard).toBe(1);
+  });
 });
 
 describe('buildDayCompletedProps', () => {
