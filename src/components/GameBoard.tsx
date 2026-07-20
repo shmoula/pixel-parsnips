@@ -7,7 +7,7 @@ import type { OnboardingStep } from '../engine/onboarding';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { BottomActionBar } from './BottomActionBar';
-import { HarvestCelebration } from './HarvestCelebration';
+import { HarvestCelebration, playHarvestSounds } from './HarvestCelebration';
 import { HUD } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
@@ -28,6 +28,15 @@ type CelebrationState =
     harvests and the game is still in normal play (not a season-boundary turn). */
 function shouldHoldForCelebration(log: DailyLogEntry, phase: GameState['phase']): boolean {
   return log.harvests.length > 0 && phase === 'playing';
+}
+
+/** 021 — season-boundary harvest turns skip the coin flight (the
+    SeasonTransitionModal owns the stage) but still play the harvest chime. */
+function shouldPlaySeasonEndHarvestSound(log: DailyLogEntry, phase: GameState['phase']): boolean {
+  return (
+    log.harvests.length > 0 &&
+    (phase === 'season_passed' || phase === 'season_4_won' || phase === 'season_failed')
+  );
 }
 
 /** 021 — close the fresh summary: promote holding → celebrating; else unchanged. */
@@ -322,10 +331,13 @@ export function GameBoard({
       setIsSummaryOpen(true);
       setIsProcessing(false);
       // 021 — a fresh-open harvest-day summary holds the pre-turn balance; the
-      // celebration then plays when the modal closes. Season-boundary turns and
-      // quiet (no-harvest) days do not celebrate.
+      // celebration then plays when the modal closes. Quiet (no-harvest) days do
+      // not celebrate; season-boundary harvest turns skip the coin flight but
+      // still play the harvest chime (the SeasonTransitionModal owns the stage).
       if (shouldHoldForCelebration(lastDailyLog, state.phase)) {
         setCelebration({ kind: 'holding', log: lastDailyLog });
+      } else if (shouldPlaySeasonEndHarvestSound(lastDailyLog, state.phase)) {
+        return playHarvestSounds(lastDailyLog.harvests);
       }
     }
   }, [lastDailyLog, state.phase]);

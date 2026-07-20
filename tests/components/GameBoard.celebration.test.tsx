@@ -10,6 +10,7 @@ vi.mock('../../src/audio/sfx', async importOriginal => ({
   ...(await importOriginal<typeof import('../../src/audio/sfx')>()),
   playSfx: vi.fn(),
 }));
+import { playSfx } from '../../src/audio/sfx';
 
 const harvestLog: DailyLogEntry = {
   day: 3,
@@ -142,7 +143,7 @@ describe('GameBoard — 021 harvest celebration wiring', () => {
     expect(screen.queryByTestId('harvest-celebration')).toBeNull();
   });
 
-  it('does not hold or celebrate on a season-boundary turn', () => {
+  it('does not hold or mount the coin flight on a season-boundary turn', () => {
     installFakeWaapi();
     const props = makeProps({ phase: 'season_passed' });
     const { rerender } = render(<GameBoard {...props} />);
@@ -150,6 +151,26 @@ describe('GameBoard — 021 harvest celebration wiring', () => {
     expect(screen.getByLabelText(/coins: 93/i)).toHaveTextContent('93');
     fireEvent.click(screen.getByLabelText('Close day summary'));
     expect(screen.queryByTestId('harvest-celebration')).toBeNull();
+  });
+
+  it('still plays the harvest chime (sound only) on a season-boundary harvest turn', () => {
+    // The SeasonTransitionModal owns the stage, so there is no coin flight — but
+    // the harvest sound should not be swallowed with it.
+    vi.useFakeTimers();
+    try {
+      installFakeWaapi();
+      vi.mocked(playSfx).mockClear();
+      const props = makeProps({ phase: 'season_passed' });
+      const { rerender } = render(<GameBoard {...props} />);
+      advanceWithLog(rerender, props, harvestLog);
+      expect(screen.queryByTestId('harvest-celebration')).toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(2000); // fire the staggered launch timers
+      });
+      expect(playSfx).toHaveBeenCalledWith('harvest_radish');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('cancels a running celebration when Next Day is pressed', () => {

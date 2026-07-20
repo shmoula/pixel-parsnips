@@ -35,7 +35,7 @@ means: Continue, Escape, overlay click) **and all** of:
 |---|---|
 | `log.harvests.length > 0` | Quiet days stay quiet. |
 | Fresh open (`animateReveal === true`) | "Last Turn" reopens replay nothing — same rule as 013. |
-| `state.phase === 'playing'` after the turn | Season-boundary turns hand the stage to `SeasonTransitionModal`; bankruptcy unmounts the board entirely. |
+| `state.phase === 'playing'` after the turn | Season-boundary turns hand the stage to `SeasonTransitionModal`, so the coin flight is skipped; bankruptcy unmounts the board entirely. **The harvest chime still plays** on season-boundary harvest turns (sound-only) — see §3. |
 
 While the auto-opened modal is up **and a celebration is pending**, the HUD balance
 chip displays `log.openingBalance` (the pre-turn balance) instead of the committed
@@ -73,6 +73,14 @@ can never skip the celebration it just started.) (coins removed, counter set to 
 scheduled; already-sounding notes ≤260ms simply finish). Pressing Next Day during a
 celebration cancels it the same way before the new turn processes. The overlay never
 blocks input.
+
+**Season-boundary turns (sound-only):** when the turn that opens the summary also
+ends the season (`phase === 'season_passed' | 'season_4_won' | 'season_failed'`), the
+`SeasonTransitionModal` overlays the board and owns the stage, so there is no hold,
+no coin flight and no counter tick. The per-crop harvest chimes **still play**
+(staggered as in step 2, but with no visuals), fired as the summary opens rather than
+on close — the balance chip is behind the transition modal, so the flight would land
+on a hidden target. Reduced-motion is irrelevant here (there was no motion to drop).
 
 **Fallbacks:**
 
@@ -186,8 +194,9 @@ Vitest + Testing Library + fake timers, following 013's patterns.
 - **`GameBoard` integration**: fresh-open harvest day → HUD shows `openingBalance`
   while modal is open, celebration overlay mounts on close, HUD shows committed
   balance after done. Last Turn reopen → no hold, no celebration. Quiet day → no
-  hold, no celebration. `phase === 'season_passed'` turn → no celebration. Next Day
-  during celebration → cancelled cleanly.
+  hold, no celebration. `phase === 'season_passed'` turn → no coin flight, but the
+  harvest chime still plays (sound-only). Next Day during celebration → cancelled
+  cleanly.
 - **`HUD`**: mute toggle renders, toggles `aria-pressed`, persists; danger styling
   and `aria-label` reflect committed balance even while a held/ticking value is
   displayed.
@@ -200,8 +209,9 @@ Vitest + Testing Library + fake timers, following 013's patterns.
   balance chip, the counter rapid-ticks from the pre-turn balance to the live
   balance, per-crop sounds play per group and a ping per landing. Total ≤2s.
 - Any click/keypress instantly resolves the celebration; input is never blocked.
-- No celebration on quiet days, Last Turn reopens, season-boundary turns, or
-  bankruptcy.
+- No celebration on quiet days, Last Turn reopens, or bankruptcy. Season-boundary
+  harvest turns play the harvest chime only (no coin flight — the transition modal
+  owns the stage).
 - Reduced-motion users see today's instant behavior (sounds still play; mute is
   independent).
 - Mute toggle silences everything and survives reload + Restart.

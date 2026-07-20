@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import type { CropId, DailyLogEntry } from '../engine/types';
 import { playSfx, type SfxId } from '../audio/sfx';
@@ -19,6 +19,25 @@ const CROP_SFX: Record<CropId, SfxId> = {
   parsnip: 'harvest_parsnip',
   pumpkin: 'harvest_pumpkin',
 };
+
+/** Per-group launch stagger, matching the celebration's own cadence. */
+function launchStagger(groupCount: number): number {
+  return groupCount > 1 ? Math.min(GROUP_STAGGER_MS, MAX_LAST_LAUNCH_MS / (groupCount - 1)) : 0;
+}
+
+/**
+ * 021 — sound-only harvest cue: the per-crop harvest chimes, staggered like the
+ * full celebration but without any visuals. Used on season-boundary turns, where
+ * the SeasonTransitionModal owns the stage so the coin flight is skipped but the
+ * chime should still play. Returns a cleanup that cancels any pending timers.
+ */
+export function playHarvestSounds(harvests: DailyLogEntry['harvests']): () => void {
+  const stagger = launchStagger(harvests.length);
+  const timers = harvests.map((h, i) =>
+    window.setTimeout(() => playSfx(CROP_SFX[h.cropId]), i * stagger),
+  );
+  return () => timers.forEach(id => window.clearTimeout(id));
+}
 
 /**
  * Coins per harvested plot: 1–4 scaled by yield, hard-capped at MAX_COINS
@@ -92,17 +111,20 @@ export function HarvestCelebration({ log, onCoinsArriving, onDone }: HarvestCele
   const finishRef = useRef<() => void>(() => {});
 
   // Parent callbacks in refs so the one-shot sequence effect never re-runs.
+  // Synced in a layout effect (not during render) to avoid mutating refs in the
+  // render body, while still landing before any paint or the sequence's finish.
   const onCoinsArrivingRef = useRef(onCoinsArriving);
-  onCoinsArrivingRef.current = onCoinsArriving;
   const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  useLayoutEffect(() => {
+    onCoinsArrivingRef.current = onCoinsArriving;
+    onDoneRef.current = onDone;
+  });
 
   // The whole sequence is one-shot per mount: GameBoard mounts a fresh
   // instance per celebration and the log cannot change mid-flight.
   useEffect(() => {
     const groups = log.harvests;
-    const stagger =
-      groups.length > 1 ? Math.min(GROUP_STAGGER_MS, MAX_LAST_LAUNCH_MS / (groups.length - 1)) : 0;
+    const stagger = launchStagger(groups.length);
 
     const finish = () => {
       if (doneRef.current) return;
