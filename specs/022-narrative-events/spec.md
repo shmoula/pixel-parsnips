@@ -25,6 +25,12 @@ Per Proposal C's design constraint, **events are never traps**: each side of eve
 defensible under some game state, and the "decline/safe" side is always choice B by catalog
 convention.
 
+To protect brand-new players from post-onboarding cognitive load, the feature **auto-unlocks on a
+device's second run**: the first run is eventless, the run-end screen teases the unlock
+narratively, and events simply fire from run 2 onward (see
+[New-player gating](#new-player-gating-auto-unlock-on-run-2)). No opt-in prompt, no settings
+toggle.
+
 ---
 
 ## Goals
@@ -45,6 +51,9 @@ convention.
 - No more than **one concurrent contract** (contract-type events are excluded from the draw while
   one is active).
 - No event art beyond emoji; no per-event sounds this ship (can ride the 021 `playSfx` seam later).
+- No opt-in prompt and no settings toggle for events (considered and rejected 2026-07-21: a
+  prompt asks players to judge a feature they haven't seen, and a toggle creates a second balance
+  profile; the run-2 auto-unlock protects the first session with zero decision burden).
 - No negative/punishing events — effects are opportunities or foreshadowing, per Proposal C.
 - No changes to the season disaster budget, market events, or streak systems beyond the defined
   integration points.
@@ -52,6 +61,28 @@ convention.
 ---
 
 ## Mechanic
+
+### New-player gating (auto-unlock on run 2)
+
+A device's **first run is eventless**. Enablement is derived from existing persistence — no new
+key, no prompt state:
+
+- At run creation, `initialGameState` stores `farmEvents.enabled = totalRunsCompleted >= 1`
+  (from `loadRecords()`, passed in by the caller so the engine stays pure; the simulator and tests
+  pass `true` by default).
+- While `enabled` is false, scheduling and firing are complete no-ops — the slice stays empty and
+  the run plays exactly like today's baseline (which is already the tuned economy, so the first
+  run needs no separate balance profile).
+- The flag is per-run and frozen at creation: finishing the first run mid-session does not
+  turn events on retroactively; the *next* run has them.
+
+**Unlock framing (UI):** when a run with `enabled === false` reaches a terminal screen
+(bankruptcy, `season_failed`, or the season-4 victory), the run-end screen adds a one-line tease —
+"🧳 Word of your farm is spreading — from your next run, visitors will arrive with offers." Event
+modals render a small "New!" ribbon while `totalRunsCompleted === 1` (the player's second run).
+
+Existing devices (records already show completed runs) and migrated in-progress saves get events
+immediately — they are not new players.
 
 ### Scheduling (lazy, per-season, guaranteed)
 
@@ -152,6 +183,7 @@ Constants join `constants.ts` in the existing `MARKET_*` style.
 
 ```ts
 farmEvents: {
+  enabled: boolean;                       // false on a device's first run (new-player gating)
   scheduleSeason: number;                 // 0 = never drawn
   scheduledDays: number[];
   pending: { eventId: FarmEventId; firedDay: number } | null;
@@ -162,8 +194,8 @@ farmEvents: {
 }
 ```
 
-Initial value: `{ scheduleSeason: 0, scheduledDays: [], pending: null, activeEffects: [],
-contract: null, seenIds: [], lastResolved: null }`. Effect payloads are resolved from config at
+Initial value: `{ enabled: <records-derived, see gating>, scheduleSeason: 0, scheduledDays: [],
+pending: null, activeEffects: [], contract: null, seenIds: [], lastResolved: null }`. Effect payloads are resolved from config at
 choice time (frozen into state), so a mid-run config change cannot alter a live effect — same rule
 as market multipliers.
 
@@ -223,6 +255,8 @@ merchantOfferValue(state, config)                // live modal estimate for sell
 ## Simulator integration
 
 - `FarmEventsConfig` joins the sim's economy presets so `npm run sim` exercises events by default.
+- Sim runs always create state with `farmEvents.enabled: true` — the sim measures the
+  event-enabled economy; the gated first run is by construction today's already-tuned baseline.
 - `tickDay` in `scripts/sim/runner.ts` gains a resolve step: if `pending`, answer via the run's
   **event policy** before the strategy acts.
 - Three policies:
@@ -269,6 +303,8 @@ around.
 - Opens after the Day Summary closes on a fired day; **Next Day is blocked** while `pending`.
 - A11y: `role="dialog"`, focus trap, **Escape does not dismiss** — a choice is required.
   `prefers-reduced-motion` honored as elsewhere.
+- "New!" ribbon during the player's second run, and the run-end unlock tease after an eventless
+  run — see [New-player gating](#new-player-gating-auto-unlock-on-run-2).
 
 ### HUD
 
@@ -290,9 +326,12 @@ persistent chip.)
 ## Persistence & migration
 
 - `GameState.schemaVersion` bumps **9 → 10**.
-- v9 → v10 migration: add the empty `farmEvents` slice. The lazy scheduler then draws for the
-  current season with the window clamped to **future days only** — a save migrated past its
-  season's window simply gets no event that season (never punished, never retroactively credited).
+- v9 → v10 migration: add the empty `farmEvents` slice with
+  `enabled: totalRunsCompleted >= 1` (the records-derived flag is passed in by the load layer so
+  the migration function stays pure; in practice existing devices have completed runs and migrate
+  to `true`). The lazy scheduler then draws for the current season with the window clamped to
+  **future days only** — a save migrated past its season's window simply gets no event that season
+  (never punished, never retroactively credited).
 - Defensive parse: a malformed/absent `farmEvents` field loads as the empty slice, consistent with
   existing load hardening.
 - A persisted `pending` re-presents the modal on reload.
@@ -306,6 +345,7 @@ transitions and `lastResolved` drive them; no engine impurity):
 
 | Event | Properties |
 |---|---|
+| `play_started` *(existing — new property)* | gains `events_enabled` (boolean) so the funnel can split first-run/eventless sessions from event-enabled ones |
 | `farm_event_fired` | `event_id`, `season`, `day` |
 | `farm_event_choice` | `event_id`, `choice` (`A`/`B`), `auto` (boolean), `day` |
 | `contract_completed` | `event_id`, `reward` |
@@ -317,7 +357,8 @@ handling unchanged.
 **PostHog dashboard (deliverable):** provision a **"Pixel Parsnips — Narrative Events"** dashboard
 via the PostHog MCP (020 precedent, EU project 216788) with tiles:
 
-1. Event fires by `event_id` (are all six being seen?)
+1. Event fires by `event_id` (are all six being seen?), with `events_enabled` on `play_started`
+   distinguishing "no events because first run" from a window/scheduling bug
 2. Choice split A vs B per `event_id` (a lopsided split flags a dominant choice — Proposal C's
    failure mode)
 3. Auto-decline rate (`auto: true` share — should be ~0; nonzero flags a UI gap)
@@ -331,6 +372,9 @@ Tiles validate once a first seed pass lands events in PostHog (same caveat as th
 
 ## Testing
 
+- **Gating:** `enabled: false` never schedules or fires (slice stays empty across a full run);
+  `initialGameState` derives the flag from the passed-in records value; run-end tease renders only
+  for eventless runs; "New!" ribbon only while `totalRunsCompleted === 1`.
 - **Scheduling:** deterministic draw from seeded RNG (count honors `secondEventChance`, days
   distinct and inside the window); redraw on season change only; Endless seasons schedule; migrated
   mid-season save clamps to future days; empty remaining window → no events.
