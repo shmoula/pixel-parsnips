@@ -6,6 +6,7 @@ import {
 } from './constants';
 import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
 import { EMPTY_MARKET, activatePending, expireActive, marketMultiplierFor, rollSchedule } from './market';
+import { EMPTY_FARM_EVENTS } from './farmEvents';
 import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
 import type {
   GameState,
@@ -57,6 +58,7 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     unlockedPlots: config.startingPlots,
     market: EMPTY_MARKET,
     buildings: { ...NO_BUILDINGS },
+    farmEvents: { ...EMPTY_FARM_EVENTS },
   };
 }
 

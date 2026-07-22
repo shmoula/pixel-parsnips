@@ -1,4 +1,4 @@
-import type { CropDefinition, CropId, BuildingDefinition } from './types';
+import type { CropDefinition, CropId, BuildingDefinition, FarmEventDefinition } from './types';
 import {
   STARTING_BALANCE, PLOT_COUNT, STARTING_PLOTS, PLOT_PRICES, TAX_RATE, FERTILIZER_COST,
   EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS,
@@ -11,8 +11,10 @@ import {
   BUILDING_DROUGHT_WINDOW_DAYS, BUILDING_PEST_DESTRUCTION_CHANCE,
   BUILDING_YIELD_MULTIPLIER, BUILDING_DEFINITIONS,
   CROP_DEFINITIONS,
+  FARM_EVENT_WINDOW_START_OFFSET, FARM_EVENT_WINDOW_END_OFFSET, FARM_EVENT_SECOND_CHANCE,
 } from './constants';
 import type { SeasonConfig } from './seasons';
+import { FARM_EVENT_DEFINITIONS } from './farmEventCatalog';
 
 /** Hard-coded configs for Seasons 1–4 (the finite arc). Defined here to avoid circular imports. */
 export const SEASON_TABLE: SeasonConfig[] = [
@@ -57,6 +59,17 @@ export interface BuildingsConfig {
   yieldMultiplier: number;
 }
 
+export interface FarmEventsConfig {
+  /** First eligible season day = startDay + this. */
+  windowStartOffset: number;
+  /** Last eligible season day = startDay + this (clamped to season endDay). */
+  windowEndOffset: number;
+  /** 0..1 chance of a 2nd event per season (the 1st is guaranteed). */
+  secondEventChance: number;
+  /** The authored catalog; per-event numbers live inside the definitions. */
+  events: FarmEventDefinition[];
+}
+
 export interface EconomyConfig {
   startingBalance: number;
   startingPlots: number; // 010 activates plot gating; in 009 == maxPlots
@@ -77,6 +90,7 @@ export interface EconomyConfig {
   /** Base days added to the drought window per Flash Drought event (no Well). */
   flashDroughtWindowDays: number;
   buildings: BuildingsConfig;
+  farmEvents: FarmEventsConfig;
 }
 
 export const DEFAULT_ECONOMY: EconomyConfig = {
@@ -114,5 +128,11 @@ export const DEFAULT_ECONOMY: EconomyConfig = {
     droughtWindowDays: BUILDING_DROUGHT_WINDOW_DAYS,
     pestDestructionChance: BUILDING_PEST_DESTRUCTION_CHANCE,
     yieldMultiplier: BUILDING_YIELD_MULTIPLIER,
+  },
+  farmEvents: {
+    windowStartOffset: FARM_EVENT_WINDOW_START_OFFSET,
+    windowEndOffset: FARM_EVENT_WINDOW_END_OFFSET,
+    secondEventChance: FARM_EVENT_SECOND_CHANCE,
+    events: FARM_EVENT_DEFINITIONS,
   },
 };

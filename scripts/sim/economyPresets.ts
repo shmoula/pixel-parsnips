@@ -24,6 +24,8 @@ export const baseline: EconomyConfig = {
   // 019: frozen pre-buildings baseline — no buildings purchasable, ladder-era economics
   // are approximated by definitions: [] (bots can't buy anything, incl. the toolshed).
   buildings: { ...DEFAULT_ECONOMY.buildings, definitions: [] },
+  // 022: frozen pre-events presets — an empty catalog means nothing can ever fire.
+  farmEvents: { windowStartOffset: 4, windowEndOffset: 15, secondEventChance: 0, events: [] },
 };
 
 /**
