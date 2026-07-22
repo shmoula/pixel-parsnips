@@ -6,7 +6,7 @@ import {
 } from './constants';
 import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
 import { EMPTY_MARKET, activatePending, expireActive, marketMultiplierFor, rollSchedule } from './market';
-import { EMPTY_FARM_EVENTS } from './farmEvents';
+import { EMPTY_FARM_EVENTS, seedDiscountFor } from './farmEvents';
 import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
 import type {
   GameState,
@@ -23,6 +23,10 @@ import type {
   HarvestEvent,
   BuildingId,
   BuyBuildingResult,
+  FarmEventChoiceId,
+  FarmEventEffect,
+  FarmEventEffectSpec,
+  FarmEventId,
 } from './types';
 
 // ── Factory ───────────────────────────────────────────────────────────────────
@@ -142,15 +146,18 @@ export function plantSeed(
 
 // ── T029: computeSeedCost ─────────────────────────────────────────────────────
 
-/** Returns the current purchase price for one seed, applying the Toolshed discount. */
+/** Returns the current purchase price for one seed, applying the Toolshed and
+ *  any active farm-event seed discount (022) inside a single coins() floor. */
 export function computeSeedCost(
   cropId: CropId,
   buildings: GameState['buildings'],
   config: EconomyConfig = DEFAULT_ECONOMY,
+  activeEffects: FarmEventEffect[] = [],
 ): number {
   const crop = config.crops[cropId];
-  if (!buildings.toolshed) return crop.baseSeedCost;
-  return coins(crop.baseSeedCost * (1 - config.buildings.seedDiscount));
+  const shedFactor = buildings.toolshed ? 1 - config.buildings.seedDiscount : 1;
+  const eventFactor = seedDiscountFor(activeEffects, cropId);
+  return coins(crop.baseSeedCost * shedFactor * eventFactor);
 }
 
 // ── T029: buySeed ─────────────────────────────────────────────────────────────
@@ -165,7 +172,7 @@ export function buySeed(
   if (!Number.isInteger(quantity) || quantity < 1) {
     return { ok: false, error: 'invalid_quantity' };
   }
-  const unitCost = computeSeedCost(cropId, state.buildings, config);
+  const unitCost = computeSeedCost(cropId, state.buildings, config, state.farmEvents.activeEffects);
   const totalCost = unitCost * quantity;
 
   if (state.coinBalance < totalCost) {
@@ -694,6 +701,113 @@ export function buyBuilding(
       ...state,
       coinBalance: state.coinBalance - def.cost,
       buildings: { ...state.buildings, [id]: true },
+    },
+  };
+}
+
+// ── resolveFarmEventChoice (022) ──────────────────────────────────────────────
+
+type FarmEventEffectAcc = {
+  coinBalance: number;
+  plots: PlotState[];
+  activeEffects: FarmEventEffect[];
+  contract: GameState['farmEvents']['contract'];
+};
+
+/** Applies one authored effect spec to the running resolution accumulator. Pure. */
+function applyFarmEventEffectSpec(
+  acc: FarmEventEffectAcc,
+  spec: FarmEventEffectSpec,
+  eventId: FarmEventId,
+  firedDay: number,
+  currentDay: number,
+  config: EconomyConfig,
+): FarmEventEffectAcc {
+  switch (spec.kind) {
+    case 'coins_delta':
+      return { ...acc, coinBalance: acc.coinBalance + spec.amount };
+    case 'sell_standing_crops': {
+      const gain = acc.plots.reduce(
+        (sum, p) => (p.cropId === null ? sum : sum + coins(config.crops[p.cropId].baseYield * spec.priceFactor)), 0);
+      // A private sale, not a harvest: no streak, no exhaustion increment.
+      const plots = acc.plots.map(p => (p.cropId === null ? p : {
+        ...p, cropId: null, dayPlanted: null, daysRemaining: null, droughtPenalised: false,
+      }));
+      return { ...acc, coinBalance: acc.coinBalance + gain, plots };
+    }
+    case 'yield_buff':
+      return {
+        ...acc,
+        activeEffects: [...acc.activeEffects, {
+          kind: 'yield_buff', eventId, multiplier: spec.multiplier,
+          harvestsRemaining: spec.harvests, exhaustionFactor: spec.exhaustionFactor,
+        }],
+      };
+    case 'seed_discount':
+      return {
+        ...acc,
+        activeEffects: [...acc.activeEffects, {
+          kind: 'seed_discount', cropId: spec.cropId, factor: spec.factor, expiresAfterDay: currentDay,
+        }],
+      };
+    case 'weather_pin':
+      return acc; // fire-time-only; inert if ever authored on a choice
+    case 'contract':
+      return {
+        ...acc,
+        contract: {
+          eventId, cropId: spec.cropId, quantity: spec.quantity,
+          remaining: spec.quantity, deadlineDay: firedDay + spec.deadlineDays, reward: spec.reward,
+        },
+      };
+  }
+}
+
+/**
+ * Applies one side of the pending farm event's choice. Pure — no mutations.
+ * No-ops when nothing is pending, when the id is unknown to the catalog
+ * (pending is dropped), or when a buy-in is unaffordable (pending is KEPT so
+ * the UI can re-present; auto-resolve always takes the free B side).
+ */
+export function resolveFarmEventChoice(
+  state: GameState,
+  choice: FarmEventChoiceId,
+  config: EconomyConfig = DEFAULT_ECONOMY,
+  auto = false,
+): GameState {
+  const pending = state.farmEvents.pending;
+  if (pending === null) return state;
+  const def = config.farmEvents.events.find(e => e.id === pending.eventId);
+  if (def === undefined) {
+    return { ...state, farmEvents: { ...state.farmEvents, pending: null } };
+  }
+  const effects = choice === 'A' ? def.choiceA.effects : def.choiceB.effects;
+
+  const buyIn = effects.reduce(
+    (sum, e) => (e.kind === 'coins_delta' && e.amount < 0 ? sum - e.amount : sum), 0);
+  if (state.coinBalance < buyIn) return state;
+
+  const result = effects.reduce(
+    (acc, spec) => applyFarmEventEffectSpec(acc, spec, def.id, pending.firedDay, state.currentDay, config),
+    {
+      coinBalance: state.coinBalance,
+      plots: state.plots,
+      activeEffects: [...state.farmEvents.activeEffects],
+      contract: state.farmEvents.contract,
+    } as FarmEventEffectAcc,
+  );
+
+  return {
+    ...state,
+    coinBalance: result.coinBalance,
+    plots: result.plots,
+    peakBalance: Math.max(state.peakBalance, result.coinBalance),
+    farmEvents: {
+      ...state.farmEvents,
+      pending: null,
+      activeEffects: result.activeEffects,
+      contract: result.contract,
+      lastResolved: { eventId: def.id, choice, day: state.currentDay, auto },
     },
   };
 }
