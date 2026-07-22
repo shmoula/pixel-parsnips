@@ -26,8 +26,13 @@ import type {
   WeatherId,
   BuildingId,
   BuildingDefinition,
+  FarmEventsState,
+  FarmEventId,
+  ContractState,
+  FarmEventEffect,
 } from './types';
-import { recordRunEnd, type PersonalBests } from './records';
+import { recordRunEnd, loadRecords, type PersonalBests } from './records';
+import { EMPTY_FARM_EVENTS } from './farmEvents';
 import { deriveMedal, type Medal } from './medals';
 import { getSeasonForDay } from './seasons';
 import { EMPTY_MARKET } from './market';
@@ -92,6 +97,73 @@ function normalizeBuildings(raw: unknown): GameState['buildings'] {
   };
 }
 
+/** 022 gate: events unlock from a device's second run onward. */
+function defaultFarmEventsEnabled(): boolean {
+  return loadRecords().totalRunsCompleted >= 1;
+}
+
+const FARM_EVENT_IDS: readonly FarmEventId[] = [
+  'traveling_merchant', 'bountiful_spring', 'drought_warning',
+  'millers_order', 'fair_committee', 'wandering_beekeeper',
+];
+const isFarmEventId = (v: unknown): v is FarmEventId =>
+  (FARM_EVENT_IDS as readonly unknown[]).includes(v);
+
+const isNumber = (v: unknown): v is number => typeof v === 'number';
+
+/** Structurally validate a pending (announced) farm event, or null if malformed. */
+function toPendingFarmEvent(v: unknown): FarmEventsState['pending'] {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const p = v as Record<string, unknown>;
+  return isFarmEventId(p.eventId) && typeof p.firedDay === 'number'
+    ? { eventId: p.eventId, firedDay: p.firedDay }
+    : null;
+}
+
+/** Structurally validate a live contract, or null if any field is missing/malformed. */
+function toContractState(v: unknown): ContractState | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const c = v as Record<string, unknown>;
+  if (
+    !isFarmEventId(c.eventId) || !isCropId(c.cropId) ||
+    !isNumber(c.quantity) || !isNumber(c.remaining) ||
+    !isNumber(c.deadlineDay) || !isNumber(c.reward)
+  ) {
+    return null;
+  }
+  return {
+    eventId: c.eventId, cropId: c.cropId, quantity: c.quantity,
+    remaining: c.remaining, deadlineDay: c.deadlineDay, reward: c.reward,
+  };
+}
+
+/** A live (counter-bearing) effect kind, distinct from the catalog spec shapes. */
+function isLiveFarmEffect(e: unknown): e is FarmEventEffect {
+  if (!e || typeof e !== 'object') return false;
+  const k = (e as Record<string, unknown>).kind;
+  return k === 'yield_buff' || k === 'seed_discount' || k === 'weather_pin';
+}
+
+/** Normalize a raw `farmEvents` value from a save: missing/malformed → empty slice
+ *  with the records-derived enabled flag. Structurally valid fields pass through;
+ *  anything suspect degrades to its empty value (never crashes, never blocks). */
+function normalizeFarmEvents(raw: unknown, fallbackEnabled: boolean): FarmEventsState {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ...EMPTY_FARM_EVENTS, enabled: fallbackEnabled };
+  }
+  const r = raw as Record<string, unknown>;
+  return {
+    enabled: typeof r.enabled === 'boolean' ? r.enabled : fallbackEnabled,
+    scheduleSeason: typeof r.scheduleSeason === 'number' ? r.scheduleSeason : 0,
+    scheduledDays: Array.isArray(r.scheduledDays) ? r.scheduledDays.filter(isNumber) : [],
+    pending: toPendingFarmEvent(r.pending),
+    activeEffects: Array.isArray(r.activeEffects) ? r.activeEffects.filter(isLiveFarmEffect) : [],
+    contract: toContractState(r.contract),
+    seenIds: Array.isArray(r.seenIds) ? r.seenIds.filter(isFarmEventId) : [],
+    lastResolved: null, // analytics-only; safe to drop on load
+  };
+}
+
 /** v8 → v9: any owned tool tier becomes the Toolshed; the tier field is dropped. */
 function migrateLadderToBuildings(st: Record<string, unknown>): Record<string, unknown> {
   const tier = typeof st.upgradeTier === 'number' ? st.upgradeTier : 0;
@@ -116,12 +188,14 @@ function hardenCurrentSchema(st: Record<string, unknown>): GameState {
   );
   const market = normalizeMarket(st.market);
   const buildings = normalizeBuildings(st.buildings);
+  const farmEvents = normalizeFarmEvents(st.farmEvents, defaultFarmEventsEnabled());
   return {
     ...(st as unknown as GameState),
     plots,
     unlockedPlots,
     market,
     buildings,
+    farmEvents,
     schemaVersion: SCHEMA_VERSION,
   } as GameState;
 }
@@ -138,11 +212,25 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     return null;
   }
 
-  // Schema 9 — current. Harden tampered/corrupt fields in place.
+  // Schema 10 — current. Harden tampered/corrupt fields in place.
   if (parsed.schemaVersion === SCHEMA_VERSION) {
     return hardenCurrentSchema(parsed.state as Record<string, unknown>);
   }
 
+  // Schema 9 → 10 — add farm events (022); enabled derives from completed-run records.
+  if (parsed.schemaVersion === 9) {
+    console.info('[PixelParsnips] Migrating save from v9 to v10 (Farm Events).');
+    return hardenCurrentSchema({
+      ...(parsed.state as Record<string, unknown>),
+      schemaVersion: SCHEMA_VERSION,
+    });
+  }
+
+  return migrateLegacy(parsed);
+}
+
+/** Migrates pre-v9 save envelopes (v3–v8) forward to the current schema, or null if unsupported. */
+function migrateLegacy(parsed: { schemaVersion: number; state: unknown }): GameState | null {
   // Schema 8 → 9 — collapse the tool ladder into the Toolshed building (019)
   if (parsed.schemaVersion === 8) {
     console.info('[PixelParsnips] Migrating save from v8 to v9 (Farm Buildings — tool tiers become the Toolshed; T1 owners gain a little, T3 owners lose the last 20%).');
@@ -227,11 +315,11 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
 function loadState(): GameState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return initialGameState(ECONOMY);
+    if (!raw) return initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
     const parsed = JSON.parse(raw);
-    return migrateState(parsed) ?? initialGameState(ECONOMY);
+    return migrateState(parsed) ?? initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
   } catch {
-    return initialGameState(ECONOMY);
+    return initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
   }
 }
 
@@ -427,7 +515,7 @@ export function useGameEngine(): GameEngineHook {
   }, [state.currentDay, state.buildings]);
 
   const restart = useCallback(() => {
-    const fresh = initialGameState(ECONOMY);
+    const fresh = initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
     commitState(fresh);
@@ -443,7 +531,7 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState]);
 
   const endRunVictory = useCallback(() => {
-    const fresh = initialGameState(ECONOMY);
+    const fresh = initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
     commitState(fresh);
