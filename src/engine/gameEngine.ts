@@ -6,7 +6,17 @@ import {
 } from './constants';
 import { DEFAULT_ECONOMY, type EconomyConfig } from './economy';
 import { EMPTY_MARKET, activatePending, expireActive, marketMultiplierFor, rollSchedule } from './market';
-import { EMPTY_FARM_EVENTS, seedDiscountFor } from './farmEvents';
+import {
+  EMPTY_FARM_EVENTS,
+  seedDiscountFor,
+  ensureSchedule,
+  maybeFireEvent,
+  buffMultiplierFor,
+  buffExhaustionFactorFor,
+  pinnedWeatherFor,
+  tickEffects,
+  applyContractProgress,
+} from './farmEvents';
 import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
 import type {
   GameState,
@@ -27,12 +37,18 @@ import type {
   FarmEventEffect,
   FarmEventEffectSpec,
   FarmEventId,
+  FarmEventsState,
 } from './types';
 
 // ── Factory ───────────────────────────────────────────────────────────────────
 
-/** Returns the canonical starting state for a new game run. */
-export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameState {
+/** Returns the canonical starting state for a new game run.
+ *  `farmEventsEnabled` implements the 022 run-2 gate; the UI passes the
+ *  records-derived value, while the simulator and tests default to true. */
+export function initialGameState(
+  config: EconomyConfig = DEFAULT_ECONOMY,
+  opts: { farmEventsEnabled?: boolean } = {},
+): GameState {
   const plots: PlotState[] = Array.from({ length: config.maxPlots }, (_, i) => ({
     id: i,
     cropId: null,
@@ -62,7 +78,7 @@ export function initialGameState(config: EconomyConfig = DEFAULT_ECONOMY): GameS
     unlockedPlots: config.startingPlots,
     market: EMPTY_MARKET,
     buildings: { ...NO_BUILDINGS },
-    farmEvents: { ...EMPTY_FARM_EVENTS },
+    farmEvents: { ...EMPTY_FARM_EVENTS, enabled: opts.farmEventsEnabled ?? true },
   };
 }
 
@@ -286,6 +302,95 @@ function computeBuildingsApplied(
 }
 
 /**
+ * 022 FE-A: prepare the turn's working state. A still-pending farm event resolves
+ * as the safe choice (B, auto) so the engine is never blocked on an unanswered
+ * modal; then lazily draw this season's event schedule (no-op once drawn / while
+ * disabled). ensureSchedule consumes the turn's FIRST rng draws — keep this call
+ * at the very start of processTurn so the draw order stays load-bearing. Pure.
+ */
+function prepareTurnState(
+  state: GameState,
+  config: EconomyConfig,
+  rng: () => number,
+): GameState {
+  const preState = state.farmEvents.pending !== null
+    ? resolveFarmEventChoice(state, 'B', config, true)
+    : state;
+  return {
+    ...preState,
+    farmEvents: ensureSchedule(preState.farmEvents, preState.currentDay, config, rng),
+  };
+}
+
+interface FarmEventTurnResult {
+  /** Contract completion reward to credit BEFORE the bankruptcy check (0 if none). */
+  rewardCredit: number;
+  eventBuffsApplied: NonNullable<DailyLogEntry['eventBuffsApplied']>;
+  feAfterTurn: FarmEventsState;
+  contractProgress: DailyLogEntry['contractProgress'];
+  contractCompleted: DailyLogEntry['contractCompleted'];
+  contractExpired: DailyLogEntry['contractExpired'];
+}
+
+/**
+ * 022 FE-B/C: contract accounting + buff bookkeeping for this turn. A completion
+ * reward is surfaced (the caller credits it before the bankruptcy check, exactly
+ * like the streak bonus); buffs decrement per harvest and expire via tickEffects.
+ * Pure — no rng.
+ */
+function resolveFarmEventTurn(
+  fe: FarmEventsState,
+  harvests: HarvestEvent[],
+  currentDay: number,
+): FarmEventTurnResult {
+  const contractOutcome = applyContractProgress(fe.contract, harvests, currentDay);
+  const eventBuffsApplied = harvests.length === 0 ? [] : fe.activeEffects
+    .filter((e): e is Extract<FarmEventEffect, { kind: 'yield_buff' }> =>
+      e.kind === 'yield_buff' && e.harvestsRemaining > 0)
+    .map(e => ({
+      eventId: e.eventId,
+      multiplier: e.multiplier,
+      harvestsAffected: Math.min(e.harvestsRemaining, harvests.length),
+    }));
+  const feAfterTurn: FarmEventsState = {
+    ...fe,
+    activeEffects: tickEffects(fe.activeEffects, harvests.length, currentDay),
+    contract: contractOutcome.contract,
+  };
+  const contractProgress = contractOutcome.contract === null ? null : {
+    cropId: contractOutcome.contract.cropId,
+    done: contractOutcome.contract.quantity - contractOutcome.contract.remaining,
+    total: contractOutcome.contract.quantity,
+    deadlineDay: contractOutcome.contract.deadlineDay,
+  };
+  return {
+    rewardCredit: contractOutcome.completed !== null ? contractOutcome.completed.reward : 0,
+    eventBuffsApplied,
+    feAfterTurn,
+    contractProgress,
+    contractCompleted: contractOutcome.completed,
+    contractExpired: contractOutcome.expired,
+  };
+}
+
+/**
+ * 022 FE-D: fire a scheduled event for the day the player is about to start.
+ * Terminal season phases don't fire (the run/season screen owns the moment).
+ * maybeFireEvent consumes rng — call this at the same point (after the market
+ * roll) to keep the draw order load-bearing.
+ */
+function fireScheduledEvent(
+  fe: FarmEventsState,
+  phase: GameState['phase'],
+  nextDay: number,
+  config: EconomyConfig,
+  rng: () => number,
+): FarmEventsState {
+  const canFire = phase === 'playing' || phase === 'season_passed';
+  return canFire ? maybeFireEvent(fe, nextDay, config, rng) : fe;
+}
+
+/**
  * Executes the full end-of-turn sequence (FR-002).
  * Pass `weatherRoll` in tests for deterministic weather; omit in production.
  * Pass `pestDestructionOverride` (plot ID array) for deterministic pest tests;
@@ -299,22 +404,29 @@ export function processTurn(
   config: EconomyConfig = DEFAULT_ECONOMY,
   rng: () => number = Math.random,
 ): TurnResult {
+  // 022 FE-A: resolve any still-pending event (safe choice B, auto) and lazily
+  // draw this season's schedule. ensureSchedule consumes the turn's first rng
+  // draws, so this must stay the very first step.
+  const s = prepareTurnState(state, config, rng);
+
   // Compute season once — reused for both lease and weather band selection
-  const season = getSeasonForDay(state.currentDay, config);
+  const season = getSeasonForDay(s.currentDay, config);
 
   // Market Step A: activate any pending event so its modifier applies to THIS harvest.
-  const marketAfterActivate = activatePending(state.market, config.market);
+  const marketAfterActivate = activatePending(s.market, config.market);
   const activeMarket = marketAfterActivate.active;
 
   // Step 1: Decrement daysRemaining on all occupied plots
-  const plots = state.plots.map(plot => {
+  const plots = s.plots.map(plot => {
     if (plot.cropId === null || plot.daysRemaining === null) return plot;
     return { ...plot, daysRemaining: plot.daysRemaining - 1 };
   });
 
-  // Step 2: Resolve weather — inject via weatherRoll for tests, else seasonal-band random
+  // Step 2: Resolve weather — test override > 022 pinned weather > seasonal-band roll
   const weatherId: WeatherId = (() => {
     if (weatherRoll) return weatherRoll;
+    const pinned = pinnedWeatherFor(s.farmEvents.activeEffects, s.currentDay);
+    if (pinned !== null) return pinned;
     const bands = getDisasterBandsForSeason(season);
     const roll = weatherRollOverride ?? rng();
     for (const band of bands) {
@@ -332,7 +444,7 @@ export function processTurn(
       if (plot.cropId === null) return plot; // empty/exhausted plots immune
       const isDestroyed = pestDestructionOverride !== undefined
         ? pestDestructionOverride.includes(plot.id)
-        : rng() < pestDestructionChanceFor(state, config);
+        : rng() < pestDestructionChanceFor(s, config);
       if (isDestroyed) {
         pestDestroyedPlots.push(plot.id);
         return {
@@ -353,35 +465,32 @@ export function processTurn(
   // Step 2b: Flash Drought — extend counter when event fires (stacks); window is
   // shortened with an irrigation well (019)
   const flashDroughtDaysAfterEvent = weatherId === 'flash_drought'
-    ? state.flashDroughtDaysRemaining + droughtWindowDaysFor(state, config)
-    : state.flashDroughtDaysRemaining;
+    ? s.flashDroughtDaysRemaining + droughtWindowDaysFor(s, config)
+    : s.flashDroughtDaysRemaining;
 
   // 019: disaster mitigations in effect this turn (for the Day Summary banner)
-  const buildingsApplied = computeBuildingsApplied(weatherId, state.buildings);
+  const buildingsApplied = computeBuildingsApplied(weatherId, s.buildings);
 
   // 019: effective exhaustion-recovery period this turn (Compost Bin shortens it).
-  // Snapshotted onto the log so reopening "Last Turn" after buying a Compost Bin
-  // still shows the period that actually applied when the plots were exhausted.
-  const effectiveRecoveryDays = state.buildings.compost_bin
+  const effectiveRecoveryDays = s.buildings.compost_bin
     ? config.buildings.exhaustionRecoveryDays
     : config.exhaustionRecoveryDays;
 
-  // 019 review fix: occupied plots the pest could have hit (pre-destruction), so the
-  // banner tells an empty board apart from an all-spared one when nothing was destroyed.
+  // 019 review fix: occupied plots the pest could have hit (pre-destruction).
   const pestPlotsAtRisk = pestPlotsAtRiskFor(weatherId, plots);
 
   // Step 3: Harvest all plots where daysRemaining === 0
-  // Sub-step 3a: increment consecutiveHarvests per harvested plot
-  // Sub-step 3b: trigger exhaustion when consecutiveHarvests >= EXHAUSTION_THRESHOLD
+  // 022: an active yield buff multiplies each harvest and raises the exhaustion increment.
+  const buffFactor = buffMultiplierFor(s.farmEvents.activeEffects);
+  const exhaustionStep = buffExhaustionFactorFor(s.farmEvents.activeEffects);
   const harvests: HarvestEvent[] = [];
   const exhaustedPlots: number[] = [];
-  // 019: Farm Stand — flat +10% yield multiplier, applied inside the single floor below
-  const stallMod = state.buildings.farm_stand ? config.buildings.yieldMultiplier : 1;
+  const stallMod = s.buildings.farm_stand ? config.buildings.yieldMultiplier : 1;
   const harvestedPlots = plotsAfterPest.map(plot => {
     if (plot.cropId === null || plot.daysRemaining !== 0) return plot;
     const crop = config.crops[plot.cropId];
     const marketMod = marketMultiplierFor(activeMarket, plot.cropId);
-    const adjustedYield = coins(crop.baseYield * weather.multiplier * marketMod * stallMod);
+    const adjustedYield = coins(crop.baseYield * weather.multiplier * marketMod * stallMod * buffFactor);
     harvests.push({
       plotId: plot.id,
       cropId: plot.cropId,
@@ -389,9 +498,7 @@ export function processTurn(
       weatherMultiplier: weather.multiplier,
       adjustedYield,
     });
-    // Sub-step 3a: increment counter
-    const newConsecutiveHarvests = plot.consecutiveHarvests + 1;
-    // Sub-step 3b: trigger exhaustion if threshold reached
+    const newConsecutiveHarvests = plot.consecutiveHarvests + exhaustionStep;
     if (newConsecutiveHarvests >= config.exhaustionThreshold) {
       exhaustedPlots.push(plot.id);
       return {
@@ -401,7 +508,7 @@ export function processTurn(
         daysRemaining: null,
         droughtPenalised: false,
         consecutiveHarvests: 0,
-        exhaustedSinceDay: state.currentDay + 1, // post-increment day
+        exhaustedSinceDay: s.currentDay + 1, // post-increment day
       };
     }
     return {
@@ -415,29 +522,38 @@ export function processTurn(
   });
 
   // Step 4: Add harvest income to balance
-  const totalHarvestIncome = harvests.reduce(
-    (sum, h) => sum + h.adjustedYield,
-    0
-  );
-  const openingBalance = state.coinBalance;
+  const totalHarvestIncome = harvests.reduce((sum, h) => sum + h.adjustedYield, 0);
+  const openingBalance = s.coinBalance;
   let coinBalance = openingBalance + totalHarvestIncome;
 
   // Step 4.5: Harvest streak update — bonus counts toward bankruptcy avoidance
-  const streakBefore = state.harvestStreak;
+  const streakBefore = s.harvestStreak;
   const { streakAfter, streakBonus, peakHarvestStreak } = computeStreakUpdate(
     streakBefore,
-    state.peakHarvestStreak,
+    s.peakHarvestStreak,
     harvests.length > 0,
     config.streakBonusCap,
     config.streakBonusPerLevel,
   );
   coinBalance += streakBonus;
 
+  // 022 FE-B/C: contract accounting + buff bookkeeping. The completion reward is
+  // credited here (before the bankruptcy check), exactly like the streak bonus.
+  const {
+    rewardCredit,
+    eventBuffsApplied,
+    feAfterTurn,
+    contractProgress: contractProgressLog,
+    contractCompleted,
+    contractExpired,
+  } = resolveFarmEventTurn(s.farmEvents, harvests, s.currentDay);
+  coinBalance += rewardCredit;
+
   // Step 5: Bankruptcy check — if balance < lease fee, game over
   const leaseForDay = season.leasePerDay;
   if (coinBalance < leaseForDay) {
     const log: DailyLogEntry = {
-      day: state.currentDay,
+      day: s.currentDay,
       weatherId,
       weatherMultiplier: weather.multiplier,
       harvests,
@@ -459,9 +575,13 @@ export function processTurn(
       marketAnnounced: null,
       buildingsApplied,
       recoveryDays: effectiveRecoveryDays,
+      eventBuffsApplied,
+      contractProgress: contractProgressLog,
+      contractCompleted,
+      contractExpired,
     };
     const bankruptState: GameState = {
-      ...state,
+      ...s,
       plots: harvestedPlots,
       coinBalance,
       phase: 'bankrupt',
@@ -470,6 +590,7 @@ export function processTurn(
       harvestStreak: streakAfter,
       peakHarvestStreak,
       market: marketAfterActivate,
+      farmEvents: feAfterTurn,
     };
     return { state: bankruptState, log, isBankrupt: true };
   }
@@ -483,15 +604,15 @@ export function processTurn(
   coinBalance -= taxDeducted;
 
   // Step 8: Increment currentDay
-  const currentDay = state.currentDay + 1;
+  const currentDay = s.currentDay + 1;
 
   // Step 8.4: Season-end check
   const { phase: seasonPhase, nextDay: nextDayAfterTransition } = resolveSeasonEnd(
-    state.currentDay,
+    s.currentDay,
     currentDay,
     season,
     coinBalance,
-    state.endlessMode,
+    s.endlessMode,
   );
 
   // Step 8.4b: Reset harvest streak when a season is cleared (not on season_failed,
@@ -515,21 +636,24 @@ export function processTurn(
   });
 
   // Step 9: Update peakBalance
-  const peakBalance = Math.max(state.peakBalance, coinBalance);
+  const peakBalance = Math.max(s.peakBalance, coinBalance);
 
   // Market Step B: expire the active event, then maybe schedule a new one at a boundary.
   const activeAfterExpire = expireActive(activeMarket);
   const scheduled = rollSchedule(
     { active: activeAfterExpire, pending: null },
-    state.currentDay,
+    s.currentDay,
     config.market,
     rng,
   );
   const nextMarket = { active: activeAfterExpire, pending: scheduled };
 
+  // 022 FE-D: fire a scheduled event for the day the player is about to start.
+  const feFinal = fireScheduledEvent(feAfterTurn, seasonPhase, nextDayAfterTransition, config, rng);
+
   // Step 10: Build DailyLogEntry
   const log: DailyLogEntry = {
-    day: state.currentDay,
+    day: s.currentDay,
     weatherId,
     weatherMultiplier: weather.multiplier,
     harvests,
@@ -551,15 +675,19 @@ export function processTurn(
     marketAnnounced: scheduled,
     buildingsApplied,
     recoveryDays: effectiveRecoveryDays,
+    eventBuffsApplied,
+    contractProgress: contractProgressLog,
+    contractCompleted,
+    contractExpired,
   };
 
   // Step 9.5: Increment disastersSurvived if this turn's weather was a disaster
   //           AND the run did not bankrupt this turn.
   const isDisasterTurn = (DISASTER_WEATHER_IDS as readonly string[]).includes(weatherId);
-  const disastersSurvived = state.disastersSurvived + (isDisasterTurn ? 1 : 0);
+  const disastersSurvived = s.disastersSurvived + (isDisasterTurn ? 1 : 0);
 
   const nextState: GameState = {
-    ...state,
+    ...s,
     plots: recoveredPlots,
     coinBalance,
     currentDay: nextDayAfterTransition,
@@ -571,6 +699,7 @@ export function processTurn(
     harvestStreak: harvestStreakAfterSeason,
     peakHarvestStreak,
     market: nextMarket,
+    farmEvents: feFinal,
   };
 
   return { state: nextState, log, isBankrupt: false };
