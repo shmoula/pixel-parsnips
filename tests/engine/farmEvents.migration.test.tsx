@@ -45,6 +45,45 @@ describe('v9 → v10 migration', () => {
     expect(result.current.state.farmEvents).toEqual({ ...EMPTY_FARM_EVENTS, enabled: true });
   });
 
+  it('drops a malformed pending field on an otherwise valid v10 save', () => {
+    seedRecords(1);
+    const tampered = {
+      ...initialGameState(),
+      farmEvents: { ...EMPTY_FARM_EVENTS, pending: { eventId: 42 } },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: 10, state: tampered }));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.farmEvents.pending).toBeNull();
+  });
+
+  it('drops a contract with an unknown eventId on an otherwise valid v10 save', () => {
+    seedRecords(1);
+    const tampered = {
+      ...initialGameState(),
+      farmEvents: {
+        ...EMPTY_FARM_EVENTS,
+        contract: { eventId: 'nope', cropId: 'radish', quantity: 1, remaining: 1, deadlineDay: 5, reward: 10 },
+      },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: 10, state: tampered }));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.farmEvents.contract).toBeNull();
+  });
+
+  it('drops an active effect carrying a bogus weatherId on an otherwise valid v10 save', () => {
+    seedRecords(1);
+    const tampered = {
+      ...initialGameState(),
+      farmEvents: {
+        ...EMPTY_FARM_EVENTS,
+        activeEffects: [{ kind: 'weather_pin', weatherId: 'nonsense', day: 3 }],
+      },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: 10, state: tampered }));
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.state.farmEvents.activeEffects).toEqual([]);
+  });
+
   it('a persisted pending event survives the reload round-trip', () => {
     const withPending = {
       ...initialGameState(),
