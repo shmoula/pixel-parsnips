@@ -1,6 +1,10 @@
-import type { FarmEventsState, FarmEventDefinition, FarmEventEffect, FarmEventId } from './types';
+import type {
+  ContractState, CropId, FarmEventsState, FarmEventDefinition, FarmEventEffect, FarmEventId,
+  GameState, HarvestEvent, WeatherId,
+} from './types';
 import { getSeasonForDay } from './seasons';
 import type { EconomyConfig } from './economy';
+import { coins } from './constants';
 
 /** Canonical empty slice. `enabled` defaults true (sim/tests); the UI overrides at run creation. */
 export const EMPTY_FARM_EVENTS: FarmEventsState = {
@@ -110,4 +114,84 @@ export function maybeFireEvent(
     seenIds: [...seenIds, def.id],
     activeEffects: [...fe.activeEffects, ...newEffects],
   };
+}
+
+/** Aggregate yield multiplier from live buffs (multiplicative). */
+export function buffMultiplierFor(effects: FarmEventEffect[]): number {
+  return effects.reduce(
+    (f, e) => (e.kind === 'yield_buff' && e.harvestsRemaining > 0 ? f * e.multiplier : f), 1);
+}
+
+/** Exhaustion increment per harvest while buffed: max factor across live buffs, min 1. */
+export function buffExhaustionFactorFor(effects: FarmEventEffect[]): number {
+  return effects.reduce(
+    (f, e) => (e.kind === 'yield_buff' && e.harvestsRemaining > 0 ? Math.max(f, e.exhaustionFactor) : f), 1);
+}
+
+/** Active seed-discount factor for `cropId`, or 1. */
+export function seedDiscountFor(effects: FarmEventEffect[], cropId: CropId): number {
+  const d = effects.find(e => e.kind === 'seed_discount' && e.cropId === cropId);
+  return d !== undefined && d.kind === 'seed_discount' ? d.factor : 1;
+}
+
+/** The weather pinned for `day`, or null. */
+export function pinnedWeatherFor(effects: FarmEventEffect[], day: number): WeatherId | null {
+  const p = effects.find(e => e.kind === 'weather_pin' && e.day === day);
+  return p !== undefined && p.kind === 'weather_pin' ? p.weatherId : null;
+}
+
+/**
+ * End-of-turn effect bookkeeping: buffs decrement once per harvest event this
+ * turn and expire at 0; seed discounts expire with the day they were granted;
+ * pins for today or earlier are consumed. Pure.
+ */
+export function tickEffects(
+  effects: FarmEventEffect[],
+  harvestCount: number,
+  dayCompleted: number,
+): FarmEventEffect[] {
+  return effects
+    .map(e => (e.kind === 'yield_buff' ? { ...e, harvestsRemaining: e.harvestsRemaining - harvestCount } : e))
+    .filter(e =>
+      e.kind === 'yield_buff' ? e.harvestsRemaining > 0
+      : e.kind === 'seed_discount' ? e.expiresAfterDay > dayCompleted
+      : e.day > dayCompleted);
+}
+
+export interface ContractOutcome {
+  contract: ContractState | null;
+  completed: { eventId: FarmEventId; reward: number } | null;
+  expired: FarmEventId | null;
+}
+
+/**
+ * One turn of contract accounting: qualifying harvests reduce `remaining`;
+ * at 0 the contract completes (caller credits the reward BEFORE the bankruptcy
+ * check); an unfinished contract expires — no penalty — once the deadline day
+ * has been played. Pure.
+ */
+export function applyContractProgress(
+  contract: ContractState | null,
+  harvests: HarvestEvent[],
+  dayCompleted: number,
+): ContractOutcome {
+  if (contract === null) return { contract: null, completed: null, expired: null };
+  const qualifying = harvests.filter(h => h.cropId === contract.cropId).length;
+  const remaining = contract.remaining - qualifying;
+  if (remaining <= 0) {
+    return { contract: null, completed: { eventId: contract.eventId, reward: contract.reward }, expired: null };
+  }
+  if (dayCompleted >= contract.deadlineDay) {
+    return { contract: null, completed: null, expired: contract.eventId };
+  }
+  return { contract: { ...contract, remaining }, completed: null, expired: null };
+}
+
+/** Live coin value of the Traveling Merchant's sell-now offer for the current board. */
+export function merchantOfferValue(state: GameState, config: EconomyConfig): number {
+  const def = config.farmEvents.events.find(e => e.id === 'traveling_merchant');
+  const spec = def?.choiceA.effects.find(e => e.kind === 'sell_standing_crops');
+  if (spec === undefined || spec.kind !== 'sell_standing_crops') return 0;
+  return state.plots.reduce(
+    (sum, p) => (p.cropId === null ? sum : sum + coins(config.crops[p.cropId].baseYield * spec.priceFactor)), 0);
 }

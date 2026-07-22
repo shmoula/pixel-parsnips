@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { EMPTY_FARM_EVENTS, ensureSchedule, maybeFireEvent, isContractEvent } from '../../src/engine/farmEvents';
+import {
+  EMPTY_FARM_EVENTS, ensureSchedule, maybeFireEvent, isContractEvent,
+  buffMultiplierFor, buffExhaustionFactorFor, seedDiscountFor, pinnedWeatherFor,
+  tickEffects, applyContractProgress, merchantOfferValue,
+} from '../../src/engine/farmEvents';
 import { DEFAULT_ECONOMY } from '../../src/engine/economy';
-import type { FarmEventsState, ContractState } from '../../src/engine/types';
+import { initialGameState } from '../../src/engine/gameEngine';
+import type { FarmEventsState, ContractState, FarmEventEffect, HarvestEvent } from '../../src/engine/types';
 
 /** Deterministic RNG yielding the given sequence, then repeating the last value. */
 function seq(values: number[]): () => number {
@@ -124,5 +129,96 @@ describe('maybeFireEvent', () => {
     const fe = maybeFireEvent(others, 8, DEFAULT_ECONOMY, seq([0.0, 0.9]));
     expect(fe.pending?.eventId).toBe('drought_warning');
     expect(fe.activeEffects).toEqual([]);
+  });
+});
+
+const buff = (multiplier: number, harvestsRemaining: number, exhaustionFactor = 1): FarmEventEffect =>
+  ({ kind: 'yield_buff', eventId: 'bountiful_spring', multiplier, harvestsRemaining, exhaustionFactor });
+
+describe('effect helpers', () => {
+  it('buff multipliers stack multiplicatively; spent buffs are ignored', () => {
+    expect(buffMultiplierFor([buff(1.5, 3), buff(1.2, 4)])).toBeCloseTo(1.8);
+    expect(buffMultiplierFor([buff(1.5, 0)])).toBe(1);
+    expect(buffMultiplierFor([])).toBe(1);
+  });
+
+  it('exhaustion factor is the max across live buffs, min 1', () => {
+    expect(buffExhaustionFactorFor([buff(1.5, 3, 2), buff(1.2, 4, 1)])).toBe(2);
+    expect(buffExhaustionFactorFor([])).toBe(1);
+  });
+
+  it('seed discount applies per crop and defaults to 1', () => {
+    const d: FarmEventEffect = { kind: 'seed_discount', cropId: 'radish', factor: 0.5, expiresAfterDay: 8 };
+    expect(seedDiscountFor([d], 'radish')).toBe(0.5);
+    expect(seedDiscountFor([d], 'pumpkin')).toBe(1);
+  });
+
+  it('pinned weather matches only its exact day', () => {
+    const p: FarmEventEffect = { kind: 'weather_pin', weatherId: 'flash_drought', day: 11 };
+    expect(pinnedWeatherFor([p], 11)).toBe('flash_drought');
+    expect(pinnedWeatherFor([p], 10)).toBeNull();
+  });
+
+  it('tickEffects decrements buffs per harvest and expires spent/stale effects', () => {
+    const effects: FarmEventEffect[] = [
+      buff(1.5, 3), buff(1.2, 2),
+      { kind: 'seed_discount', cropId: 'radish', factor: 0.5, expiresAfterDay: 8 },
+      { kind: 'weather_pin', weatherId: 'flash_drought', day: 8 },
+      { kind: 'weather_pin', weatherId: 'flash_drought', day: 9 },
+    ];
+    const out = tickEffects(effects, 2, 8);
+    expect(out).toEqual([
+      buff(1.5, 1),
+      { kind: 'weather_pin', weatherId: 'flash_drought', day: 9 },
+    ]);
+  });
+});
+
+describe('applyContractProgress', () => {
+  const harvest = (cropId: 'radish' | 'parsnip' | 'pumpkin'): HarvestEvent =>
+    ({ plotId: 0, cropId, baseYield: 10, weatherMultiplier: 1, adjustedYield: 10 });
+  const contract = { eventId: 'millers_order' as const, cropId: 'parsnip' as const, quantity: 3, remaining: 2, deadlineDay: 12, reward: 55 };
+
+  it('counts only qualifying harvests', () => {
+    const out = applyContractProgress(contract, [harvest('parsnip'), harvest('radish')], 10);
+    expect(out.contract).toEqual({ ...contract, remaining: 1 });
+    expect(out.completed).toBeNull();
+    expect(out.expired).toBeNull();
+  });
+
+  it('completes when remaining reaches 0 — even on the deadline day', () => {
+    const out = applyContractProgress({ ...contract, remaining: 1 }, [harvest('parsnip')], 12);
+    expect(out.contract).toBeNull();
+    expect(out.completed).toEqual({ eventId: 'millers_order', reward: 55 });
+  });
+
+  it('expires without penalty when the deadline day ends unfinished', () => {
+    const out = applyContractProgress(contract, [], 12);
+    expect(out.contract).toBeNull();
+    expect(out.expired).toBe('millers_order');
+  });
+
+  it('is a no-op without a contract', () => {
+    expect(applyContractProgress(null, [harvest('parsnip')], 10))
+      .toEqual({ contract: null, completed: null, expired: null });
+  });
+});
+
+describe('merchantOfferValue', () => {
+  it('sums coins(baseYield × priceFactor) over growing plots', () => {
+    let s = initialGameState();
+    s = {
+      ...s,
+      plots: s.plots.map((p, i) =>
+        i === 0 ? { ...p, cropId: 'pumpkin' as const, daysRemaining: 2, dayPlanted: 1 }
+        : i === 1 ? { ...p, cropId: 'radish' as const, daysRemaining: 1, dayPlanted: 1 }
+        : p),
+    };
+    // pumpkin 65 × 1.4 = 91, radish 12 × 1.4 = 16.8 → 16; total 107
+    expect(merchantOfferValue(s, DEFAULT_ECONOMY)).toBe(107);
+  });
+
+  it('is 0 with nothing growing', () => {
+    expect(merchantOfferValue(initialGameState(), DEFAULT_ECONOMY)).toBe(0);
   });
 });
