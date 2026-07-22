@@ -20,7 +20,7 @@ export interface EventPropsMap {
     utm_medium?: string;
     utm_campaign?: string;
   };
-  play_started: { start_action: string; day: number; onboarding_active: boolean };
+  play_started: { start_action: string; day: number; onboarding_active: boolean; events_enabled: boolean };
   milestone_reached: { milestone: MilestoneId; day: number; season_number: number };
   day_completed: {
     day: number;
@@ -75,7 +75,7 @@ export type AnalyticsEventName = keyof EventPropsMap;
 /** Per-event schema version; bump the specific event when its shape changes. */
 export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   page_loaded: 1,
-  play_started: 1,
+  play_started: 2,
   milestone_reached: 1,
   day_completed: 1,
   plot_unlocked: 1,

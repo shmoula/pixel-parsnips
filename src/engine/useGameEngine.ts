@@ -11,6 +11,7 @@ import {
   getNextPlotPrice as engineGetNextPlotPrice,
   buyBuilding as engineBuyBuilding,
   computeSeedCost,
+  resolveFarmEventChoice as engineResolveFarmEventChoice,
 } from './gameEngine';
 import { SCHEMA_VERSION, NO_BUILDINGS, WEATHER_DEFINITIONS } from './constants';
 import { FARM_EVENT_DEFINITIONS } from './farmEventCatalog';
@@ -31,9 +32,11 @@ import type {
   FarmEventId,
   ContractState,
   FarmEventEffect,
+  FarmEventChoiceId,
+  FarmEventDefinition,
 } from './types';
 import { recordRunEnd, loadRecords, type PersonalBests } from './records';
-import { EMPTY_FARM_EVENTS } from './farmEvents';
+import { EMPTY_FARM_EVENTS, merchantOfferValue } from './farmEvents';
 import { deriveMedal, type Medal } from './medals';
 import { getSeasonForDay } from './seasons';
 import { EMPTY_MARKET } from './market';
@@ -353,6 +356,13 @@ export interface BuildingCardData {
   unlocked: boolean;
 }
 
+export interface PendingFarmEventView {
+  def: FarmEventDefinition;
+  /** Live sell-now estimate (Traveling Merchant); 0 for other events. */
+  offerValue: number;
+  balance: number;
+}
+
 export interface GameEngineHook {
   state: GameState;
   lastDailyLog: DailyLogEntry | null;
@@ -375,6 +385,8 @@ export interface GameEngineHook {
   getNextPlotPrice: () => number | null;
   getOccupiedPlotCount: () => number;
   getRecoveryDays: () => number;
+  resolveFarmEvent: (choice: FarmEventChoiceId) => boolean;
+  getPendingFarmEvent: () => PendingFarmEventView | null;
 }
 
 export function useGameEngine(): GameEngineHook {
@@ -409,6 +421,7 @@ export function useGameEngine(): GameEngineHook {
       start_action: action,
       day: s.currentDay,
       onboarding_active: !loadOnboarding().completed && s.currentDay <= 1,
+      events_enabled: s.farmEvents.enabled,
     });
   }, []);
 
@@ -518,6 +531,24 @@ export function useGameEngine(): GameEngineHook {
     return true;
   }, [commitState, signalPlayStarted]);
 
+  const resolveFarmEvent = useCallback((choice: FarmEventChoiceId): boolean => {
+    const prev = stateRef.current;
+    if (prev.farmEvents.pending === null) return false;
+    const next = engineResolveFarmEventChoice(prev, choice, ECONOMY);
+    if (next === prev) return false; // unaffordable buy-in — modal stays up
+    signalPlayStarted('farm_event_choice');
+    commitState(next);
+    return true;
+  }, [commitState, signalPlayStarted]);
+
+  const getPendingFarmEvent = useCallback((): PendingFarmEventView | null => {
+    const pending = state.farmEvents.pending;
+    if (pending === null) return null;
+    const def = ECONOMY.farmEvents.events.find(e => e.id === pending.eventId);
+    if (def === undefined) return null;
+    return { def, offerValue: merchantOfferValue(state, ECONOMY), balance: state.coinBalance };
+  }, [state]);
+
   const getBuildingCards = useCallback((): BuildingCardData[] => {
     const season = getSeasonForDay(state.currentDay, ECONOMY).number;
     return ECONOMY.buildings.definitions.map(def => ({
@@ -601,5 +632,7 @@ export function useGameEngine(): GameEngineHook {
     getNextPlotPrice,
     getOccupiedPlotCount,
     getRecoveryDays,
+    resolveFarmEvent,
+    getPendingFarmEvent,
   };
 }

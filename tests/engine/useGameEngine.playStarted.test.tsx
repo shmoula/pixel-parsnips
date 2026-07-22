@@ -35,6 +35,7 @@ describe('play_started', () => {
       day: 1,
     });
     expect(typeof trackPlayStartedOnce.mock.calls[0][0].onboarding_active).toBe('boolean');
+    expect(typeof trackPlayStartedOnce.mock.calls[0][0].events_enabled).toBe('boolean');
   });
 
   it('does not fire when an action fails (e.g. cannot afford)', () => {
