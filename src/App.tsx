@@ -98,6 +98,8 @@ function App() {
         buildingCards={engine.getBuildingCards()}
         onBuyBuilding={engine.buyBuilding}
         onRestart={restart}
+        pendingFarmEvent={engine.getPendingFarmEvent()}
+        onResolveFarmEvent={engine.resolveFarmEvent}
       />
       {transitionVariant && (
         <SeasonTransitionModal

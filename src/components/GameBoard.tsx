@@ -15,6 +15,10 @@ import { EmojiIcon } from './EmojiIcon';
 import { PageBackdrop } from './PageBackdrop';
 import { DaySummaryModal } from './DaySummaryModal';
 import { OnboardingOverlay } from './OnboardingOverlay';
+import { FarmEventModal } from './FarmEventModal';
+import { loadRecords } from '../engine/records';
+import type { PendingFarmEventView } from '../engine/useGameEngine';
+import type { FarmEventChoiceId } from '../engine/types';
 import { track } from '../analytics/track';
 
 /** 021 — harvest-celebration flow. `holding`: fresh summary modal is open and
@@ -239,6 +243,34 @@ function EmptyDayConfirm({ onCancel, onAdvance }: { onCancel: () => void; onAdva
   );
 }
 
+/** 022 — the event modal waits for the fresh Day Summary and any coin-flight
+    celebration to finish before it takes over the screen. */
+function shouldShowFarmEvent(
+  pendingFarmEvent: PendingFarmEventView | null,
+  isSummaryOpen: boolean,
+  celebration: CelebrationState,
+): boolean {
+  if (pendingFarmEvent === null) return false;
+  return !isSummaryOpen && celebration.kind === 'idle';
+}
+
+/** 022 — Farm Event modal wrapper: mirrors CelebrationOverlay below, keeping the
+    show/hide branching out of GameBoard's own complexity count. */
+function FarmEventOverlay({
+  show,
+  view,
+  isNew,
+  onChoose,
+}: {
+  show: boolean;
+  view: PendingFarmEventView | null;
+  isNew: boolean;
+  onChoose: (choice: FarmEventChoiceId) => void;
+}) {
+  if (!show || view === null) return null;
+  return <FarmEventModal view={view} isNew={isNew} onChoose={onChoose} />;
+}
+
 /** 021 — coin-flight overlay wrapper: renders the celebration only while the
     flow is in the `celebrating` phase (mounts once the fresh summary closes). */
 function CelebrationOverlay({
@@ -275,6 +307,10 @@ interface GameBoardProps {
   onBuyBuilding: (id: BuildingId) => boolean;
   /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
   onRestart: () => void;
+  /** 022 — the pending farm event to present, or null. Next Day is blocked while set. */
+  pendingFarmEvent: PendingFarmEventView | null;
+  /** 022 — apply a farm-event choice; returns false when it could not be applied. */
+  onResolveFarmEvent: (choice: FarmEventChoiceId) => boolean;
 }
 
 export function GameBoard({
@@ -295,6 +331,8 @@ export function GameBoard({
   buildingCards,
   onBuyBuilding,
   onRestart,
+  pendingFarmEvent,
+  onResolveFarmEvent,
 }: GameBoardProps) {
   const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
 
@@ -322,6 +360,10 @@ export function GameBoard({
   const [hasConfirmedEmptyDay, setHasConfirmedEmptyDay] = useState(false);
 
   const isUnwinnable = checkIsUnwinnable(state, canAdvance, getSeedPrice);
+
+  // 022 — "New!" ribbon shows throughout the player's second run (the feature just unlocked).
+  const [isSecondRun] = useState(() => loadRecords().totalRunsCompleted === 1);
+  const showFarmEvent = shouldShowFarmEvent(pendingFarmEvent, isSummaryOpen, celebration);
 
   const { seedHint, showSeedHint } = useSeedHint();
 
@@ -380,6 +422,7 @@ export function GameBoard({
   }
 
   function handleNextDay() {
+    if (pendingFarmEvent !== null) return; // 022 — a farm event demands an answer first
     if (isProcessing) return;
     if (!canAdvance && !hasConfirmedEmptyDay) { setShowEmptyConfirm(true); return; }
     doAdvance();
@@ -530,6 +573,14 @@ export function GameBoard({
         celebration={celebration}
         onArriving={() => setCelebration(startTicking)}
         onDone={() => setCelebration({ kind: 'idle' })}
+      />
+
+      {/* 022 — Farm Event choice modal: blocks the day until answered */}
+      <FarmEventOverlay
+        show={showFarmEvent}
+        view={pendingFarmEvent}
+        isNew={isSecondRun}
+        onChoose={onResolveFarmEvent}
       />
 
       {onboarding.active && (
