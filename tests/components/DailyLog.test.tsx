@@ -240,3 +240,30 @@ describe('DailyLog — inline icons are optically centred', () => {
     expectLiftedIcon(screen.getByLabelText(/market forecast/i), '📈');
   });
 });
+
+describe('farm event lines (022)', () => {
+  it('renders a buff line per applied buff', () => {
+    render(<DailyLog log={makeLog({ eventBuffsApplied: [{ eventId: 'bountiful_spring', multiplier: 1.5, harvestsAffected: 2 }] })} />);
+    expect(screen.getByLabelText('Event bonus')).toHaveTextContent('×1.5 on 2 harvests');
+  });
+
+  it('renders contract completion with the reward', () => {
+    render(<DailyLog log={makeLog({ contractCompleted: { eventId: 'millers_order', reward: 55 } })} />);
+    expect(screen.getByLabelText('Contract completed')).toHaveTextContent('+55');
+  });
+
+  it('renders neutral expiry copy', () => {
+    render(<DailyLog log={makeLog({ contractExpired: 'fair_committee' })} />);
+    expect(screen.getByLabelText('Contract expired')).toHaveTextContent(/no harm done/i);
+  });
+
+  it('renders live progress', () => {
+    render(<DailyLog log={makeLog({ contractProgress: { cropId: 'parsnip', done: 1, total: 3, deadlineDay: 14 } })} />);
+    expect(screen.getByLabelText('Contract progress')).toHaveTextContent('1/3 parsnip');
+  });
+
+  it('renders none of the lines on a log without event fields (old saves)', () => {
+    render(<DailyLog log={makeLog({})} />);
+    expect(screen.queryByLabelText(/event bonus|contract/i)).toBeNull();
+  });
+});
