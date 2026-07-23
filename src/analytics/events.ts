@@ -1,4 +1,4 @@
-import type { DailyLogEntry, GameState, WeatherId } from '../engine/types';
+import type { DailyLogEntry, FarmEventChoiceId, FarmEventId, GameState, WeatherId } from '../engine/types';
 import type { Medal } from '../engine/medals';
 import type { OnboardingStep } from '../engine/onboarding';
 
@@ -68,6 +68,10 @@ export interface EventPropsMap {
     day: number;
     coin_balance: number;
   };
+  farm_event_fired: { event_id: FarmEventId; season: number; day: number };
+  farm_event_choice: { event_id: FarmEventId; choice: FarmEventChoiceId; auto: boolean; day: number };
+  contract_completed: { event_id: FarmEventId; reward: number };
+  contract_expired: { event_id: FarmEventId };
 }
 
 export type AnalyticsEventName = keyof EventPropsMap;
@@ -87,6 +91,10 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   onboarding_skipped: 1,
   onboarding_replay_requested: 1,
   empty_day_safeguard: 1,
+  farm_event_fired: 1,
+  farm_event_choice: 1,
+  contract_completed: 1,
+  contract_expired: 1,
 };
 
 export function buildDayCompletedProps(

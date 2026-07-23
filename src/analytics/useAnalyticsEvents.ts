@@ -148,6 +148,37 @@ function detectShopPurchased(prev: GameState, state: GameState): void {
   }
 }
 
+/** 022 — farm-event lifecycle, all derived from state diffs (engine stays pure). */
+function detectFarmEvents(prev: GameState, state: GameState): void {
+  const curr = state.farmEvents;
+  const before = prev.farmEvents;
+
+  if (curr.pending !== null && curr.pending !== before.pending) {
+    track('farm_event_fired', {
+      event_id: curr.pending.eventId,
+      season: getSeasonForDay(curr.pending.firedDay).number,
+      day: curr.pending.firedDay,
+    });
+  }
+  if (curr.lastResolved !== null && curr.lastResolved !== before.lastResolved) {
+    track('farm_event_choice', {
+      event_id: curr.lastResolved.eventId,
+      choice: curr.lastResolved.choice,
+      auto: curr.lastResolved.auto,
+      day: curr.lastResolved.day,
+    });
+  }
+  const log = state.lastDailyLog;
+  if (log && log !== prev.lastDailyLog) {
+    if (log.contractCompleted) {
+      track('contract_completed', { event_id: log.contractCompleted.eventId, reward: log.contractCompleted.reward });
+    }
+    if (log.contractExpired) {
+      track('contract_expired', { event_id: log.contractExpired });
+    }
+  }
+}
+
 /** Fires all state-derived analytics events by diffing engine state across renders. */
 export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): void {
   const prevRef = useRef<GameState | null>(null);
@@ -165,5 +196,6 @@ export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): v
     detectSeasonCompleted(prev, state);
     detectRunLifecycle(prev, state, firedMilestonesRef.current, runEndedFiredRef.current);
     detectShopPurchased(prev, state);
+    detectFarmEvents(prev, state);
   }, [state]);
 }
