@@ -102,3 +102,46 @@ describe('GameBoard x farm events', () => {
     expect(screen.queryByText('New!')).toBeNull();
   });
 });
+
+describe('GameBoard contract chip derivation', () => {
+  /** Builds props whose state carries a live contract on the given day. */
+  function withContract(currentDay: number, deadlineDay: number, remaining: number) {
+    const props = makeProps();
+    const state: GameState = {
+      ...props.state,
+      currentDay,
+      farmEvents: {
+        ...props.state.farmEvents,
+        contract: {
+          eventId: 'millers_order',
+          cropId: 'parsnip',
+          quantity: 3,
+          remaining,
+          deadlineDay,
+          reward: 55,
+        },
+      },
+    };
+    return { ...props, state };
+  }
+
+  it('derives done, total, cropId and inclusive days-left from the live contract', () => {
+    // done = 3 - 1 = 2; daysLeft = 12 - 8 + 1 = 5 (today counts).
+    render(<GameBoard {...withContract(8, 12, 1)} />);
+    expect(
+      screen.getByLabelText('Contract: 2 of 3 parsnip delivered, 5 days left'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('2/3 · 5d')).toBeInTheDocument();
+  });
+
+  it('still shows 1 day left on the deadline day (the contract can complete today)', () => {
+    // currentDay === deadlineDay → daysLeft = 12 - 12 + 1 = 1.
+    render(<GameBoard {...withContract(12, 12, 2)} />);
+    expect(screen.getByText('1/3 · 1d')).toBeInTheDocument();
+  });
+
+  it('hides the chip when there is no live contract', () => {
+    render(<GameBoard {...makeProps()} />);
+    expect(screen.queryByLabelText(/contract:/i)).toBeNull();
+  });
+});

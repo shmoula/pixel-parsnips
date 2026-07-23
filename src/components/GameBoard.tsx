@@ -8,7 +8,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { BottomActionBar } from './BottomActionBar';
 import { HarvestCelebration, playHarvestSounds } from './HarvestCelebration';
-import { HUD } from './HUD';
+import { HUD, type ContractChipData } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
 import { EmojiIcon } from './EmojiIcon';
@@ -82,7 +82,7 @@ function canAfford(balance: number, price: number | null): boolean {
 function getContractChip(
   contract: GameState['farmEvents']['contract'],
   currentDay: number,
-): { done: number; total: number; cropId: string; daysLeft: number } | null {
+): ContractChipData {
   if (contract === null) return null;
   return {
     done: contract.quantity - contract.remaining,

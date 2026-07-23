@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { TAX_RATE } from '../engine/constants';
+import type { CropId } from '../engine/types';
 import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
@@ -39,7 +40,7 @@ function getRepTitleClass(expanded: boolean): string {
 }
 
 /** 022 — live delivery-contract progress, or null (chip hidden). */
-type ContractChipData = { done: number; total: number; cropId: string; daysLeft: number } | null;
+export type ContractChipData = { done: number; total: number; cropId: CropId; daysLeft: number } | null;
 
 /** 022 — compact HUD chip showing delivery-contract progress and days remaining. */
 function ContractChip({ contract }: { contract: ContractChipData }) {
