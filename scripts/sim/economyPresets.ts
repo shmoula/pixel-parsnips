@@ -62,4 +62,10 @@ export const buildings019: EconomyConfig = {
   buildings: DEFAULT_ECONOMY.buildings,
 };
 
-export const PRESETS: Record<string, EconomyConfig> = { baseline, proposed, buildings019 };
+/** 022 candidate — the live economy with the farm-event catalog enabled. */
+export const events022: EconomyConfig = {
+  ...buildings019,
+  farmEvents: DEFAULT_ECONOMY.farmEvents,
+};
+
+export const PRESETS: Record<string, EconomyConfig> = { baseline, proposed, buildings019, events022 };

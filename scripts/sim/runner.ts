@@ -1,7 +1,7 @@
-import { initialGameState, processTurn, clearPestDamage } from '../../src/engine/gameEngine';
+import { initialGameState, processTurn, clearPestDamage, resolveFarmEventChoice } from '../../src/engine/gameEngine';
 import { getSeasonForDay } from '../../src/engine/seasons';
 import { makeRng } from './rng';
-import type { Strategy } from './strategies';
+import { EVENT_POLICIES, type Strategy, type EventPolicy } from './strategies';
 import type { EconomyConfig } from '../../src/engine/economy';
 
 export type RunResult = 'won' | 'bankrupt' | 'targetMissed';
@@ -43,20 +43,30 @@ function tickDay(
   strategy: Strategy,
   config: EconomyConfig,
   rng: Rng,
+  eventPolicy: EventPolicy,
 ): ReturnType<typeof initialGameState> {
   const cleared = clearPests(state, config);
-  const decided = strategy(cleared, config);
+  // 022: answer a pending farm event via the run's policy before the bot acts.
+  const answered = cleared.farmEvents.pending !== null
+    ? resolveFarmEventChoice(cleared, eventPolicy(cleared, config), config)
+    : cleared;
+  const decided = strategy(answered, config);
   return processTurn(decided, undefined, undefined, undefined, config, rng).state;
 }
 
-export function playRun(config: EconomyConfig, strategy: Strategy, seed: number): Outcome {
+export function playRun(
+  config: EconomyConfig,
+  strategy: Strategy,
+  seed: number,
+  eventPolicy: EventPolicy = EVENT_POLICIES.heuristic,
+): Outcome {
   const rng = makeRng(seed);
   let state = initialGameState(config);
 
   for (let guard = 0; guard < 1000; guard++) {
     if (isTerminal(state.phase, state.currentDay)) break;
     if (state.phase === 'season_passed') { state = { ...state, phase: 'playing' }; continue; }
-    state = tickDay(state, strategy, config, rng);
+    state = tickDay(state, strategy, config, rng, eventPolicy);
   }
 
   const result: RunResult =
@@ -74,9 +84,13 @@ export function playRun(config: EconomyConfig, strategy: Strategy, seed: number)
 }
 
 export function monteCarlo(
-  config: EconomyConfig, strategy: Strategy, trials: number, masterSeed: number,
+  config: EconomyConfig,
+  strategy: Strategy,
+  trials: number,
+  masterSeed: number,
+  eventPolicy: EventPolicy = EVENT_POLICIES.heuristic,
 ): Outcome[] {
   const out: Outcome[] = [];
-  for (let i = 0; i < trials; i++) out.push(playRun(config, strategy, masterSeed + i));
+  for (let i = 0; i < trials; i++) out.push(playRun(config, strategy, masterSeed + i, eventPolicy));
   return out;
 }

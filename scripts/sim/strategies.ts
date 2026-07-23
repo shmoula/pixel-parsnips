@@ -3,7 +3,9 @@ import {
 } from '../../src/engine/gameEngine';
 import { getSeasonForDay } from '../../src/engine/seasons';
 import type { EconomyConfig } from '../../src/engine/economy';
-import type { GameState, CropId, ActiveMarketEvent, MarketEvent, BuildingId } from '../../src/engine/types';
+import type {
+  GameState, CropId, ActiveMarketEvent, MarketEvent, BuildingId, FarmEventChoiceId, FarmEventId,
+} from '../../src/engine/types';
 
 export type Strategy = (state: GameState, config: EconomyConfig) => GameState;
 
@@ -116,4 +118,64 @@ export const STRATEGIES: Record<string, Strategy> = {
   parsnipOnly: single('parsnip'),
   pumpkinOnly: single('pumpkin'),
   smartMixed,
+};
+
+// ── 022: farm-event decision policies ──────────────────────────────────────────
+
+export type EventPolicy = (state: GameState, config: EconomyConfig) => FarmEventChoiceId;
+
+/** Accept the merchant's instant sale only when at least half the occupied plots ripen within 2 days. */
+function heuristicMerchant(active: GameState['plots']): FarmEventChoiceId {
+  const occupied = active.filter(p => p.cropId !== null);
+  const ripeSoon = occupied.filter(p => p.daysRemaining !== null && p.daysRemaining <= 2);
+  return occupied.length > 0 && ripeSoon.length * 2 >= occupied.length ? 'A' : 'B';
+}
+
+/** Embrace the yield buff only when the board isn't already close to exhaustion. */
+function heuristicBountifulSpring(active: GameState['plots'], config: EconomyConfig): FarmEventChoiceId {
+  const nearExhausted = active.filter(p => p.consecutiveHarvests >= config.exhaustionThreshold - 1);
+  return nearExhausted.length <= 1 ? 'A' : 'B';
+}
+
+/** Rush-plant the discounted radishes only with enough coins to spare for a few seeds + lease. */
+function heuristicDroughtWarning(state: GameState, config: EconomyConfig, lease: number): FarmEventChoiceId {
+  const seedCost = computeSeedCost('radish', state.buildings, config, state.farmEvents.activeEffects);
+  return state.coinBalance >= seedCost * 4 + lease * 2 ? 'A' : 'B';
+}
+
+/** Take a delivery contract only when enough free plots and growth time allow completing it. */
+function heuristicContract(
+  active: GameState['plots'],
+  config: EconomyConfig,
+  eventId: FarmEventId,
+): FarmEventChoiceId {
+  const def = config.farmEvents.events.find(e => e.id === eventId);
+  const spec = def?.choiceA.effects.find(e => e.kind === 'contract');
+  if (spec === undefined || spec.kind !== 'contract') return 'B';
+  const free = active.filter(p => p.cropId === null && p.exhaustedSinceDay === null && !p.pestDamaged);
+  return spec.quantity <= free.length && config.crops[spec.cropId].growthDays + 1 <= spec.deadlineDays
+    ? 'A' : 'B';
+}
+
+/** The per-event "defensible reasoning" each event is designed around (spec §Simulator). */
+function heuristicChoice(state: GameState, config: EconomyConfig): FarmEventChoiceId {
+  const pending = state.farmEvents.pending;
+  if (pending === null) return 'B';
+  const lease = getSeasonForDay(state.currentDay, config).leasePerDay;
+  const active = state.plots.slice(0, state.unlockedPlots);
+  switch (pending.eventId) {
+    case 'traveling_merchant': return heuristicMerchant(active);
+    case 'bountiful_spring': return heuristicBountifulSpring(active, config);
+    case 'drought_warning': return heuristicDroughtWarning(state, config, lease);
+    case 'millers_order':
+    case 'fair_committee': return heuristicContract(active, config, pending.eventId);
+    case 'wandering_beekeeper': return state.coinBalance > lease * 3 ? 'A' : 'B';
+    default: return 'B';
+  }
+}
+
+export const EVENT_POLICIES: Record<string, EventPolicy> = {
+  heuristic: heuristicChoice,
+  acceptAll: () => 'A',
+  declineAll: () => 'B',
 };
