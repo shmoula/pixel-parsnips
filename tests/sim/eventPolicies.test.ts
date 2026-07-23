@@ -43,4 +43,22 @@ describe('event policies', () => {
     const poor = pendingState('wandering_beekeeper', s => ({ ...s, coinBalance: 40 }));
     expect(EVENT_POLICIES.heuristic(poor, DEFAULT_ECONOMY)).toBe('B');
   });
+
+  it('heuristic embraces Bountiful Spring only when at most 1 plot is near exhaustion', () => {
+    // EXHAUSTION_THRESHOLD is 3, so "near exhausted" is consecutiveHarvests >= 2.
+    expect(EVENT_POLICIES.heuristic(pendingState('bountiful_spring'), DEFAULT_ECONOMY)).toBe('A'); // 0 near-exhausted
+    const strained = pendingState('bountiful_spring', s => ({
+      ...s,
+      plots: s.plots.map((p, i) => (i < 2 ? { ...p, consecutiveHarvests: 2 } : p)), // 2 near-exhausted
+    }));
+    expect(EVENT_POLICIES.heuristic(strained, DEFAULT_ECONOMY)).toBe('B');
+  });
+
+  it('heuristic rush-plants on Drought Warning only with 4 radish seeds + 2 lease days in reserve', () => {
+    // radish seedCost 5, season-1 lease 15 → threshold = 5*4 + 15*2 = 50.
+    const ample = pendingState('drought_warning', s => ({ ...s, coinBalance: 50 }));
+    expect(EVENT_POLICIES.heuristic(ample, DEFAULT_ECONOMY)).toBe('A');
+    const poor = pendingState('drought_warning', s => ({ ...s, coinBalance: 49 }));
+    expect(EVENT_POLICIES.heuristic(poor, DEFAULT_ECONOMY)).toBe('B');
+  });
 });

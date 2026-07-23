@@ -16,7 +16,7 @@ This runs the default sweep (every preset × every strategy, 2000 trials, seed 4
 and prints a table:
 
 ```
-Monte Carlo — 2000 trials/seed=42
+Monte Carlo — 2000 trials/seed=42/eventPolicy=heuristic
 
 config    strategy     win%  bankrupt%  miss%  avgPeak  medPeak  overshoot
 --------  -----------  ----  ---------  -----  -------  -------  ---------
@@ -96,7 +96,7 @@ that day. Policies live alongside the strategies in
 ## Presets
 
 Economy presets live in [`scripts/sim/economyPresets.ts`](scripts/sim/economyPresets.ts).
-Today there are three:
+Today there are four:
 
 - **`baseline`** — the original pre-010 economy, frozen (12 plots from day 1, no
   buildings purchasable). The trivially-easy reference point.

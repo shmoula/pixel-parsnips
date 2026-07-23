@@ -170,7 +170,12 @@ function heuristicChoice(state: GameState, config: EconomyConfig): FarmEventChoi
     case 'millers_order':
     case 'fair_committee': return heuristicContract(active, config, pending.eventId);
     case 'wandering_beekeeper': return state.coinBalance > lease * 3 ? 'A' : 'B';
-    default: return 'B';
+    default: {
+      // Exhaustiveness guard: adding a 7th FarmEventId without a case here is a compile error,
+      // rather than silently declining it (every event's choice must be defensible).
+      const unreachable: never = pending.eventId;
+      return unreachable;
+    }
   }
 }
 
