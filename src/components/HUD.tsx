@@ -38,6 +38,26 @@ function getRepTitleClass(expanded: boolean): string {
   return `font-pixel text-caption text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
 }
 
+/** 022 — live delivery-contract progress, or null (chip hidden). */
+type ContractChipData = { done: number; total: number; cropId: string; daysLeft: number } | null;
+
+/** 022 — compact HUD chip showing delivery-contract progress and days remaining. */
+function ContractChip({ contract }: { contract: ContractChipData }) {
+  if (contract === null) return null;
+  return (
+    <div
+      aria-label={`Contract: ${contract.done} of ${contract.total} ${contract.cropId} delivered, ${contract.daysLeft} days left`}
+      title={`Deliver ${contract.total} ${contract.cropId} harvests before the deadline for the reward.`}
+      className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
+    >
+      <EmojiIcon className="text-base leading-none">📜</EmojiIcon>
+      <span className="font-pixel text-caption text-farm-gold">
+        {contract.done}/{contract.total} · {contract.daysLeft}d
+      </span>
+    </div>
+  );
+}
+
 /** 021 — resolves the number the balance chip should animate toward: the held
     (pre-turn) value while a Day Summary is holding the reveal, or the
     committed `coinBalance` otherwise (including mid-tick, so the animation
@@ -78,6 +98,8 @@ interface HUDProps {
   /** 021 — when true, the displayed balance rapid-ticks from the held value to
       the committed balance (celebration coins are landing). */
   tickBalance?: boolean;
+  /** 022 — live delivery-contract progress, or null (chip hidden). */
+  contract: ContractChipData;
 }
 
 export function HUD({
@@ -92,6 +114,7 @@ export function HUD({
   canAdvanceProductively,
   heldBalance,
   tickBalance,
+  contract,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
   const reputation = getReputationTier(currentDay);
@@ -179,6 +202,7 @@ export function HUD({
             <span className="font-pixel text-caption text-farm-gold">×{harvestStreak}</span>
           </div>
         )}
+        <ContractChip contract={contract} />
         <button
           type="button"
           aria-label={`Reputation: ${reputation.title}`}

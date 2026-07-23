@@ -77,6 +77,22 @@ function canAfford(balance: number, price: number | null): boolean {
   return balance >= price;
 }
 
+/** 022 — derives the HUD contract-chip data from the live contract state, or
+    null when no contract is active (chip hidden). */
+function getContractChip(
+  contract: GameState['farmEvents']['contract'],
+  currentDay: number,
+): { done: number; total: number; cropId: string; daysLeft: number } | null {
+  if (contract === null) return null;
+  return {
+    done: contract.quantity - contract.remaining,
+    total: contract.quantity,
+    cropId: contract.cropId,
+    // Days left INCLUDING today — the contract can still complete on its deadline day.
+    daysLeft: Math.max(0, contract.deadlineDay - currentDay + 1),
+  };
+}
+
 /** Null-safe gross harvest income from the last daily log. */
 function getHarvestIncome(state: GameState): number {
   return state.lastDailyLog?.totalHarvestIncome ?? 0;
@@ -452,6 +468,8 @@ export function GameBoard({
   const nextPlotPrice = getNextPlotPrice();
   const canAffordPlot = canAfford(state.coinBalance, nextPlotPrice);
 
+  const contractChip = getContractChip(state.farmEvents.contract, state.currentDay);
+
   return (
     // 018 — page colour lives on PageBackdrop now (a fixed -z-10 layer scoped to
     // the viewport; no positioned ancestor needed). Body is transparent so it shows.
@@ -478,6 +496,7 @@ export function GameBoard({
         canAdvanceProductively={canAdvance}
         heldBalance={celebrationHud.heldBalance}
         tickBalance={celebrationHud.tickBalance}
+        contract={contractChip}
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}
