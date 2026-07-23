@@ -3,8 +3,22 @@ import { renderHook, act } from '@testing-library/react';
 import { useGameEngine } from '../../src/engine/useGameEngine';
 import { initialGameState } from '../../src/engine/gameEngine';
 import { EMPTY_FARM_EVENTS } from '../../src/engine/farmEvents';
+import { RECORDS_KEY, type PersonalBests } from '../../src/engine/records';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
+
+function seedRecords(totalRunsCompleted: number): void {
+  const records: PersonalBests = {
+    schemaVersion: 2,
+    bestDaysSurvived: 0,
+    bestPeakBalance: 0,
+    bestSeasonReached: 0,
+    mostDisastersSurvived: 0,
+    bestHarvestStreak: 0,
+    totalRunsCompleted,
+  };
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+}
 
 function seedPendingSave(): void {
   const state = {
@@ -45,5 +59,19 @@ describe('useGameEngine × farm events', () => {
     let ok = true;
     act(() => { ok = result.current.resolveFarmEvent('A'); });
     expect(ok).toBe(false);
+  });
+
+  // Regression test: isNew must be derived fresh from records on every call to
+  // getPendingFarmEvent(), NOT frozen at GameBoard mount — a run restart
+  // (endRunVictory/restart) commits fresh state in place without remounting
+  // GameBoard, so a mount-time snapshot would never reflect the second run.
+  it('isNew reflects the current totalRunsCompleted on every call, not a frozen snapshot', () => {
+    seedPendingSave();
+    seedRecords(1); // player's second run — the feature just unlocked
+    const { result } = renderHook(() => useGameEngine());
+    expect(result.current.getPendingFarmEvent()?.isNew).toBe(true);
+
+    seedRecords(2); // a later run — no longer new
+    expect(result.current.getPendingFarmEvent()?.isNew).toBe(false);
   });
 });

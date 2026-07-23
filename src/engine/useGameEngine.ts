@@ -361,6 +361,10 @@ export interface PendingFarmEventView {
   /** Live sell-now estimate (Traveling Merchant); 0 for other events. */
   offerValue: number;
   balance: number;
+  /** True during the player's second run (totalRunsCompleted === 1) — the
+      feature just unlocked. Read fresh on every call so it stays correct even
+      when a run restarts in place (GameBoard is not remounted between runs). */
+  isNew: boolean;
 }
 
 export interface GameEngineHook {
@@ -546,7 +550,12 @@ export function useGameEngine(): GameEngineHook {
     if (pending === null) return null;
     const def = ECONOMY.farmEvents.events.find(e => e.id === pending.eventId);
     if (def === undefined) return null;
-    return { def, offerValue: merchantOfferValue(state, ECONOMY), balance: state.coinBalance };
+    return {
+      def,
+      offerValue: merchantOfferValue(state, ECONOMY),
+      balance: state.coinBalance,
+      isNew: loadRecords().totalRunsCompleted === 1,
+    };
   }, [state]);
 
   const getBuildingCards = useCallback((): BuildingCardData[] => {

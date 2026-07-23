@@ -11,6 +11,7 @@ const merchantView: PendingFarmEventView = {
   def: FARM_EVENT_DEFINITIONS.find(e => e.id === 'traveling_merchant')!,
   offerValue: 0,
   balance: 100,
+  isNew: false,
 };
 
 /** Reuses the GameBoard fixture pattern from GameBoard.safeguard.test.tsx,
@@ -86,5 +87,18 @@ describe('GameBoard x farm events', () => {
     render(<GameBoard {...props} />);
     fireEvent.click(screen.getByRole('button', { name: /decline/i }));
     expect(onResolveFarmEvent).toHaveBeenCalledWith('B');
+  });
+
+  // Regression test: isNew must come from the view (re-read fresh by the
+  // caller on every render), NOT a value frozen in GameBoard state at mount.
+  // A run restart (endRunVictory/restart) commits fresh state into the SAME
+  // GameBoard mount — rerendering with a new view is exactly that scenario.
+  it('reflects the pending view\'s isNew live across rerenders on the same mount', () => {
+    const props = makeProps({ pendingFarmEvent: { ...merchantView, isNew: true } });
+    const { rerender } = render(<GameBoard {...props} />);
+    expect(screen.getByText('New!')).toBeInTheDocument();
+
+    rerender(<GameBoard {...props} pendingFarmEvent={{ ...merchantView, isNew: false }} />);
+    expect(screen.queryByText('New!')).toBeNull();
   });
 });

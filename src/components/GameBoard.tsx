@@ -16,7 +16,6 @@ import { PageBackdrop } from './PageBackdrop';
 import { DaySummaryModal } from './DaySummaryModal';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { FarmEventModal } from './FarmEventModal';
-import { loadRecords } from '../engine/records';
 import type { PendingFarmEventView } from '../engine/useGameEngine';
 import type { FarmEventChoiceId } from '../engine/types';
 import { track } from '../analytics/track';
@@ -255,20 +254,20 @@ function shouldShowFarmEvent(
 }
 
 /** 022 — Farm Event modal wrapper: mirrors CelebrationOverlay below, keeping the
-    show/hide branching out of GameBoard's own complexity count. */
+    show/hide branching out of GameBoard's own complexity count. `isNew` rides
+    along on the view itself (read fresh from records each time it's built) so
+    it stays correct across in-place run restarts that never remount GameBoard. */
 function FarmEventOverlay({
   show,
   view,
-  isNew,
   onChoose,
 }: {
   show: boolean;
   view: PendingFarmEventView | null;
-  isNew: boolean;
   onChoose: (choice: FarmEventChoiceId) => void;
 }) {
   if (!show || view === null) return null;
-  return <FarmEventModal view={view} isNew={isNew} onChoose={onChoose} />;
+  return <FarmEventModal view={view} isNew={view.isNew} onChoose={onChoose} />;
 }
 
 /** 021 — coin-flight overlay wrapper: renders the celebration only while the
@@ -361,8 +360,6 @@ export function GameBoard({
 
   const isUnwinnable = checkIsUnwinnable(state, canAdvance, getSeedPrice);
 
-  // 022 — "New!" ribbon shows throughout the player's second run (the feature just unlocked).
-  const [isSecondRun] = useState(() => loadRecords().totalRunsCompleted === 1);
   const showFarmEvent = shouldShowFarmEvent(pendingFarmEvent, isSummaryOpen, celebration);
 
   const { seedHint, showSeedHint } = useSeedHint();
@@ -579,7 +576,6 @@ export function GameBoard({
       <FarmEventOverlay
         show={showFarmEvent}
         view={pendingFarmEvent}
-        isNew={isSecondRun}
         onChoose={onResolveFarmEvent}
       />
 
