@@ -105,9 +105,9 @@ function MarketLines({ log }: { log: DailyLogEntry }) {
 function EventBuffLines({ log }: { log: DailyLogEntry }) {
   return (
     <>
-      {(log.eventBuffsApplied ?? []).map(b => (
+      {(log.eventBuffsApplied ?? []).map((b, i) => (
         <div
-          key={b.eventId}
+          key={`${b.eventId}-${i}`}
           aria-label="Event bonus"
           className="flex items-center gap-1 px-2 py-1 rounded bg-farm-grass/20 border border-farm-grass/40 text-farm-parchment"
         >
@@ -150,16 +150,6 @@ function ContractLines({ log }: { log: DailyLogEntry }) {
           <span>Contract: {log.contractProgress.done}/{log.contractProgress.total} {log.contractProgress.cropId} delivered</span>
         </div>
       )}
-    </>
-  );
-}
-
-/** 022 — buff / contract lines. All fields are optional (absent on pre-v10 logs). */
-function FarmEventLines({ log }: { log: DailyLogEntry }) {
-  return (
-    <>
-      <EventBuffLines log={log} />
-      <ContractLines log={log} />
     </>
   );
 }
@@ -211,7 +201,8 @@ export function DailyLog({ log, suppressDisasterStyling = false, recoveryDays = 
       </div>
 
       <MarketLines log={log} />
-      <FarmEventLines log={log} />
+      <EventBuffLines log={log} />
+      <ContractLines log={log} />
 
       {/* Harvest line-items */}
       {log.harvests.length > 0 && (

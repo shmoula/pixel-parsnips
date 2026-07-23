@@ -266,4 +266,18 @@ describe('farm event lines (022)', () => {
     render(<DailyLog log={makeLog({})} />);
     expect(screen.queryByLabelText(/event bonus|contract/i)).toBeNull();
   });
+
+  it('renders two buff lines without key collisions when the same event fires twice (Endless pool reset)', () => {
+    render(
+      <DailyLog
+        log={makeLog({
+          eventBuffsApplied: [
+            { eventId: 'bountiful_spring', multiplier: 1.5, harvestsAffected: 2 },
+            { eventId: 'bountiful_spring', multiplier: 1.5, harvestsAffected: 1 },
+          ],
+        })}
+      />,
+    );
+    expect(screen.getAllByLabelText('Event bonus')).toHaveLength(2);
+  });
 });
