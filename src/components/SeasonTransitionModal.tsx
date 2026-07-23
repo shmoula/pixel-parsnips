@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { getSeasonForDay } from '../engine/seasons';
+import { EmojiIcon } from './EmojiIcon';
 
 export type SeasonTransitionVariant = 'passed' | 'failed' | 'victory';
 
@@ -15,6 +16,8 @@ interface SeasonTransitionModalProps {
   onEndRun: () => void;
   /** Failed only: reset to fresh state. */
   onRestart: () => void;
+  /** Shown on terminal run-end variants (failed/victory) after an eventless run. */
+  showEventsUnlockTease?: boolean;
 }
 
 export function SeasonTransitionModal({
@@ -25,6 +28,7 @@ export function SeasonTransitionModal({
   onContinue,
   onEndRun,
   onRestart,
+  showEventsUnlockTease = false,
 }: SeasonTransitionModalProps) {
   const justCompleted = variant === 'passed'
     ? getSeasonForDay(currentDay - 1)
@@ -90,8 +94,20 @@ export function SeasonTransitionModal({
             primaryButtonRef={primaryButtonRef}
           />
         )}
+        <EventsUnlockTease variant={variant} show={showEventsUnlockTease} />
       </div>
     </div>
+  );
+}
+
+function EventsUnlockTease({ variant, show }: { variant: SeasonTransitionVariant; show: boolean }) {
+  const isTerminalVariant = variant === 'failed' || variant === 'victory';
+  if (!isTerminalVariant || !show) return null;
+
+  return (
+    <p className="font-pixel text-caption text-farm-gold leading-relaxed">
+      <EmojiIcon>🧳</EmojiIcon> Word of your farm is spreading — from your next run, visitors will arrive with offers.
+    </p>
   );
 }
 

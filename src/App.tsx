@@ -64,6 +64,7 @@ function App() {
           lastDailyLog={state.lastDailyLog}
           onRestart={restart}
           onReplayTutorial={() => { track('onboarding_replay_requested', {}); requestOnboardingReplay(); restart(); }}
+          showEventsUnlockTease={!state.farmEvents.enabled}
         />
         <AnalyticsOptOutToggle />
       </>
@@ -110,6 +111,7 @@ function App() {
           onContinue={continueSeason}
           onEndRun={endRunVictory}
           onRestart={restart}
+          showEventsUnlockTease={!state.farmEvents.enabled}
         />
       )}
       <AnalyticsOptOutToggle />

@@ -26,6 +26,7 @@ function renderScreen(props: Partial<React.ComponentProps<typeof BankruptcyScree
       records={emptyRecords}
       newBests={new Set()}
       onRestart={vi.fn()}
+      showEventsUnlockTease={false}
       {...props}
     />,
   );
@@ -135,5 +136,17 @@ describe('BankruptcyScreen — replay tutorial (014)', () => {
     renderWithReplay({ onReplayTutorial });
     fireEvent.click(screen.getByRole('button', { name: /replay tutorial/i }));
     expect(onReplayTutorial).toHaveBeenCalledOnce();
+  });
+});
+
+describe('BankruptcyScreen — farm-events unlock tease (022)', () => {
+  it('teases the farm-events unlock after an eventless run (022)', () => {
+    renderScreen({ showEventsUnlockTease: true });
+    expect(screen.getByText(/word of your farm is spreading/i)).toBeInTheDocument();
+  });
+
+  it('does not tease when events were already enabled', () => {
+    renderScreen({ showEventsUnlockTease: false });
+    expect(screen.queryByText(/word of your farm is spreading/i)).toBeNull();
   });
 });
