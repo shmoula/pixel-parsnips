@@ -1,5 +1,5 @@
 import type {
-  ContractState, CropId, FarmEventsState, FarmEventDefinition, FarmEventEffect, FarmEventId,
+  ContractState, CropId, FarmEventsState, FarmEventDefinition, FarmEventEffect, FarmEventEffectSpec, FarmEventId,
   GameState, HarvestEvent, WeatherId,
 } from './types';
 import { getSeasonForDay } from './seasons';
@@ -187,11 +187,20 @@ export function applyContractProgress(
   return { contract: { ...contract, remaining }, completed: null, expired: null };
 }
 
+/** Up-front cost of a choice: the sum of its negative coins_delta amounts, as a positive number. */
+export function choiceBuyIn(effects: FarmEventEffectSpec[]): number {
+  return effects.reduce((sum, e) => (e.kind === 'coins_delta' && e.amount < 0 ? sum - e.amount : sum), 0);
+}
+
+/** Coin value of clearing every growing plot at `priceFactor` × base yield (per-plot coins() floor). */
+export function standingCropsValue(plots: GameState['plots'], priceFactor: number, config: EconomyConfig): number {
+  return plots.reduce((sum, p) => (p.cropId === null ? sum : sum + coins(config.crops[p.cropId].baseYield * priceFactor)), 0);
+}
+
 /** Live coin value of the Traveling Merchant's sell-now offer for the current board. */
 export function merchantOfferValue(state: GameState, config: EconomyConfig): number {
   const def = config.farmEvents.events.find(e => e.id === 'traveling_merchant');
   const spec = def?.choiceA.effects.find(e => e.kind === 'sell_standing_crops');
   if (spec === undefined || spec.kind !== 'sell_standing_crops') return 0;
-  return state.plots.reduce(
-    (sum, p) => (p.cropId === null ? sum : sum + coins(config.crops[p.cropId].baseYield * spec.priceFactor)), 0);
+  return standingCropsValue(state.plots, spec.priceFactor, config);
 }

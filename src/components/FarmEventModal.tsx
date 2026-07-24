@@ -1,11 +1,10 @@
-import type { FarmEventChoiceId, FarmEventEffectSpec } from '../engine/types';
+import type { FarmEventChoiceId } from '../engine/types';
+import { choiceBuyIn } from '../engine/farmEvents';
 import type { PendingFarmEventView } from '../engine/useGameEngine';
 import { EmojiIcon } from './EmojiIcon';
 
 /** Total up-front cost of a choice: the sum of its negative coins_delta amounts, as a positive number. */
-export function choiceCost(effects: FarmEventEffectSpec[]): number {
-  return effects.reduce((sum, e) => (e.kind === 'coins_delta' && e.amount < 0 ? sum - e.amount : sum), 0);
-}
+export const choiceCost = choiceBuyIn;
 
 interface FarmEventModalProps {
   view: PendingFarmEventView;

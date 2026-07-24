@@ -16,6 +16,8 @@ import {
   pinnedWeatherFor,
   tickEffects,
   applyContractProgress,
+  choiceBuyIn,
+  standingCropsValue,
 } from './farmEvents';
 import { getSeasonForDay, getDisasterBandsForSeason, DISASTER_WEATHER_IDS } from './seasons';
 import type {
@@ -856,8 +858,7 @@ function applyFarmEventEffectSpec(
     case 'coins_delta':
       return { ...acc, coinBalance: acc.coinBalance + spec.amount };
     case 'sell_standing_crops': {
-      const gain = acc.plots.reduce(
-        (sum, p) => (p.cropId === null ? sum : sum + coins(config.crops[p.cropId].baseYield * spec.priceFactor)), 0);
+      const gain = standingCropsValue(acc.plots, spec.priceFactor, config);
       // A private sale, not a harvest: no streak, no exhaustion increment.
       const plots = acc.plots.map(p => (p.cropId === null ? p : {
         ...p, cropId: null, dayPlanted: null, daysRemaining: null, droughtPenalised: false,
@@ -896,7 +897,9 @@ function applyFarmEventEffectSpec(
  * Applies one side of the pending farm event's choice. Pure — no mutations.
  * No-ops when nothing is pending, when the id is unknown to the catalog
  * (pending is dropped), or when a buy-in is unaffordable (pending is KEPT so
- * the UI can re-present; auto-resolve always takes the free B side).
+ * the UI can re-present; auto-resolve always takes the free B side). Returns
+ * the identical `state` reference on no-op paths (nothing pending, or an
+ * unaffordable buy-in) — callers may rely on `===` to detect this.
  */
 export function resolveFarmEventChoice(
   state: GameState,
@@ -912,8 +915,7 @@ export function resolveFarmEventChoice(
   }
   const effects = choice === 'A' ? def.choiceA.effects : def.choiceB.effects;
 
-  const buyIn = effects.reduce(
-    (sum, e) => (e.kind === 'coins_delta' && e.amount < 0 ? sum - e.amount : sum), 0);
+  const buyIn = choiceBuyIn(effects);
   if (state.coinBalance < buyIn) return state;
 
   const result = effects.reduce(
