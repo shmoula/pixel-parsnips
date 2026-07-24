@@ -21,7 +21,7 @@ describe('resolveFarmEventChoice', () => {
   it('coins_delta: contract decline pays the consolation now', () => {
     const s = withPending('millers_order');
     const out = resolveFarmEventChoice(s, 'B');
-    expect(out.coinBalance).toBe(s.coinBalance + 12);
+    expect(out.coinBalance).toBe(s.coinBalance + 20); // millers_order choiceB consolation (sim-tuned, 022)
     expect(out.farmEvents.pending).toBeNull();
     expect(out.farmEvents.lastResolved).toEqual({ eventId: 'millers_order', choice: 'B', day: 8, auto: false });
   });

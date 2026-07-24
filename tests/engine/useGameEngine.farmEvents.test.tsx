@@ -51,7 +51,7 @@ describe('useGameEngine × farm events', () => {
     act(() => { ok = result.current.resolveFarmEvent('B'); });
     expect(ok).toBe(true);
     expect(result.current.state.farmEvents.pending).toBeNull();
-    expect(result.current.state.coinBalance).toBe(before + 12);
+    expect(result.current.state.coinBalance).toBe(before + 20); // millers_order choiceB consolation (sim-tuned, 022)
   });
 
   it('resolveFarmEvent returns false when nothing is pending', () => {
