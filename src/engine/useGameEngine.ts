@@ -145,7 +145,7 @@ function toContractState(v: unknown): ContractState | null {
 /** Per-variant payload validators keyed by effect kind. Split out so each stays
  *  trivial and `isLiveFarmEffect` doesn't blow the complexity budget. */
 const LIVE_EFFECT_VALIDATORS: Record<string, (x: Record<string, unknown>) => boolean> = {
-  yield_buff: x => isNumber(x.multiplier) && isNumber(x.harvestsRemaining) && isNumber(x.exhaustionFactor),
+  yield_buff: x => isFarmEventId(x.eventId) && isNumber(x.multiplier) && isNumber(x.harvestsRemaining) && isNumber(x.exhaustionFactor),
   seed_discount: x => isCropId(x.cropId) && isNumber(x.factor) && isNumber(x.expiresAfterDay),
   weather_pin: x => isWeatherId(x.weatherId) && isNumber(x.day),
 };

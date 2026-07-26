@@ -34,8 +34,12 @@ const policyName = arg('--eventPolicy', 'heuristic');
 if (configNames.length === 0) fail('No configs specified');
 if (stratNames.length === 0) fail('No strategies specified');
 
+// hasOwnProperty guard: reject inherited keys (`toString`, `__proto__`) that
+// would otherwise resolve to a truthy non-policy value.
+if (!Object.prototype.hasOwnProperty.call(EVENT_POLICIES, policyName)) {
+  fail(`Unknown event policy: ${policyName} (expected ${Object.keys(EVENT_POLICIES).join('|')})`);
+}
 const eventPolicy = EVENT_POLICIES[policyName];
-if (!eventPolicy) fail(`Unknown event policy: ${policyName} (expected ${Object.keys(EVENT_POLICIES).join('|')})`);
 
 const rows: Row[] = [];
 for (const c of configNames) {

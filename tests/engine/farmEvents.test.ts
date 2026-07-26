@@ -111,6 +111,23 @@ describe('maybeFireEvent', () => {
     expect(isContractEvent(def)).toBe(false);
   });
 
+  it('still fires a recycled non-contract event when the only unseen ids are contracts', () => {
+    // Contract live; every non-contract event already seen, so the only unseen
+    // ids are the two contract events. The scheduled event must still fire from
+    // the recycled non-contract pool rather than being lost.
+    const contract: ContractState = {
+      eventId: 'millers_order', cropId: 'parsnip', quantity: 3, remaining: 2, deadlineDay: 12, reward: 55,
+    };
+    const allNonContractSeen = scheduledFe([8], {
+      contract,
+      seenIds: ['traveling_merchant', 'bountiful_spring', 'drought_warning', 'wandering_beekeeper'],
+    });
+    const fe = maybeFireEvent(allNonContractSeen, 8, DEFAULT_ECONOMY, seq([0.0]));
+    expect(fe.pending).not.toBeNull();
+    const def = DEFAULT_ECONOMY.farmEvents.events.find(e => e.id === fe.pending!.eventId)!;
+    expect(isContractEvent(def)).toBe(false);
+  });
+
   it('applies the drought pin at fire time when the pre-roll hits', () => {
     // Force drought_warning: seenIds excludes everything else.
     const others = scheduledFe([8], {

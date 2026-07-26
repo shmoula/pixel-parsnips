@@ -1,7 +1,7 @@
 # G11 — In-Run Narrative Events (Farm Events)
 
 **Status:** Design approved · 2026-07-21
-**Backlog item:** [G11](../../BACKLOG.md) — Phase 4 "Depth & memorable moments" (top remaining pick, 2026-07-21 triage)
+**Backlog item:** [G11](../../backlog.md) — Phase 4 "Depth & memorable moments" (top remaining pick, 2026-07-21 triage)
 **Refs:** p2·C, p3·2, p4·B, p5·3.1 · folds in deferred **G4** (per-day objectives / contracts)
 **Effort:** M
 
@@ -155,8 +155,8 @@ Copy below is the design intent; final strings live in `farmEventCatalog.ts`. Al
 | 1 | 🧳 **The Traveling Merchant** — "A buyer offers to take everything growing in your fields, right now." | `sell_standing_crops` at **1.4×** base yield | Decline | Strong with a full board and a disaster-heavy season looming; weak when crops just went in. The modal shows a live estimate of the offer. |
 | 2 | 🌸 **Bountiful Spring** — "Unusually rich soil this week." | `yield_buff`: next **3** harvests **+50%**, `exhaustionFactor: 2` | Decline | Windfall vs. soil health — costly if plots are near exhaustion. |
 | 3 | 🌵 **Drought Warning** — "The almanac says a flash drought is likely within days." Pre-rolled at fire time: **70%** chance a `weather_pin` schedules a real `flash_drought` 2–3 days out (rng picks the offset). | `seed_discount`: radish seeds **half price today** | Hold and wait | Acting on uncertain information; 30% of the time the drought never comes. The pin fires (or doesn't) regardless of the choice — the choice is the reaction window. |
-| 4 | 📜 **The Miller's Order** — "The miller needs parsnips for the harvest fair." *(contract — G4 fold-in)* | `contract`: **3 parsnip** harvests within **6 days** → **+55🪙** | `coins_delta` **+12🪙** now | Guaranteed small vs. conditional big; bad if the board is committed to other crops. |
-| 5 | 🎪 **The Fair Committee** — "The county fair wants fresh radishes, fast." *(contract — G4 fold-in)* | `contract`: **4 radish** harvests within **5 days** → **+40🪙** | `coins_delta` **+10🪙** now | Same shape, faster tempo, cheap crop — a different board state favors it than the Miller. |
+| 4 | 📜 **The Miller's Order** — "The miller needs parsnips for the harvest fair." *(contract — G4 fold-in)* | `contract`: **3 parsnip** harvests within **6 days** → **+55🪙** | `coins_delta` **+20🪙** now | Guaranteed small vs. conditional big; bad if the board is committed to other crops. |
+| 5 | 🎪 **The Fair Committee** — "The county fair wants fresh radishes, fast." *(contract — G4 fold-in)* | `contract`: **4 radish** harvests within **5 days** → **+40🪙** | `coins_delta` **+18🪙** now | Same shape, faster tempo, cheap crop — a different board state favors it than the Miller. |
 | 6 | 🐝 **The Wandering Beekeeper** — "For a small fee, her bees will pollinate your fields." | `coins_delta` **−15🪙** + `yield_buff`: next **4** harvests **+20%** (no exhaustion downside) | Decline | Up-front cost against future harvests; dead money if pests wipe the plots. Button disabled when unaffordable. |
 
 ---
@@ -202,8 +202,8 @@ as market multipliers.
 ### `DailyLogEntry` additions
 
 ```ts
-eventBuffApplied: { eventId: FarmEventId; multiplier: number; harvestsAffected: number } | null;
-contractProgress: { cropId: CropId; remaining: number; deadlineDay: number } | null;
+eventBuffsApplied: Array<{ eventId: FarmEventId; multiplier: number; harvestsAffected: number }>;
+contractProgress: { cropId: CropId; done: number; total: number; deadlineDay: number } | null;
 contractCompleted: { eventId: FarmEventId; reward: number } | null;
 contractExpired: FarmEventId | null;
 ```

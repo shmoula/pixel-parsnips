@@ -120,7 +120,7 @@ function detectShopPurchased(prev: GameState, state: GameState): void {
         item_type: 'seed',
         item_id: cropId,
         quantity: delta,
-        cost: computeSeedCost(cropId, prev.buildings) * delta,
+        cost: computeSeedCost(cropId, prev.buildings, DEFAULT_ECONOMY, prev.farmEvents.activeEffects) * delta,
         ...common,
       });
     }

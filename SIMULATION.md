@@ -91,7 +91,7 @@ that day. Policies live alongside the strategies in
 | ------------ | ----------------------------------------------------------------------------------------- |
 | `heuristic`  | A per-event "defensible reasoning" check (e.g. only take a delivery contract when there's enough free land and time to complete it; only take the merchant's instant sale when crops are ripening soon). |
 | `acceptAll`  | Always chooses A — useful for measuring the catalog's upside ceiling.                    |
-| `declineAll` | Always chooses B — the floor/no-event-impact control.                                    |
+| `declineAll` | Always chooses B — a choice-B control, **not** a no-event-impact one: B-side rewards and fire-time effects (e.g. Drought Warning's weather pin) still apply. |
 
 ## Presets
 

@@ -283,8 +283,8 @@ export const FARM_EVENT_DEFINITIONS: FarmEventDefinition[] = [
     },
     choiceB: {
       label: 'Sell your spare sacks',
-      summary: '+12🪙 now.',
-      effects: [{ kind: 'coins_delta', amount: 12 }],
+      summary: '+20🪙 now.',
+      effects: [{ kind: 'coins_delta', amount: 20 }],
     },
   },
   {
@@ -299,8 +299,8 @@ export const FARM_EVENT_DEFINITIONS: FarmEventDefinition[] = [
     },
     choiceB: {
       label: 'Sell what you have',
-      summary: '+10🪙 now.',
-      effects: [{ kind: 'coins_delta', amount: 10 }],
+      summary: '+18🪙 now.',
+      effects: [{ kind: 'coins_delta', amount: 18 }],
     },
   },
   {

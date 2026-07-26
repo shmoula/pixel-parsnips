@@ -1,5 +1,13 @@
 # Pixel Parsnips — Monetization Strategy Proposal
 
+> 🗄️ **ARCHIVED / SUPERSEDED — do not implement.** Monetization is out of scope for
+> this portfolio/hobby project (backlog decision 2026-07-21; see [backlog.md](../../backlog.md)
+> "Backlog — Monetization"). This document is retained as a historical design record only.
+> The rollout sequencing ("Now / Next / Later") and the localStorage persistence mitigations
+> below reflect that superseded intent and must **not** be read as an active implementation
+> plan — in particular, any real-money entitlement would require server-side purchase
+> verification, which this proposal does not provide.
+
 > *Authored by the Game Economy Architect role. Grounded in ethical F2P principles,
 > browser-native constraints, and the specific risk/reward structure of Pixel Parsnips.*
 
@@ -110,6 +118,11 @@ storage. Two mitigations:
 Neither solution is as robust as server-side accounts, but both prevent the most common
 accidental-loss scenario (browser cache clear) while avoiding full backend complexity at this
 stage.
+
+> ⚠️ **Superseded — not an implementation plan.** Client-side code hashing and email-only
+> "restore" cannot prove purchase ownership and are trivially bypassed; they were never built.
+> Any real entitlement would require server-side purchase verification with revocation/chargeback
+> handling. Kept here only to record the design's known weakness.
 
 ### Sharp Edges
 
@@ -256,6 +269,11 @@ and history are the reasons to maintain the subscription.
 ---
 
 ## Recommended Rollout Sequence
+
+> 🗄️ **Historical sequencing — superseded.** The "Now / Next / Later / Future" phases below
+> describe the *original* proposed ordering; none of it is scheduled. Monetization is out of
+> scope (see the banner at the top of this file and the "do not build" note in
+> [backlog.md](../../backlog.md)). Read the table as a design record, not a plan.
 
 | Phase | Strategy | Why First |
 |---|---|---|

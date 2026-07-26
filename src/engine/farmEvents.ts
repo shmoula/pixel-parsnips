@@ -59,17 +59,19 @@ export function isContractEvent(def: FarmEventDefinition): boolean {
 }
 
 /**
- * The unseen-id draw pool for this fire, resetting to the full catalog when
- * exhausted, then narrowed to exclude contract events while one is live.
+ * The unseen-id draw pool for this fire. Contract events are excluded up front
+ * while a contract is live, so exhaustion (and the recycle reset) is measured
+ * against the *eligible* set — a scheduled event is never lost just because the
+ * only unseen ids happen to be contracts; seen non-contract events recycle.
  */
 function candidatePool(
   fe: FarmEventsState,
   all: FarmEventDefinition[],
 ): { candidates: FarmEventDefinition[]; seenIds: FarmEventId[] } {
-  const unseenAll = all.filter(e => !fe.seenIds.includes(e.id));
-  const pool = unseenAll.length > 0 ? unseenAll : all; // reset: long Endless runs recycle content
-  const seenIds = unseenAll.length > 0 ? fe.seenIds : [];
-  const candidates = fe.contract !== null ? pool.filter(e => !isContractEvent(e)) : pool;
+  const eligible = fe.contract !== null ? all.filter(e => !isContractEvent(e)) : all;
+  const unseen = eligible.filter(e => !fe.seenIds.includes(e.id));
+  const candidates = unseen.length > 0 ? unseen : eligible; // reset: long Endless runs recycle content
+  const seenIds = unseen.length > 0 ? fe.seenIds : [];
   return { candidates, seenIds };
 }
 
@@ -103,7 +105,7 @@ export function maybeFireEvent(
   if (all.length === 0) return fe;
 
   const { candidates, seenIds } = candidatePool(fe, all);
-  if (candidates.length === 0) return fe; // only contract events left while one is live
+  if (candidates.length === 0) return fe; // no eligible events (catalog is contract-only while one is live)
 
   const def = candidates[Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))];
   const newEffects = rollOnFireEffects(def, newDay, rng);
