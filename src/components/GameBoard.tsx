@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import type { GameState, CropId, DailyLogEntry, WeatherId, BuildingId } from '../engine/types';
 import type { BuildingCardData } from '../engine/useGameEngine';
 import { canAdvanceProductively } from '../engine/gameEngine';
@@ -13,9 +13,8 @@ import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
 import { EmojiIcon } from './EmojiIcon';
 import { PageBackdrop } from './PageBackdrop';
-import { DaySummaryModal } from './DaySummaryModal';
 import { OnboardingOverlay } from './OnboardingOverlay';
-import { FarmEventModal } from './FarmEventModal';
+import { DaySummaryModal, FarmEventModal } from './lazyModals';
 import type { PendingFarmEventView } from '../engine/useGameEngine';
 import type { FarmEventChoiceId } from '../engine/types';
 import { track } from '../analytics/track';
@@ -283,7 +282,11 @@ function FarmEventOverlay({
   onChoose: (choice: FarmEventChoiceId) => void;
 }) {
   if (!show || view === null) return null;
-  return <FarmEventModal view={view} isNew={view.isNew} onChoose={onChoose} />;
+  return (
+    <Suspense fallback={null}>
+      <FarmEventModal view={view} isNew={view.isNew} onChoose={onChoose} />
+    </Suspense>
+  );
 }
 
 /** 021 — coin-flight overlay wrapper: renders the celebration only while the
@@ -573,15 +576,17 @@ export function GameBoard({
 
       {/* T011 — Day Summary modal: opens after each turn, reopenable via Last Turn */}
       {isSummaryOpen && daySummary !== null && (
-        <DaySummaryModal
-          log={daySummary}
-          animateReveal={summaryAnimate}
-          recoveryDays={recoveryDays}
-          onClose={() => {
-            setIsSummaryOpen(false);
-            setCelebration(beginCelebrating);
-          }}
-        />
+        <Suspense fallback={null}>
+          <DaySummaryModal
+            log={daySummary}
+            animateReveal={summaryAnimate}
+            recoveryDays={recoveryDays}
+            onClose={() => {
+              setIsSummaryOpen(false);
+              setCelebration(beginCelebrating);
+            }}
+          />
+        </Suspense>
       )}
 
       {/* 021 — coin-flight overlay: mounts once the fresh harvest summary closes. */}

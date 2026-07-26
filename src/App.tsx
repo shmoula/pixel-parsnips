@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useGameEngine } from './engine/useGameEngine';
 import { GameBoard } from './components/GameBoard';
-import { BankruptcyScreen } from './components/BankruptcyScreen';
-import { SeasonTransitionModal } from './components/SeasonTransitionModal';
+import {
+  BankruptcyScreen,
+  SeasonTransitionModal,
+  prefetchLateModals,
+} from './components/lazyModals';
 import { requestOnboardingReplay } from './engine/onboarding';
 import type { PersonalBests } from './engine/records';
 import { initAnalytics, track } from './analytics/track';
@@ -29,6 +32,7 @@ function GrainFilter() {
 function App() {
   useEffect(() => {
     initAnalytics();
+    prefetchLateModals();
   }, []);
 
   const engine = useGameEngine();
@@ -52,20 +56,22 @@ function App() {
     return (
       <>
         <GrainFilter />
-        <BankruptcyScreen
-          daysPlayed={state.currentDay}
-          peakBalance={state.peakBalance}
-          peakHarvestStreak={state.peakHarvestStreak}
-          disastersSurvived={state.disastersSurvived}
-          seasonReached={seasonReached}
-          medal={medal}
-          records={records}
-          newBests={newBests}
-          lastDailyLog={state.lastDailyLog}
-          onRestart={restart}
-          onReplayTutorial={() => { track('onboarding_replay_requested', {}); requestOnboardingReplay(); restart(); }}
-          showEventsUnlockTease={!state.farmEvents.enabled}
-        />
+        <Suspense fallback={null}>
+          <BankruptcyScreen
+            daysPlayed={state.currentDay}
+            peakBalance={state.peakBalance}
+            peakHarvestStreak={state.peakHarvestStreak}
+            disastersSurvived={state.disastersSurvived}
+            seasonReached={seasonReached}
+            medal={medal}
+            records={records}
+            newBests={newBests}
+            lastDailyLog={state.lastDailyLog}
+            onRestart={restart}
+            onReplayTutorial={() => { track('onboarding_replay_requested', {}); requestOnboardingReplay(); restart(); }}
+            showEventsUnlockTease={!state.farmEvents.enabled}
+          />
+        </Suspense>
         <AnalyticsOptOutToggle />
       </>
     );
@@ -103,16 +109,18 @@ function App() {
         onResolveFarmEvent={engine.resolveFarmEvent}
       />
       {transitionVariant && (
-        <SeasonTransitionModal
-          variant={transitionVariant}
-          currentDay={state.currentDay}
-          coinBalance={state.coinBalance}
-          peakBalance={state.peakBalance}
-          onContinue={continueSeason}
-          onEndRun={endRunVictory}
-          onRestart={restart}
-          showEventsUnlockTease={!state.farmEvents.enabled}
-        />
+        <Suspense fallback={null}>
+          <SeasonTransitionModal
+            variant={transitionVariant}
+            currentDay={state.currentDay}
+            coinBalance={state.coinBalance}
+            peakBalance={state.peakBalance}
+            onContinue={continueSeason}
+            onEndRun={endRunVictory}
+            onRestart={restart}
+            showEventsUnlockTease={!state.farmEvents.enabled}
+          />
+        </Suspense>
       )}
       <AnalyticsOptOutToggle />
     </>

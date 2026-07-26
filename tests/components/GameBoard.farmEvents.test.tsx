@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { GameBoard } from '../../src/components/GameBoard';
 import { initialGameState } from '../../src/engine/gameEngine';
 import { markOnboardingComplete } from '../../src/engine/onboarding';
@@ -58,10 +58,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('GameBoard x farm events', () => {
-  it('renders the FarmEventModal when a pending view is supplied', () => {
+  it('renders the FarmEventModal when a pending view is supplied', async () => {
     const props = makeProps({ pendingFarmEvent: merchantView });
     render(<GameBoard {...props} />);
-    expect(screen.getByRole('dialog', { name: 'The Traveling Merchant' })).toBeInTheDocument();
+    // FarmEventModal is code-split (React.lazy) — await the Suspense boundary.
+    expect(await screen.findByRole('dialog', { name: 'The Traveling Merchant' })).toBeInTheDocument();
   });
 
   it('does not render the modal when there is no pending event', () => {
@@ -70,22 +71,22 @@ describe('GameBoard x farm events', () => {
     expect(screen.queryByRole('dialog', { name: 'The Traveling Merchant' })).toBeNull();
   });
 
-  it('does not advance the day while an event is pending', () => {
+  it('does not advance the day while an event is pending', async () => {
     const onNextDay = vi.fn();
     const props = makeProps({ pendingFarmEvent: merchantView, onNextDay });
     render(<GameBoard {...props} />);
     // Confirm the modal is up (the guard's precondition).
-    expect(screen.getByRole('dialog', { name: 'The Traveling Merchant' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'The Traveling Merchant' })).toBeInTheDocument();
     // Click the (desktop) Next Day button in the HUD — the guard must no-op it.
     fireEvent.click(screen.getAllByRole('button', { name: /next day/i })[0]);
     expect(onNextDay).not.toHaveBeenCalled();
   });
 
-  it('routes the modal choice to onResolveFarmEvent', () => {
+  it('routes the modal choice to onResolveFarmEvent', async () => {
     const onResolveFarmEvent = vi.fn().mockReturnValue(true);
     const props = makeProps({ pendingFarmEvent: merchantView, onResolveFarmEvent });
     render(<GameBoard {...props} />);
-    fireEvent.click(screen.getByRole('button', { name: /decline/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /decline/i }));
     expect(onResolveFarmEvent).toHaveBeenCalledWith('B');
   });
 
@@ -93,13 +94,13 @@ describe('GameBoard x farm events', () => {
   // caller on every render), NOT a value frozen in GameBoard state at mount.
   // A run restart (endRunVictory/restart) commits fresh state into the SAME
   // GameBoard mount — rerendering with a new view is exactly that scenario.
-  it('reflects the pending view\'s isNew live across rerenders on the same mount', () => {
+  it('reflects the pending view\'s isNew live across rerenders on the same mount', async () => {
     const props = makeProps({ pendingFarmEvent: { ...merchantView, isNew: true } });
     const { rerender } = render(<GameBoard {...props} />);
-    expect(screen.getByText('New!')).toBeInTheDocument();
+    expect(await screen.findByText('New!')).toBeInTheDocument();
 
     rerender(<GameBoard {...props} pendingFarmEvent={{ ...merchantView, isNew: false }} />);
-    expect(screen.queryByText('New!')).toBeNull();
+    await waitFor(() => expect(screen.queryByText('New!')).toBeNull());
   });
 });
 
