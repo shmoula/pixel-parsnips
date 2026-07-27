@@ -1,14 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { FarmEventModal, choiceCost } from '../../src/components/FarmEventModal';
+import { FarmEventModal } from '../../src/components/FarmEventModal';
+import { choiceBuyIn } from '../../src/engine/farmEvents';
 import { FARM_EVENT_DEFINITIONS } from '../../src/engine/farmEventCatalog';
 
 const def = (id: string) => FARM_EVENT_DEFINITIONS.find(e => e.id === id)!;
 
-describe('choiceCost', () => {
+describe('choiceBuyIn', () => {
   it('sums negative coins_delta amounts as a positive cost', () => {
-    expect(choiceCost(def('wandering_beekeeper').choiceA.effects)).toBe(15);
-    expect(choiceCost(def('millers_order').choiceB.effects)).toBe(0);
+    expect(choiceBuyIn(def('wandering_beekeeper').choiceA.effects)).toBe(15);
+    expect(choiceBuyIn(def('millers_order').choiceB.effects)).toBe(0);
   });
 });
 
@@ -34,6 +35,17 @@ describe('FarmEventModal', () => {
     const btn = screen.getByRole('button', { name: /pay 15🪙/i });
     expect(btn).toBeDisabled();
     expect(screen.getByText(/not enough coins/i)).toBeInTheDocument();
+  });
+
+  it('anchors initial focus on choice A, falling back to B when A is unaffordable', () => {
+    const { unmount } = render(<FarmEventModal view={{ def: def('wandering_beekeeper'), offerValue: 0, balance: 100, isNew: false }} isNew={false} onChoose={() => {}} />);
+    expect(screen.getByRole('button', { name: /pay 15🪙/i })).toHaveFocus();
+    unmount();
+
+    // A is disabled and can't hold focus — B must catch it instead.
+    render(<FarmEventModal view={{ def: def('wandering_beekeeper'), offerValue: 0, balance: 10, isNew: false }} isNew={false} onChoose={() => {}} />);
+    expect(screen.getByRole('button', { name: /pay 15🪙/i })).not.toHaveFocus();
+    expect(screen.getByRole('button', { name: /decline/i })).toHaveFocus();
   });
 
   it('shows the New! ribbon only on the second run', () => {

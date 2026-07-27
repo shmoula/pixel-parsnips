@@ -210,6 +210,27 @@ describe('useGameEngine — full turn sequence integration (T046)', () => {
     expect(withShed.current.getSeedPrice('radish')).toBe(3);
   });
 
+  it('an active farm-event seed discount shows in the shop price', () => {
+    // 022 drought_warning choice A: radish at half price until end of day.
+    const base = initialGameState();
+    const discounted = {
+      ...base,
+      farmEvents: {
+        ...base.farmEvents,
+        activeEffects: [
+          { kind: 'seed_discount' as const, cropId: 'radish' as const, factor: 0.5, expiresAfterDay: base.currentDay },
+        ],
+      },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: discounted }));
+
+    const { result } = renderHook(() => useGameEngine());
+    // The displayed price must match what buySeed actually charges: floor(5 * 0.5) = 2.
+    expect(result.current.getSeedPrice('radish')).toBe(2);
+    // The discount is crop-scoped — other seeds keep their base price.
+    expect(result.current.getSeedPrice('parsnip')).toBe(10);
+  });
+
   it('the Farm Stand exposes a +10% yield multiplier for the shop display', () => {
     // No buildings: multiplier is a no-op 1
     const { result, unmount } = renderHook(() => useGameEngine());

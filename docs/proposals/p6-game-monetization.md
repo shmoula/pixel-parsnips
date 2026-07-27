@@ -7,7 +7,7 @@
 > below reflect that superseded intent and must **not** be read as an active implementation
 > plan — in particular, any real-money entitlement would require server-side purchase
 > verification, which this proposal does not provide.
-
+>
 > *Authored by the Game Economy Architect role. Grounded in ethical F2P principles,
 > browser-native constraints, and the specific risk/reward structure of Pixel Parsnips.*
 

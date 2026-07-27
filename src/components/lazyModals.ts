@@ -33,10 +33,16 @@ export const FarmEventModal = lazy(() =>
 /** Warm the deferred modal chunks during idle time after first paint. */
 export function prefetchLateModals(): void {
   const warm = () => {
-    void import('./BankruptcyScreen');
-    void import('./SeasonTransitionModal');
-    void import('./DaySummaryModal');
-    void import('./FarmEventModal');
+    // Best-effort: a failed warm-up (offline, CDN hiccup, stale chunk after a
+    // deploy) must stay silent — Suspense retries the import when the modal
+    // actually opens. Swallowing here keeps it out of unhandled-rejection
+    // reporting.
+    void Promise.allSettled([
+      import('./BankruptcyScreen'),
+      import('./SeasonTransitionModal'),
+      import('./DaySummaryModal'),
+      import('./FarmEventModal'),
+    ]);
   };
   const ric = (globalThis as {
     requestIdleCallback?: (cb: () => void) => void;

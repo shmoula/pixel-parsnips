@@ -3,9 +3,6 @@ import { choiceBuyIn } from '../engine/farmEvents';
 import type { PendingFarmEventView } from '../engine/useGameEngine';
 import { EmojiIcon } from './EmojiIcon';
 
-/** Total up-front cost of a choice: the sum of its negative coins_delta amounts, as a positive number. */
-export const choiceCost = choiceBuyIn;
-
 interface FarmEventModalProps {
   view: PendingFarmEventView;
   /** True during the player's second run — the feature just unlocked. */
@@ -20,7 +17,7 @@ interface FarmEventModalProps {
  */
 export function FarmEventModal({ view, isNew, onChoose }: FarmEventModalProps) {
   const { def, offerValue, balance } = view;
-  const costA = choiceCost(def.choiceA.effects);
+  const costA = choiceBuyIn(def.choiceA.effects);
   const affordableA = balance >= costA;
   const summaryA = def.id === 'traveling_merchant'
     ? `All growing crops sold instantly — est. +${offerValue}🪙.`
@@ -47,7 +44,8 @@ export function FarmEventModal({ view, isNew, onChoose }: FarmEventModalProps) {
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            autoFocus
+            // A disabled button can't take focus, so the anchor falls to B.
+            autoFocus={affordableA}
             disabled={!affordableA}
             onClick={() => onChoose('A')}
             className="font-pixel text-body text-left px-4 py-3 min-h-[44px] rounded bg-farm-grass text-farm-parchment hover:enabled:bg-farm-gold hover:enabled:text-farm-ink disabled:opacity-40 transition-colors"
@@ -59,6 +57,7 @@ export function FarmEventModal({ view, isNew, onChoose }: FarmEventModalProps) {
           </button>
           <button
             type="button"
+            autoFocus={!affordableA}
             onClick={() => onChoose('B')}
             className="font-pixel text-body text-left px-4 py-3 min-h-[44px] rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-[#3A2510] transition-colors"
           >

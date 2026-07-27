@@ -29,6 +29,30 @@ function GrainFilter() {
   );
 }
 
+/**
+ * Placeholder for the code-split terminal screens (bankruptcy, season
+ * transition). `prefetchLateModals()` normally warms these chunks during idle
+ * time so this never shows, but idle callbacks can be throttled and a cold or
+ * slow network can still leave a gap — the bankruptcy screen replaces the whole
+ * page, so a `null` fallback would be a blank browser window. Backgrounds match
+ * the screens they stand in for, so the handover doesn't flash.
+ */
+function ScreenFallback({ variant }: { variant: 'page' | 'overlay' }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={
+        variant === 'page'
+          ? 'flex items-center justify-center min-h-screen bg-farm-soil text-farm-parchment'
+          : 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm text-farm-parchment'
+      }
+    >
+      <span className="font-pixel text-body">Loading…</span>
+    </div>
+  );
+}
+
 function App() {
   useEffect(() => {
     initAnalytics();
@@ -56,7 +80,7 @@ function App() {
     return (
       <>
         <GrainFilter />
-        <Suspense fallback={null}>
+        <Suspense fallback={<ScreenFallback variant="page" />}>
           <BankruptcyScreen
             daysPlayed={state.currentDay}
             peakBalance={state.peakBalance}
@@ -109,7 +133,7 @@ function App() {
         onResolveFarmEvent={engine.resolveFarmEvent}
       />
       {transitionVariant && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<ScreenFallback variant="overlay" />}>
           <SeasonTransitionModal
             variant={transitionVariant}
             currentDay={state.currentDay}

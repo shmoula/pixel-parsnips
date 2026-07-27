@@ -591,8 +591,9 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState]);
 
   const getSeedPrice = useCallback(
-    (cropId: CropId): number => computeSeedCost(cropId, state.buildings, ECONOMY),
-    [state.buildings]
+    (cropId: CropId): number =>
+      computeSeedCost(cropId, state.buildings, ECONOMY, state.farmEvents.activeEffects),
+    [state.buildings, state.farmEvents.activeEffects]
   );
 
   const getOccupiedPlotCount = useCallback(
