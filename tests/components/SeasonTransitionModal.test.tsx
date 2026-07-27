@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { axe } from 'vitest-axe';
@@ -230,6 +231,44 @@ describe('SeasonTransitionModal — Escape key handling', () => {
     );
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onEndRun).toHaveBeenCalledOnce();
+  });
+});
+
+describe('SeasonTransitionModal — farm-events unlock tease (022)', () => {
+  function renderModal(over: Partial<React.ComponentProps<typeof SeasonTransitionModal>> = {}) {
+    return render(
+      <SeasonTransitionModal
+        variant="failed"
+        currentDay={20}
+        coinBalance={93}
+        peakBalance={105}
+        onContinue={vi.fn()}
+        onEndRun={vi.fn()}
+        onRestart={vi.fn()}
+        showEventsUnlockTease={false}
+        {...over}
+      />
+    );
+  }
+
+  it('shows the tease when variant="failed" and the flag is true', () => {
+    renderModal({ variant: 'failed', showEventsUnlockTease: true });
+    expect(screen.getByText(/word of your farm is spreading/i)).toBeInTheDocument();
+  });
+
+  it('shows the tease when variant="victory" and the flag is true', () => {
+    renderModal({ variant: 'victory', currentDay: 80, coinBalance: 700, peakBalance: 891, showEventsUnlockTease: true });
+    expect(screen.getByText(/word of your farm is spreading/i)).toBeInTheDocument();
+  });
+
+  it('never shows the tease for variant="passed", even when the flag is true', () => {
+    renderModal({ variant: 'passed', currentDay: 21, coinBalance: 200, peakBalance: 250, showEventsUnlockTease: true });
+    expect(screen.queryByText(/word of your farm is spreading/i)).toBeNull();
+  });
+
+  it('does not show the tease when the flag is false', () => {
+    renderModal({ variant: 'failed', showEventsUnlockTease: false });
+    expect(screen.queryByText(/word of your farm is spreading/i)).toBeNull();
   });
 });
 

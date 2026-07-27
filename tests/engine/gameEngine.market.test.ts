@@ -24,7 +24,10 @@ function pumpkinReady(overrides: Partial<GameState> = {}): GameState {
 
 describe('processTurn — market scheduling', () => {
   it('schedules a pending event on a boundary day and announces it', () => {
-    const rng = (() => { const v = [0.1, 0.0, 0.4]; let i = 0; return () => v[Math.min(i++, v.length - 1)]; })();
+    // 022: ensureSchedule draws first (count roll ≥0.5 → 1 event, then 1 day
+    // roll) — the two leading 0.9s absorb those so rollSchedule still sees
+    // [0.1, 0.0, 0.4] and announces the same radish shortage.
+    const rng = (() => { const v = [0.9, 0.9, 0.1, 0.0, 0.4]; let i = 0; return () => v[Math.min(i++, v.length - 1)]; })();
     const state = { ...initialGameState(), currentDay: 5 };
     const { state: next, log } = processTurn(state, 'sunny', undefined, undefined, DEFAULT_ECONOMY, rng);
     expect(next.market.pending).toEqual({ cropId: 'radish', kind: 'shortage', multiplier: 1.4 });

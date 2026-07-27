@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useGameEngine } from './engine/useGameEngine';
 import { GameBoard } from './components/GameBoard';
-import { BankruptcyScreen } from './components/BankruptcyScreen';
-import { SeasonTransitionModal } from './components/SeasonTransitionModal';
+import {
+  BankruptcyScreen,
+  SeasonTransitionModal,
+  prefetchLateModals,
+} from './components/lazyModals';
 import { requestOnboardingReplay } from './engine/onboarding';
 import type { PersonalBests } from './engine/records';
 import { initAnalytics, track } from './analytics/track';
@@ -26,9 +29,34 @@ function GrainFilter() {
   );
 }
 
+/**
+ * Placeholder for the code-split terminal screens (bankruptcy, season
+ * transition). `prefetchLateModals()` normally warms these chunks during idle
+ * time so this never shows, but idle callbacks can be throttled and a cold or
+ * slow network can still leave a gap — the bankruptcy screen replaces the whole
+ * page, so a `null` fallback would be a blank browser window. Backgrounds match
+ * the screens they stand in for, so the handover doesn't flash.
+ */
+function ScreenFallback({ variant }: { variant: 'page' | 'overlay' }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={
+        variant === 'page'
+          ? 'flex items-center justify-center min-h-screen bg-farm-soil text-farm-parchment'
+          : 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm text-farm-parchment'
+      }
+    >
+      <span className="font-pixel text-body">Loading…</span>
+    </div>
+  );
+}
+
 function App() {
   useEffect(() => {
     initAnalytics();
+    prefetchLateModals();
   }, []);
 
   const engine = useGameEngine();
@@ -52,19 +80,22 @@ function App() {
     return (
       <>
         <GrainFilter />
-        <BankruptcyScreen
-          daysPlayed={state.currentDay}
-          peakBalance={state.peakBalance}
-          peakHarvestStreak={state.peakHarvestStreak}
-          disastersSurvived={state.disastersSurvived}
-          seasonReached={seasonReached}
-          medal={medal}
-          records={records}
-          newBests={newBests}
-          lastDailyLog={state.lastDailyLog}
-          onRestart={restart}
-          onReplayTutorial={() => { track('onboarding_replay_requested', {}); requestOnboardingReplay(); restart(); }}
-        />
+        <Suspense fallback={<ScreenFallback variant="page" />}>
+          <BankruptcyScreen
+            daysPlayed={state.currentDay}
+            peakBalance={state.peakBalance}
+            peakHarvestStreak={state.peakHarvestStreak}
+            disastersSurvived={state.disastersSurvived}
+            seasonReached={seasonReached}
+            medal={medal}
+            records={records}
+            newBests={newBests}
+            lastDailyLog={state.lastDailyLog}
+            onRestart={restart}
+            onReplayTutorial={() => { track('onboarding_replay_requested', {}); requestOnboardingReplay(); restart(); }}
+            showEventsUnlockTease={!state.farmEvents.enabled}
+          />
+        </Suspense>
         <AnalyticsOptOutToggle />
       </>
     );
@@ -98,17 +129,22 @@ function App() {
         buildingCards={engine.getBuildingCards()}
         onBuyBuilding={engine.buyBuilding}
         onRestart={restart}
+        pendingFarmEvent={engine.getPendingFarmEvent()}
+        onResolveFarmEvent={engine.resolveFarmEvent}
       />
       {transitionVariant && (
-        <SeasonTransitionModal
-          variant={transitionVariant}
-          currentDay={state.currentDay}
-          coinBalance={state.coinBalance}
-          peakBalance={state.peakBalance}
-          onContinue={continueSeason}
-          onEndRun={endRunVictory}
-          onRestart={restart}
-        />
+        <Suspense fallback={<ScreenFallback variant="overlay" />}>
+          <SeasonTransitionModal
+            variant={transitionVariant}
+            currentDay={state.currentDay}
+            coinBalance={state.coinBalance}
+            peakBalance={state.peakBalance}
+            onContinue={continueSeason}
+            onEndRun={endRunVictory}
+            onRestart={restart}
+            showEventsUnlockTease={!state.farmEvents.enabled}
+          />
+        </Suspense>
       )}
       <AnalyticsOptOutToggle />
     </>

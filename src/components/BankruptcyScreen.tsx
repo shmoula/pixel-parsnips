@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { getSeasonForDay } from '../engine/seasons';
 import { MedalBadge } from './MedalBadge';
 import { Coin } from './Coin';
+import { EmojiIcon } from './EmojiIcon';
 import type { DailyLogEntry } from '../engine/types';
 import type { Medal } from '../engine/medals';
 import type { PersonalBests } from '../engine/records';
@@ -18,6 +19,7 @@ interface BankruptcyScreenProps {
   lastDailyLog?: DailyLogEntry | null;
   onRestart: () => void;
   onReplayTutorial: () => void;
+  showEventsUnlockTease?: boolean;
 }
 
 function deriveInsight(
@@ -80,6 +82,7 @@ export function BankruptcyScreen({
   lastDailyLog,
   onRestart,
   onReplayTutorial,
+  showEventsUnlockTease = false,
 }: BankruptcyScreenProps) {
   const season = getSeasonForDay(daysPlayed);
   const insight = deriveInsight(lastDailyLog, daysPlayed, peakBalance);
@@ -156,6 +159,12 @@ export function BankruptcyScreen({
         <span className="font-pixel text-caption text-farm-stone uppercase tracking-widest">Insight</span>
         <p className="font-pixel text-body text-farm-parchment leading-relaxed">{insight}</p>
       </div>
+
+      {showEventsUnlockTease && (
+        <p className="font-pixel text-caption text-farm-gold leading-relaxed">
+          <EmojiIcon>🧳</EmojiIcon> Word of your farm is spreading — from your next run, visitors will arrive with offers.
+        </p>
+      )}
 
       <div className="flex flex-col gap-2 w-full max-w-xs mt-2">
         <button

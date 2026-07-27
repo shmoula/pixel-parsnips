@@ -1,4 +1,4 @@
-import type { DailyLogEntry, GameState, WeatherId } from '../engine/types';
+import type { DailyLogEntry, FarmEventChoiceId, FarmEventId, GameState, WeatherId } from '../engine/types';
 import type { Medal } from '../engine/medals';
 import type { OnboardingStep } from '../engine/onboarding';
 
@@ -20,7 +20,7 @@ export interface EventPropsMap {
     utm_medium?: string;
     utm_campaign?: string;
   };
-  play_started: { start_action: string; day: number; onboarding_active: boolean };
+  play_started: { start_action: string; day: number; onboarding_active: boolean; events_enabled: boolean };
   milestone_reached: { milestone: MilestoneId; day: number; season_number: number };
   day_completed: {
     day: number;
@@ -68,6 +68,10 @@ export interface EventPropsMap {
     day: number;
     coin_balance: number;
   };
+  farm_event_fired: { event_id: FarmEventId; season: number; day: number };
+  farm_event_choice: { event_id: FarmEventId; choice: FarmEventChoiceId; auto: boolean; day: number };
+  contract_completed: { event_id: FarmEventId; reward: number };
+  contract_expired: { event_id: FarmEventId };
 }
 
 export type AnalyticsEventName = keyof EventPropsMap;
@@ -75,7 +79,7 @@ export type AnalyticsEventName = keyof EventPropsMap;
 /** Per-event schema version; bump the specific event when its shape changes. */
 export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   page_loaded: 1,
-  play_started: 1,
+  play_started: 2,
   milestone_reached: 1,
   day_completed: 1,
   plot_unlocked: 1,
@@ -87,6 +91,10 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   onboarding_skipped: 1,
   onboarding_replay_requested: 1,
   empty_day_safeguard: 1,
+  farm_event_fired: 1,
+  farm_event_choice: 1,
+  contract_completed: 1,
+  contract_expired: 1,
 };
 
 export function buildDayCompletedProps(

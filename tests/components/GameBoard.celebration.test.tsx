@@ -64,6 +64,8 @@ function makeProps(state?: Partial<GameState>) {
     buildingCards: [],
     onBuyBuilding: vi.fn().mockReturnValue(false),
     onRestart: vi.fn(),
+    pendingFarmEvent: null,
+    onResolveFarmEvent: vi.fn().mockReturnValue(false),
   };
 }
 
@@ -102,21 +104,22 @@ afterEach(() => {
 });
 
 describe('GameBoard — 021 harvest celebration wiring', () => {
-  it('holds the pre-turn balance in the HUD while a fresh harvest summary is open', () => {
+  it('holds the pre-turn balance in the HUD while a fresh harvest summary is open', async () => {
     const props = makeProps();
     const { rerender } = render(<GameBoard {...props} />);
     advanceWithLog(rerender, props, harvestLog);
-    // Modal is open; HUD text shows the held opening balance, label the committed one.
-    expect(screen.getByLabelText('Close day summary')).toBeInTheDocument();
+    // Modal is open (DaySummaryModal is code-split — await the Suspense boundary);
+    // HUD text shows the held opening balance, label the committed one.
+    expect(await screen.findByLabelText('Close day summary')).toBeInTheDocument();
     expect(screen.getByLabelText(/coins: 93/i)).toHaveTextContent('100');
   });
 
-  it('mounts the celebration on close and shows the committed balance when done', () => {
+  it('mounts the celebration on close and shows the committed balance when done', async () => {
     const animations = installFakeWaapi();
     const props = makeProps();
     const { rerender } = render(<GameBoard {...props} />);
     advanceWithLog(rerender, props, harvestLog);
-    fireEvent.click(screen.getByLabelText('Close day summary'));
+    fireEvent.click(await screen.findByLabelText('Close day summary'));
     expect(screen.getByTestId('harvest-celebration')).toBeInTheDocument();
     // Land every coin → celebration resolves.
     act(() => animations.forEach(a => a.onfinish?.()));
@@ -124,33 +127,33 @@ describe('GameBoard — 021 harvest celebration wiring', () => {
     expect(screen.getByLabelText(/coins: 93/i)).toHaveTextContent('93');
   });
 
-  it('does not hold or celebrate on a quiet day', () => {
+  it('does not hold or celebrate on a quiet day', async () => {
     installFakeWaapi();
     const props = makeProps();
     const { rerender } = render(<GameBoard {...props} />);
     advanceWithLog(rerender, props, quietLog);
     expect(screen.getByLabelText(/coins: 93/i)).toHaveTextContent('93');
-    fireEvent.click(screen.getByLabelText('Close day summary'));
+    fireEvent.click(await screen.findByLabelText('Close day summary'));
     expect(screen.queryByTestId('harvest-celebration')).toBeNull();
   });
 
-  it('does not celebrate on a Last Turn reopen', () => {
+  it('does not celebrate on a Last Turn reopen', async () => {
     installFakeWaapi();
     const props = makeProps();
     render(<GameBoard {...props} lastDailyLog={harvestLog} />);
     fireEvent.click(screen.getByRole('button', { name: /view last turn summary/i }));
     expect(screen.getByLabelText(/coins: 93/i)).toHaveTextContent('93');
-    fireEvent.click(screen.getByLabelText('Close day summary'));
+    fireEvent.click(await screen.findByLabelText('Close day summary'));
     expect(screen.queryByTestId('harvest-celebration')).toBeNull();
   });
 
-  it('does not hold or mount the coin flight on a season-boundary turn', () => {
+  it('does not hold or mount the coin flight on a season-boundary turn', async () => {
     installFakeWaapi();
     const props = makeProps({ phase: 'season_passed' });
     const { rerender } = render(<GameBoard {...props} />);
     advanceWithLog(rerender, props, harvestLog);
     expect(screen.getByLabelText(/coins: 93/i)).toHaveTextContent('93');
-    fireEvent.click(screen.getByLabelText('Close day summary'));
+    fireEvent.click(await screen.findByLabelText('Close day summary'));
     expect(screen.queryByTestId('harvest-celebration')).toBeNull();
   });
 
@@ -174,12 +177,12 @@ describe('GameBoard — 021 harvest celebration wiring', () => {
     }
   });
 
-  it('cancels a running celebration when Next Day is pressed', () => {
+  it('cancels a running celebration when Next Day is pressed', async () => {
     installFakeWaapi(); // animations never finish on their own
     const props = makeProps();
     const { rerender } = render(<GameBoard {...props} />);
     advanceWithLog(rerender, props, harvestLog);
-    fireEvent.click(screen.getByLabelText('Close day summary'));
+    fireEvent.click(await screen.findByLabelText('Close day summary'));
     expect(screen.getByTestId('harvest-celebration')).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('button', { name: /next day/i })[0]);
     expect(screen.queryByTestId('harvest-celebration')).toBeNull();

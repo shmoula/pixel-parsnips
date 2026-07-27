@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import type { GameState, CropId, DailyLogEntry, WeatherId, BuildingId } from '../engine/types';
 import type { BuildingCardData } from '../engine/useGameEngine';
 import { canAdvanceProductively } from '../engine/gameEngine';
@@ -8,13 +8,15 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { BottomActionBar } from './BottomActionBar';
 import { HarvestCelebration, playHarvestSounds } from './HarvestCelebration';
-import { HUD } from './HUD';
+import { HUD, type ContractChipData } from './HUD';
 import { FarmGrid } from './FarmGrid';
 import { Shop } from './Shop';
 import { EmojiIcon } from './EmojiIcon';
 import { PageBackdrop } from './PageBackdrop';
-import { DaySummaryModal } from './DaySummaryModal';
 import { OnboardingOverlay } from './OnboardingOverlay';
+import { DaySummaryModal, FarmEventModal } from './lazyModals';
+import type { PendingFarmEventView } from '../engine/useGameEngine';
+import type { FarmEventChoiceId } from '../engine/types';
 import { track } from '../analytics/track';
 
 /** 021 — harvest-celebration flow. `holding`: fresh summary modal is open and
@@ -72,6 +74,22 @@ function getCelebrationHud(
 function canAfford(balance: number, price: number | null): boolean {
   if (price === null) return false;
   return balance >= price;
+}
+
+/** 022 — derives the HUD contract-chip data from the live contract state, or
+    null when no contract is active (chip hidden). */
+function getContractChip(
+  contract: GameState['farmEvents']['contract'],
+  currentDay: number,
+): ContractChipData {
+  if (contract === null) return null;
+  return {
+    done: contract.quantity - contract.remaining,
+    total: contract.quantity,
+    cropId: contract.cropId,
+    // Days left INCLUDING today — the contract can still complete on its deadline day.
+    daysLeft: Math.max(0, contract.deadlineDay - currentDay + 1),
+  };
 }
 
 /** Null-safe gross harvest income from the last daily log. */
@@ -239,6 +257,38 @@ function EmptyDayConfirm({ onCancel, onAdvance }: { onCancel: () => void; onAdva
   );
 }
 
+/** 022 — the event modal waits for the fresh Day Summary and any coin-flight
+    celebration to finish before it takes over the screen. */
+function shouldShowFarmEvent(
+  pendingFarmEvent: PendingFarmEventView | null,
+  isSummaryOpen: boolean,
+  celebration: CelebrationState,
+): boolean {
+  if (pendingFarmEvent === null) return false;
+  return !isSummaryOpen && celebration.kind === 'idle';
+}
+
+/** 022 — Farm Event modal wrapper: mirrors CelebrationOverlay below, keeping the
+    show/hide branching out of GameBoard's own complexity count. `isNew` rides
+    along on the view itself (read fresh from records each time it's built) so
+    it stays correct across in-place run restarts that never remount GameBoard. */
+function FarmEventOverlay({
+  show,
+  view,
+  onChoose,
+}: {
+  show: boolean;
+  view: PendingFarmEventView | null;
+  onChoose: (choice: FarmEventChoiceId) => void;
+}) {
+  if (!show || view === null) return null;
+  return (
+    <Suspense fallback={null}>
+      <FarmEventModal view={view} isNew={view.isNew} onChoose={onChoose} />
+    </Suspense>
+  );
+}
+
 /** 021 — coin-flight overlay wrapper: renders the celebration only while the
     flow is in the `celebrating` phase (mounts once the fresh summary closes). */
 function CelebrationOverlay({
@@ -275,6 +325,10 @@ interface GameBoardProps {
   onBuyBuilding: (id: BuildingId) => boolean;
   /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
   onRestart: () => void;
+  /** 022 — the pending farm event to present, or null. Next Day is blocked while set. */
+  pendingFarmEvent: PendingFarmEventView | null;
+  /** 022 — apply a farm-event choice; returns false when it could not be applied. */
+  onResolveFarmEvent: (choice: FarmEventChoiceId) => boolean;
 }
 
 export function GameBoard({
@@ -295,6 +349,8 @@ export function GameBoard({
   buildingCards,
   onBuyBuilding,
   onRestart,
+  pendingFarmEvent,
+  onResolveFarmEvent,
 }: GameBoardProps) {
   const [selectedCrop, setSelectedCrop] = useState<CropId | null>(null);
 
@@ -322,6 +378,8 @@ export function GameBoard({
   const [hasConfirmedEmptyDay, setHasConfirmedEmptyDay] = useState(false);
 
   const isUnwinnable = checkIsUnwinnable(state, canAdvance, getSeedPrice);
+
+  const showFarmEvent = shouldShowFarmEvent(pendingFarmEvent, isSummaryOpen, celebration);
 
   const { seedHint, showSeedHint } = useSeedHint();
 
@@ -380,6 +438,7 @@ export function GameBoard({
   }
 
   function handleNextDay() {
+    if (pendingFarmEvent !== null) return; // 022 — a farm event demands an answer first
     if (isProcessing) return;
     if (!canAdvance && !hasConfirmedEmptyDay) { setShowEmptyConfirm(true); return; }
     doAdvance();
@@ -412,6 +471,8 @@ export function GameBoard({
   const nextPlotPrice = getNextPlotPrice();
   const canAffordPlot = canAfford(state.coinBalance, nextPlotPrice);
 
+  const contractChip = getContractChip(state.farmEvents.contract, state.currentDay);
+
   return (
     // 018 — page colour lives on PageBackdrop now (a fixed -z-10 layer scoped to
     // the viewport; no positioned ancestor needed). Body is transparent so it shows.
@@ -438,6 +499,7 @@ export function GameBoard({
         canAdvanceProductively={canAdvance}
         heldBalance={celebrationHud.heldBalance}
         tickBalance={celebrationHud.tickBalance}
+        contract={contractChip}
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}
@@ -514,15 +576,17 @@ export function GameBoard({
 
       {/* T011 — Day Summary modal: opens after each turn, reopenable via Last Turn */}
       {isSummaryOpen && daySummary !== null && (
-        <DaySummaryModal
-          log={daySummary}
-          animateReveal={summaryAnimate}
-          recoveryDays={recoveryDays}
-          onClose={() => {
-            setIsSummaryOpen(false);
-            setCelebration(beginCelebrating);
-          }}
-        />
+        <Suspense fallback={null}>
+          <DaySummaryModal
+            log={daySummary}
+            animateReveal={summaryAnimate}
+            recoveryDays={recoveryDays}
+            onClose={() => {
+              setIsSummaryOpen(false);
+              setCelebration(beginCelebrating);
+            }}
+          />
+        </Suspense>
       )}
 
       {/* 021 — coin-flight overlay: mounts once the fresh harvest summary closes. */}
@@ -530,6 +594,13 @@ export function GameBoard({
         celebration={celebration}
         onArriving={() => setCelebration(startTicking)}
         onDone={() => setCelebration({ kind: 'idle' })}
+      />
+
+      {/* 022 — Farm Event choice modal: blocks the day until answered */}
+      <FarmEventOverlay
+        show={showFarmEvent}
+        view={pendingFarmEvent}
+        onChoose={onResolveFarmEvent}
       />
 
       {onboarding.active && (

@@ -101,6 +101,59 @@ function MarketLines({ log }: { log: DailyLogEntry }) {
   );
 }
 
+/** 022 — one line per buff applied that day (a run can stack multiple active events). */
+function EventBuffLines({ log }: { log: DailyLogEntry }) {
+  return (
+    <>
+      {(log.eventBuffsApplied ?? []).map((b, i) => (
+        <div
+          key={`${b.eventId}-${i}`}
+          aria-label="Event bonus"
+          className="flex items-center gap-1 px-2 py-1 rounded bg-farm-grass/20 border border-farm-grass/40 text-farm-parchment"
+        >
+          <EmojiIcon>✨</EmojiIcon>
+          <span>Event bonus: ×{b.multiplier} on {b.harvestsAffected} harvest{b.harvestsAffected === 1 ? '' : 's'}</span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/** 022 — contract lifecycle lines: completion (reward), expiry (neutral), or live progress. */
+function ContractLines({ log }: { log: DailyLogEntry }) {
+  return (
+    <>
+      {log.contractCompleted && (
+        <div
+          aria-label="Contract completed"
+          className="flex justify-between px-2 py-1 rounded bg-farm-gold/10 border border-farm-gold/50 text-farm-gold"
+        >
+          <span><EmojiIcon>📜</EmojiIcon> Contract delivered!</span>
+          <span className="text-farm-grass">+{log.contractCompleted.reward}<Coin /></span>
+        </div>
+      )}
+      {log.contractExpired && (
+        <div
+          aria-label="Contract expired"
+          className="flex items-center gap-1 px-2 py-1 rounded bg-farm-parchment/10 text-farm-stone"
+        >
+          <EmojiIcon>📜</EmojiIcon>
+          <span>The buyer found another supplier — no harm done.</span>
+        </div>
+      )}
+      {log.contractProgress && (
+        <div
+          aria-label="Contract progress"
+          className="flex items-center gap-1 px-2 py-1 rounded bg-farm-parchment/10 text-farm-stone"
+        >
+          <EmojiIcon>📜</EmojiIcon>
+          <span>Contract: {log.contractProgress.done}/{log.contractProgress.total} {log.contractProgress.cropId} delivered</span>
+        </div>
+      )}
+    </>
+  );
+}
+
 function ExhaustionCallout({ log, recoveryDays }: { log: DailyLogEntry; recoveryDays: number }) {
   if (log.exhaustedPlots.length === 0) return null;
   // Prefer the period snapshotted on the log (correct for reopened prior turns);
@@ -148,6 +201,8 @@ export function DailyLog({ log, suppressDisasterStyling = false, recoveryDays = 
       </div>
 
       <MarketLines log={log} />
+      <EventBuffLines log={log} />
+      <ContractLines log={log} />
 
       {/* Harvest line-items */}
       {log.harvests.length > 0 && (

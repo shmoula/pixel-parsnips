@@ -29,7 +29,15 @@ describe('useGameEngine.nextDay — StrictMode safety (017 FR-019)', () => {
     // in this hook already uses (plant, buySeed, buyPlot, ...). Keeping the
     // impure processTurn call out of the setState updater removes the risk
     // entirely, regardless of whether double-invocation reproduces here.
-    const seeded = { ...initialGameState(), currentDay: 5 };
+    // 022: pin the farm-event schedule to season 1 so ensureSchedule is a
+    // no-op this turn — otherwise it would draw before the market check and
+    // the single-draw invariant this test guards would no longer hold.
+    const base = initialGameState();
+    const seeded = {
+      ...base,
+      currentDay: 5,
+      farmEvents: { ...base.farmEvents, scheduleSeason: 1 },
+    };
     localStorage.setItem(
       'pixel-parsnips-state',
       JSON.stringify({ schemaVersion: SCHEMA_VERSION, state: seeded }),

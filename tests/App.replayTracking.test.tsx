@@ -32,10 +32,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('replay tutorial tracking', () => {
-  it('emits onboarding_replay_requested and still resets + restarts', () => {
+  it('emits onboarding_replay_requested and still resets + restarts', async () => {
     markOnboardingComplete(); // a finished tutorial is the precondition for replay
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: /replay tutorial/i }));
+    // BankruptcyScreen is code-split (React.lazy) — await the Suspense boundary.
+    fireEvent.click(await screen.findByRole('button', { name: /replay tutorial/i }));
     expect(track).toHaveBeenCalledWith('onboarding_replay_requested', {});
     // The existing behavior must be preserved: record reset + engine restart.
     expect(loadOnboarding().completed).toBe(false);

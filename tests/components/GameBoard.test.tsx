@@ -84,6 +84,8 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null; on
     buildingCards: [],
     onBuyBuilding: vi.fn().mockReturnValue(false),
     onRestart: overrides.onRestart ?? vi.fn(),
+    pendingFarmEvent: null,
+    onResolveFarmEvent: vi.fn().mockReturnValue(false),
   };
 }
 

@@ -10,6 +10,7 @@ const baseProps = {
   hasLastTurn: false,
   endlessMode: false,
   canAdvanceProductively: true,
+  contract: null,
 };
 
 describe('HUD — Season indicator (US1)', () => {
@@ -149,6 +150,7 @@ function renderHUD(over: Partial<React.ComponentProps<typeof HUD>> = {}) {
       endlessMode={false}
       harvestStreak={0}
       canAdvanceProductively={true}
+      contract={null}
       {...over}
     />,
   );
@@ -175,7 +177,7 @@ describe('HUD — empty-day safeguard label', () => {
     const { container } = render(
       <HUD currentDay={1} coinBalance={130} onNextDay={vi.fn()}
         onLastTurn={vi.fn()} isProcessing={false} hasLastTurn={false} endlessMode={false}
-        harvestStreak={0} canAdvanceProductively={true} />,
+        harvestStreak={0} canAdvanceProductively={true} contract={null} />,
     );
     expect(container.querySelector('[data-onboarding="next-day"]')).toBeTruthy();
     expect(container.querySelector('[data-onboarding="balance-chip"]')).toBeTruthy();
@@ -208,5 +210,18 @@ describe('HUD — 021 held/ticking balance', () => {
   it('shows the committed balance when heldBalance is null', () => {
     render(<HUD {...baseProps} currentDay={3} coinBalance={93} heldBalance={null} />);
     expect(screen.getByLabelText(/coins: 93/i)).toHaveTextContent('93');
+  });
+});
+
+describe('contract chip (022)', () => {
+  it('renders progress and days left while a contract is live', () => {
+    renderHUD({ contract: { done: 2, total: 3, cropId: 'parsnip', daysLeft: 4 } });
+    expect(screen.getByLabelText(/contract: 2 of 3 parsnip/i)).toBeInTheDocument();
+    expect(screen.getByText('2/3 · 4d')).toBeInTheDocument();
+  });
+
+  it('is hidden without a contract', () => {
+    renderHUD({ contract: null });
+    expect(screen.queryByLabelText(/contract:/i)).toBeNull();
   });
 });

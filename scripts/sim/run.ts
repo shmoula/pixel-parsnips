@@ -1,5 +1,5 @@
 import { PRESETS } from './economyPresets';
-import { STRATEGIES } from './strategies';
+import { STRATEGIES, EVENT_POLICIES } from './strategies';
 import { monteCarlo } from './runner';
 import { aggregate } from './metrics';
 import { formatTable, type Row } from './report';
@@ -29,9 +29,17 @@ const configNames = csv('--configs', Object.keys(PRESETS).join(','));
 const stratNames = csv('--strategies', Object.keys(STRATEGIES).join(','));
 const trials = posInt('--trials', '2000', 1);
 const seed = posInt('--seed', '42', 0);
+const policyName = arg('--eventPolicy', 'heuristic');
 
 if (configNames.length === 0) fail('No configs specified');
 if (stratNames.length === 0) fail('No strategies specified');
+
+// hasOwnProperty guard: reject inherited keys (`toString`, `__proto__`) that
+// would otherwise resolve to a truthy non-policy value.
+if (!Object.prototype.hasOwnProperty.call(EVENT_POLICIES, policyName)) {
+  fail(`Unknown event policy: ${policyName} (expected ${Object.keys(EVENT_POLICIES).join('|')})`);
+}
+const eventPolicy = EVENT_POLICIES[policyName];
 
 const rows: Row[] = [];
 for (const c of configNames) {
@@ -41,11 +49,11 @@ for (const c of configNames) {
   for (const sName of stratNames) {
     const strat = STRATEGIES[sName];
     if (!strat) { console.error(`Unknown strategy: ${sName}`); process.exit(1); }
-    const outcomes = monteCarlo(config, strat, trials, seed);
+    const outcomes = monteCarlo(config, strat, trials, seed, eventPolicy);
     rows.push({ config: c, strategy: sName, metrics: aggregate(outcomes, finalTarget) });
   }
 }
 
-console.log(`\nMonte Carlo — ${trials} trials/seed=${seed}\n`);
+console.log(`\nMonte Carlo — ${trials} trials/seed=${seed}/eventPolicy=${policyName}\n`);
 console.log(formatTable(rows));
 console.log('');

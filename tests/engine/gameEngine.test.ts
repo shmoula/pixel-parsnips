@@ -36,8 +36,8 @@ describe('initialGameState — schema 5 fields', () => {
     expect(s.endlessMode).toBe(false);
   });
 
-  it('has schemaVersion 9', () => {
-    expect(initialGameState().schemaVersion).toBe(9);
+  it('has schemaVersion 10', () => {
+    expect(initialGameState().schemaVersion).toBe(10);
   });
 
   it('starts with disastersSurvived: 0', () => {

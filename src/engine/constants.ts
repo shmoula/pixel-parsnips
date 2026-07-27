@@ -9,7 +9,7 @@ import type {
 
 // ── Scalar constants ──────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 export const STARTING_BALANCE = 130;
 export const PLOT_COUNT = 12;
 export const STARTING_PLOTS = 4;
@@ -33,6 +33,9 @@ export const BUILDING_EXHAUSTION_RECOVERY_DAYS = 2;
 export const BUILDING_DROUGHT_WINDOW_DAYS = 1;
 export const BUILDING_PEST_DESTRUCTION_CHANCE = 0.25;
 export const BUILDING_YIELD_MULTIPLIER = 1.1;
+export const FARM_EVENT_WINDOW_START_OFFSET = 4;  // first eligible day = season startDay + 4 (season day 5)
+export const FARM_EVENT_WINDOW_END_OFFSET = 15;   // last eligible day = season startDay + 15 (season day 16)
+export const FARM_EVENT_SECOND_CHANCE = 0.5;      // chance of a 2nd event per season
 
 /** Integer rounding helper for all coin arithmetic. */
 export const coins = (n: number): number => Math.floor(n);

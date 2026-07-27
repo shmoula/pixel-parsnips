@@ -40,6 +40,79 @@ export interface MarketState {
   pending: MarketEvent | null;
 }
 
+// ── Farm Events (022) ─────────────────────────────────────────────────────────
+
+export type FarmEventId =
+  | 'traveling_merchant'
+  | 'bountiful_spring'
+  | 'drought_warning'
+  | 'millers_order'
+  | 'fair_committee'
+  | 'wandering_beekeeper';
+
+export type FarmEventChoiceId = 'A' | 'B';
+
+/** Authored effect payloads (catalog data). `weather_pin` is fire-time-only. */
+export type FarmEventEffectSpec =
+  | { kind: 'coins_delta'; amount: number }
+  | { kind: 'sell_standing_crops'; priceFactor: number }
+  | { kind: 'yield_buff'; multiplier: number; harvests: number; exhaustionFactor: number }
+  | { kind: 'seed_discount'; cropId: CropId; factor: number }
+  | { kind: 'weather_pin'; weatherId: WeatherId; chance: number; minOffsetDays: number; maxOffsetDays: number }
+  | { kind: 'contract'; cropId: CropId; quantity: number; deadlineDays: number; reward: number };
+
+/** Live, serialized effects with counters — resolved from specs at choice/fire time. */
+export type FarmEventEffect =
+  | { kind: 'yield_buff'; eventId: FarmEventId; multiplier: number; harvestsRemaining: number; exhaustionFactor: number }
+  | { kind: 'seed_discount'; cropId: CropId; factor: number; expiresAfterDay: number }
+  | { kind: 'weather_pin'; weatherId: WeatherId; day: number };
+
+export interface ContractState {
+  eventId: FarmEventId;
+  cropId: CropId;
+  /** Total harvests required (frozen at accept time). */
+  quantity: number;
+  /** Harvests still owed. */
+  remaining: number;
+  /** Last calendar day on which the contract can complete. */
+  deadlineDay: number;
+  reward: number;
+}
+
+export interface FarmEventChoice {
+  label: string;
+  /** One-line mechanical summary rendered under the label. */
+  summary: string;
+  effects: FarmEventEffectSpec[];
+}
+
+export interface FarmEventDefinition {
+  id: FarmEventId;
+  emoji: string;
+  title: string;
+  body: string;
+  /** Fire-time effects applied before any choice (weather_pin only — Drought Warning). */
+  onFire?: FarmEventEffectSpec[];
+  choiceA: FarmEventChoice;
+  /** By catalog convention, B is always the decline/safe side (the auto-resolve target). */
+  choiceB: FarmEventChoice;
+}
+
+export interface FarmEventsState {
+  /** False on a device's first run (new-player gating); frozen at run creation. */
+  enabled: boolean;
+  /** Season number the schedule below was drawn for; 0 = never drawn. */
+  scheduleSeason: number;
+  scheduledDays: number[];
+  pending: { eventId: FarmEventId; firedDay: number } | null;
+  activeEffects: FarmEventEffect[];
+  contract: ContractState | null;
+  /** No-repeat pool for this run; resets when every catalog id has been seen. */
+  seenIds: FarmEventId[];
+  /** Most recent resolution, for the analytics render-diff hook. */
+  lastResolved: { eventId: FarmEventId; choice: FarmEventChoiceId; day: number; auto: boolean } | null;
+}
+
 // ── Definition records (constants — never mutated) ────────────────────────────
 
 export interface CropDefinition {
@@ -137,6 +210,14 @@ export interface DailyLogEntry {
    *  state) so reopening "Last Turn" after buying a Compost Bin still shows the
    *  period that actually applied. Optional for pre-schema-9 logs that predate it. */
   recoveryDays?: number;
+  /** Yield buffs that boosted THIS turn's harvests (022); absent/empty on unbuffed turns. */
+  eventBuffsApplied?: Array<{ eventId: FarmEventId; multiplier: number; harvestsAffected: number }>;
+  /** Live contract snapshot after this turn's accounting, or null. */
+  contractProgress?: { cropId: CropId; done: number; total: number; deadlineDay: number } | null;
+  /** Contract delivered this turn (reward already in closingBalance), or null. */
+  contractCompleted?: { eventId: FarmEventId; reward: number } | null;
+  /** Contract that ran out of time this turn (no penalty), or null. */
+  contractExpired?: FarmEventId | null;
 }
 
 export interface GameState {
@@ -167,6 +248,8 @@ export interface GameState {
   market: MarketState;
   /** One-time farm buildings owned this run (019). All false on a new run. */
   buildings: Record<BuildingId, boolean>;
+  /** In-run narrative events state (022). */
+  farmEvents: FarmEventsState;
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────

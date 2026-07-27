@@ -16,7 +16,7 @@ This runs the default sweep (every preset × every strategy, 2000 trials, seed 4
 and prints a table:
 
 ```
-Monte Carlo — 2000 trials/seed=42
+Monte Carlo — 2000 trials/seed=42/eventPolicy=heuristic
 
 config    strategy     win%  bankrupt%  miss%  avgPeak  medPeak  overshoot
 --------  -----------  ----  ---------  -----  -------  -------  ---------
@@ -40,8 +40,9 @@ npm run sim -- --strategies smartMixed,parsnipOnly --trials 500 --seed 7
 | `--strategies` | all strategies     | Comma-separated strategy bots to run (see **Strategies**).     |
 | `--trials`     | `2000`             | Number of randomized games per (config × strategy) cell.       |
 | `--seed`       | `42`               | Master seed. Trial _i_ uses `seed + i`, so runs are reproducible. |
+| `--eventPolicy`| `heuristic`        | How the bot answers farm-event prompts: `heuristic`, `acceptAll`, or `declineAll` (see **Event policies**). |
 
-Unknown config or strategy names exit with an error.
+Unknown config, strategy, or event policy names exit with an error.
 
 ## Reading the output
 
@@ -77,10 +78,25 @@ buy/plant/upgrade decisions for one day; the runner then advances the day.
 All bots first buy tool upgrades while keeping an 80-coin working buffer, then
 fill the board while reserving enough coins to cover the day's land lease.
 
+## Event policies
+
+022 farm events pause a run on a pending prompt (choice A vs. choice B). The
+runner answers each pending event via a swappable `EventPolicy` — a pure
+function `(state, config) => 'A' | 'B'` — before the bot's own strategy acts
+that day. Policies live alongside the strategies in
+[`scripts/sim/strategies.ts`](scripts/sim/strategies.ts) and default to
+`heuristic` if `--eventPolicy` is omitted.
+
+| Policy       | Behavior                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| `heuristic`  | A per-event "defensible reasoning" check (e.g. only take a delivery contract when there's enough free land and time to complete it; only take the merchant's instant sale when crops are ripening soon). |
+| `acceptAll`  | Always chooses A — useful for measuring the catalog's upside ceiling.                    |
+| `declineAll` | Always chooses B — a choice-B control, **not** a no-event-impact one: B-side rewards and fire-time effects (e.g. Drought Warning's weather pin) still apply. |
+
 ## Presets
 
 Economy presets live in [`scripts/sim/economyPresets.ts`](scripts/sim/economyPresets.ts).
-Today there are three:
+Today there are four:
 
 - **`baseline`** — the original pre-010 economy, frozen (12 plots from day 1, no
   buildings purchasable). The trivially-easy reference point.
@@ -88,6 +104,9 @@ Today there are three:
   with no buildings. The no-buildings control for the 019 retune.
 - **`buildings019`** — `proposed` plus the full farm-buildings catalog. The live
   019 candidate; `smartMixed` sits in the tuned difficulty band on this preset.
+- **`events022`** — `buildings019` plus the real farm-events catalog
+  (`DEFAULT_ECONOMY.farmEvents`). The live 022 candidate; combine with
+  `--eventPolicy` to compare `acceptAll`/`declineAll`/`heuristic` runs.
 
 ### Adding a preset
 

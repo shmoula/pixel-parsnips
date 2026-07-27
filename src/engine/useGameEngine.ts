@@ -11,8 +11,10 @@ import {
   getNextPlotPrice as engineGetNextPlotPrice,
   buyBuilding as engineBuyBuilding,
   computeSeedCost,
+  resolveFarmEventChoice as engineResolveFarmEventChoice,
 } from './gameEngine';
-import { SCHEMA_VERSION, NO_BUILDINGS } from './constants';
+import { SCHEMA_VERSION, NO_BUILDINGS, WEATHER_DEFINITIONS } from './constants';
+import { FARM_EVENT_DEFINITIONS } from './farmEventCatalog';
 import { DEFAULT_ECONOMY } from './economy';
 import { resolveEconomy } from '../devFlags';
 import type {
@@ -26,8 +28,15 @@ import type {
   WeatherId,
   BuildingId,
   BuildingDefinition,
+  FarmEventsState,
+  FarmEventId,
+  ContractState,
+  FarmEventEffect,
+  FarmEventChoiceId,
+  FarmEventDefinition,
 } from './types';
-import { recordRunEnd, type PersonalBests } from './records';
+import { recordRunEnd, loadRecords, type PersonalBests } from './records';
+import { EMPTY_FARM_EVENTS, merchantOfferValue } from './farmEvents';
 import { deriveMedal, type Medal } from './medals';
 import { getSeasonForDay } from './seasons';
 import { EMPTY_MARKET } from './market';
@@ -92,6 +101,85 @@ function normalizeBuildings(raw: unknown): GameState['buildings'] {
   };
 }
 
+/** 022 gate: events unlock from a device's second run onward. */
+function defaultFarmEventsEnabled(): boolean {
+  return loadRecords().totalRunsCompleted >= 1;
+}
+
+const FARM_EVENT_IDS: readonly FarmEventId[] = FARM_EVENT_DEFINITIONS.map(d => d.id);
+const isFarmEventId = (v: unknown): v is FarmEventId =>
+  (FARM_EVENT_IDS as readonly unknown[]).includes(v);
+
+const WEATHER_IDS: readonly WeatherId[] = Object.keys(WEATHER_DEFINITIONS) as WeatherId[];
+const isWeatherId = (v: unknown): v is WeatherId =>
+  (WEATHER_IDS as readonly unknown[]).includes(v);
+
+const isNumber = (v: unknown): v is number => typeof v === 'number';
+
+/** Structurally validate a pending (announced) farm event, or null if malformed. */
+function toPendingFarmEvent(v: unknown): FarmEventsState['pending'] {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const p = v as Record<string, unknown>;
+  return isFarmEventId(p.eventId) && isNumber(p.firedDay)
+    ? { eventId: p.eventId, firedDay: p.firedDay }
+    : null;
+}
+
+/** Structurally validate a live contract, or null if any field is missing/malformed. */
+function toContractState(v: unknown): ContractState | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const c = v as Record<string, unknown>;
+  if (
+    !isFarmEventId(c.eventId) || !isCropId(c.cropId) ||
+    !isNumber(c.quantity) || !isNumber(c.remaining) ||
+    !isNumber(c.deadlineDay) || !isNumber(c.reward)
+  ) {
+    return null;
+  }
+  return {
+    eventId: c.eventId, cropId: c.cropId, quantity: c.quantity,
+    remaining: c.remaining, deadlineDay: c.deadlineDay, reward: c.reward,
+  };
+}
+
+/** Per-variant payload validators keyed by effect kind. Split out so each stays
+ *  trivial and `isLiveFarmEffect` doesn't blow the complexity budget. */
+const LIVE_EFFECT_VALIDATORS: Record<string, (x: Record<string, unknown>) => boolean> = {
+  yield_buff: x => isFarmEventId(x.eventId) && isNumber(x.multiplier) && isNumber(x.harvestsRemaining) && isNumber(x.exhaustionFactor),
+  seed_discount: x => isCropId(x.cropId) && isNumber(x.factor) && isNumber(x.expiresAfterDay),
+  weather_pin: x => isWeatherId(x.weatherId) && isNumber(x.day),
+};
+
+/** A structurally valid live (counter-bearing) effect. Validates every payload
+ *  field per variant so a tampered save can't leak a bogus weatherId/NaN into the
+ *  turn engine (pinnedWeatherFor → WEATHER_DEFINITIONS lookup, yield multipliers). */
+function isLiveFarmEffect(e: unknown): e is FarmEventEffect {
+  if (!e || typeof e !== 'object') return false;
+  const x = e as Record<string, unknown>;
+  const validate = LIVE_EFFECT_VALIDATORS[x.kind as string];
+  return validate !== undefined && validate(x);
+}
+
+/** Normalize a raw `farmEvents` value from a save: missing/malformed → empty slice
+ *  with the records-derived enabled flag. Structurally valid fields pass through;
+ *  anything suspect degrades to its empty value (never crashes, never blocks). */
+function normalizeFarmEvents(raw: unknown, fallbackEnabled: boolean): FarmEventsState {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ...EMPTY_FARM_EVENTS, enabled: fallbackEnabled };
+  }
+  const r = raw as Record<string, unknown>;
+  return {
+    enabled: typeof r.enabled === 'boolean' ? r.enabled : fallbackEnabled,
+    scheduleSeason: typeof r.scheduleSeason === 'number' ? r.scheduleSeason : 0,
+    scheduledDays: Array.isArray(r.scheduledDays) ? r.scheduledDays.filter(isNumber) : [],
+    pending: toPendingFarmEvent(r.pending),
+    activeEffects: Array.isArray(r.activeEffects) ? r.activeEffects.filter(isLiveFarmEffect) : [],
+    contract: toContractState(r.contract),
+    seenIds: Array.isArray(r.seenIds) ? r.seenIds.filter(isFarmEventId) : [],
+    lastResolved: null, // analytics-only; safe to drop on load
+  };
+}
+
 /** v8 → v9: any owned tool tier becomes the Toolshed; the tier field is dropped. */
 function migrateLadderToBuildings(st: Record<string, unknown>): Record<string, unknown> {
   const tier = typeof st.upgradeTier === 'number' ? st.upgradeTier : 0;
@@ -116,12 +204,14 @@ function hardenCurrentSchema(st: Record<string, unknown>): GameState {
   );
   const market = normalizeMarket(st.market);
   const buildings = normalizeBuildings(st.buildings);
+  const farmEvents = normalizeFarmEvents(st.farmEvents, defaultFarmEventsEnabled());
   return {
     ...(st as unknown as GameState),
     plots,
     unlockedPlots,
     market,
     buildings,
+    farmEvents,
     schemaVersion: SCHEMA_VERSION,
   } as GameState;
 }
@@ -138,23 +228,37 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     return null;
   }
 
-  // Schema 9 — current. Harden tampered/corrupt fields in place.
+  // Schema 10 — current. Harden tampered/corrupt fields in place.
   if (parsed.schemaVersion === SCHEMA_VERSION) {
     return hardenCurrentSchema(parsed.state as Record<string, unknown>);
   }
 
-  // Schema 8 → 9 — collapse the tool ladder into the Toolshed building (019)
+  // Schema 9 → 10 — add farm events (022); enabled derives from completed-run records.
+  if (parsed.schemaVersion === 9) {
+    console.info('[PixelParsnips] Migrating save from v9 to v10 (Farm Events).');
+    return hardenCurrentSchema({
+      ...(parsed.state as Record<string, unknown>),
+      schemaVersion: SCHEMA_VERSION,
+    });
+  }
+
+  return migrateLegacy(parsed);
+}
+
+/** Migrates pre-v9 save envelopes (v3–v8) forward to the current schema, or null if unsupported. */
+function migrateLegacy(parsed: { schemaVersion: number; state: unknown }): GameState | null {
+  // Schema 8 → 10 — collapse the tool ladder into the Toolshed building (019)
   if (parsed.schemaVersion === 8) {
-    console.info('[PixelParsnips] Migrating save from v8 to v9 (Farm Buildings — tool tiers become the Toolshed; T1 owners gain a little, T3 owners lose the last 20%).');
+    console.info('[PixelParsnips] Migrating save from v8 to v10 (Farm Buildings — tool tiers become the Toolshed; T1 owners gain a little, T3 owners lose the last 20%).');
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
     });
   }
 
-  // Schema 7 → 9 — add market (existing runs continue with no event) + ladder collapse
+  // Schema 7 → 10 — add market (existing runs continue with no event) + ladder collapse
   if (parsed.schemaVersion === 7) {
-    console.info('[PixelParsnips] Migrating save from v7 to v9 (Market Events + Farm Buildings).');
+    console.info('[PixelParsnips] Migrating save from v7 to v10 (Market Events + Farm Buildings).');
     const st = parsed.state as Record<string, unknown>;
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(st),
@@ -163,9 +267,9 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     });
   }
 
-  // Schema 6 → 9 — add unlockedPlots (existing runs keep all plots unlocked) + market + ladder collapse
+  // Schema 6 → 10 — add unlockedPlots (existing runs keep all plots unlocked) + market + ladder collapse
   if (parsed.schemaVersion === 6) {
-    console.info('[PixelParsnips] Migrating save from v6 to v9 (Plot Progression + Market Events + Farm Buildings).');
+    console.info('[PixelParsnips] Migrating save from v6 to v10 (Plot Progression + Market Events + Farm Buildings).');
     const st = parsed.state as Record<string, unknown>;
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(st),
@@ -175,9 +279,9 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     });
   }
 
-  // Schema 5 → 9 — add harvestStreak, peakHarvestStreak, unlockedPlots, market, and ladder collapse
+  // Schema 5 → 10 — add harvestStreak, peakHarvestStreak, unlockedPlots, market, and ladder collapse
   if (parsed.schemaVersion === 5) {
-    console.info('[PixelParsnips] Migrating save from v5 to v9 (Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
+    console.info('[PixelParsnips] Migrating save from v5 to v10 (Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
@@ -188,9 +292,9 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     });
   }
 
-  // Schema 4 → 9 — chained: add disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
+  // Schema 4 → 10 — chained: add disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
   if (parsed.schemaVersion === 4) {
-    console.info('[PixelParsnips] Migrating save from v4 to v9.');
+    console.info('[PixelParsnips] Migrating save from v4 to v10.');
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
@@ -202,9 +306,9 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     });
   }
 
-  // Schema 3 → 9 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
+  // Schema 3 → 10 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
   if (parsed.schemaVersion === 3) {
-    console.info('[PixelParsnips] Migrating save from v3 to v9 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
+    console.info('[PixelParsnips] Migrating save from v3 to v10 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
@@ -227,11 +331,11 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
 function loadState(): GameState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return initialGameState(ECONOMY);
+    if (!raw) return initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
     const parsed = JSON.parse(raw);
-    return migrateState(parsed) ?? initialGameState(ECONOMY);
+    return migrateState(parsed) ?? initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
   } catch {
-    return initialGameState(ECONOMY);
+    return initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
   }
 }
 
@@ -250,6 +354,17 @@ export interface BuildingCardData {
   def: BuildingDefinition;
   owned: boolean;
   unlocked: boolean;
+}
+
+export interface PendingFarmEventView {
+  def: FarmEventDefinition;
+  /** Live sell-now estimate (Traveling Merchant); 0 for other events. */
+  offerValue: number;
+  balance: number;
+  /** True during the player's second run (totalRunsCompleted === 1) — the
+      feature just unlocked. Read fresh on every call so it stays correct even
+      when a run restarts in place (GameBoard is not remounted between runs). */
+  isNew: boolean;
 }
 
 export interface GameEngineHook {
@@ -274,6 +389,8 @@ export interface GameEngineHook {
   getNextPlotPrice: () => number | null;
   getOccupiedPlotCount: () => number;
   getRecoveryDays: () => number;
+  resolveFarmEvent: (choice: FarmEventChoiceId) => boolean;
+  getPendingFarmEvent: () => PendingFarmEventView | null;
 }
 
 export function useGameEngine(): GameEngineHook {
@@ -308,6 +425,7 @@ export function useGameEngine(): GameEngineHook {
       start_action: action,
       day: s.currentDay,
       onboarding_active: !loadOnboarding().completed && s.currentDay <= 1,
+      events_enabled: s.farmEvents.enabled,
     });
   }, []);
 
@@ -417,6 +535,29 @@ export function useGameEngine(): GameEngineHook {
     return true;
   }, [commitState, signalPlayStarted]);
 
+  const resolveFarmEvent = useCallback((choice: FarmEventChoiceId): boolean => {
+    const prev = stateRef.current;
+    if (prev.farmEvents.pending === null) return false;
+    const next = engineResolveFarmEventChoice(prev, choice, ECONOMY);
+    if (next === prev) return false; // unaffordable buy-in — modal stays up
+    signalPlayStarted('farm_event_choice');
+    commitState(next);
+    return true;
+  }, [commitState, signalPlayStarted]);
+
+  const getPendingFarmEvent = useCallback((): PendingFarmEventView | null => {
+    const pending = state.farmEvents.pending;
+    if (pending === null) return null;
+    const def = ECONOMY.farmEvents.events.find(e => e.id === pending.eventId);
+    if (def === undefined) return null;
+    return {
+      def,
+      offerValue: merchantOfferValue(state, ECONOMY),
+      balance: state.coinBalance,
+      isNew: loadRecords().totalRunsCompleted === 1,
+    };
+  }, [state]);
+
   const getBuildingCards = useCallback((): BuildingCardData[] => {
     const season = getSeasonForDay(state.currentDay, ECONOMY).number;
     return ECONOMY.buildings.definitions.map(def => ({
@@ -427,7 +568,7 @@ export function useGameEngine(): GameEngineHook {
   }, [state.currentDay, state.buildings]);
 
   const restart = useCallback(() => {
-    const fresh = initialGameState(ECONOMY);
+    const fresh = initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
     commitState(fresh);
@@ -443,15 +584,16 @@ export function useGameEngine(): GameEngineHook {
   }, [commitState]);
 
   const endRunVictory = useCallback(() => {
-    const fresh = initialGameState(ECONOMY);
+    const fresh = initialGameState(ECONOMY, { farmEventsEnabled: defaultFarmEventsEnabled() });
     setEndOfRunRecap(null);
     prevPhaseRef.current = fresh.phase;
     commitState(fresh);
   }, [commitState]);
 
   const getSeedPrice = useCallback(
-    (cropId: CropId): number => computeSeedCost(cropId, state.buildings, ECONOMY),
-    [state.buildings]
+    (cropId: CropId): number =>
+      computeSeedCost(cropId, state.buildings, ECONOMY, state.farmEvents.activeEffects),
+    [state.buildings, state.farmEvents.activeEffects]
   );
 
   const getOccupiedPlotCount = useCallback(
@@ -500,5 +642,7 @@ export function useGameEngine(): GameEngineHook {
     getNextPlotPrice,
     getOccupiedPlotCount,
     getRecoveryDays,
+    resolveFarmEvent,
+    getPendingFarmEvent,
   };
 }

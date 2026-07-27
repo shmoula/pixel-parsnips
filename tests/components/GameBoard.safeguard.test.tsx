@@ -32,6 +32,8 @@ function makeProps(state: GameState = initialGameState()) {
     buildingCards: [],
     onBuyBuilding: vi.fn().mockReturnValue(false),
     onRestart: vi.fn(),
+    pendingFarmEvent: null,
+    onResolveFarmEvent: vi.fn().mockReturnValue(false),
   };
 }
 
