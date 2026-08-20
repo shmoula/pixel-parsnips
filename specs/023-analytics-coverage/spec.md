@@ -159,6 +159,18 @@ Built **verbatim to the 022 spec's six tiles** — that dashboard was scoped, ma
 5. Fires by season and season-day
 6. `farm_event_choice` → `run_ended` breakdown
 
+**Provisioned 2026-08-20** — dashboard id **907101**
+([link](https://eu.posthog.com/project/216788/dashboard/907101)). Insight short-ids:
+
+| Tile | short-id |
+|---|---|
+| Event fires by id | `2XWH5YFQ` |
+| Choice split A vs B | `LAMM5QGu` |
+| Auto-decline rate | `I77NmOda` |
+| Contract funnel | `eteNTsSQ` |
+| Fires by season | `qmUZ326L` |
+| Choice to outcome | `KTh8HMB3` |
+
 ### 2. "Pixel Parsnips — Economy & Systems" (new)
 
 Covers the highest-volume event, which has no tile today, plus the systems Phase A unblocks:
