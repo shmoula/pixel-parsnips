@@ -103,6 +103,8 @@ export interface EventPropsMap {
   farm_event_choice: { event_id: FarmEventId; choice: FarmEventChoiceId; auto: boolean; day: number };
   contract_completed: { event_id: FarmEventId; reward: number };
   contract_expired: { event_id: FarmEventId };
+  /** 023 — the player chose to keep farming after winning season 4. */
+  endless_mode_entered: { day: number; season_number: number; coin_balance: number };
 }
 
 export type AnalyticsEventName = keyof EventPropsMap;
@@ -126,6 +128,7 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   farm_event_choice: 1,
   contract_completed: 1,
   contract_expired: 1,
+  endless_mode_entered: 1,
 };
 
 export function buildDayCompletedProps(

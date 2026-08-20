@@ -103,6 +103,17 @@ function detectRunLifecycle(
   }
 }
 
+/** endless_mode_entered — the one-way flip set by endRunVictory's "Continue".
+ *  Self-resetting: a new run returns endlessMode to false, so no guard is needed. */
+function detectEndlessMode(prev: GameState, state: GameState): void {
+  if (prev.endlessMode || !state.endlessMode) return;
+  track('endless_mode_entered', {
+    day: state.currentDay,
+    season_number: getSeasonForDay(state.currentDay).number,
+    coin_balance: state.coinBalance,
+  });
+}
+
 const CROP_IDS: CropId[] = ['radish', 'parsnip', 'pumpkin'];
 
 /** shop_purchased — any per-commit increase in a shop-panel inventory is a purchase.
@@ -196,6 +207,7 @@ export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): v
     detectPlotUnlocked(prev, state, firedMilestonesRef.current);
     detectSeason2(prev, state, firedMilestonesRef.current);
     detectSeasonCompleted(prev, state);
+    detectEndlessMode(prev, state);
     detectRunLifecycle(prev, state, firedMilestonesRef.current, runEndedFiredRef.current);
     detectShopPurchased(prev, state);
     detectFarmEvents(prev, state);

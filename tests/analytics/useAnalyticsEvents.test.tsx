@@ -263,3 +263,27 @@ describe('useAnalyticsEvents shop_purchased (019)', () => {
     }));
   });
 });
+
+describe('useAnalyticsEvents endless_mode_entered', () => {
+  it('fires once when the player continues past the season 4 victory', () => {
+    // Day 70 is in season 4 — seasons run ~24 days, so a season-4 win cannot
+    // happen earlier. Verify with getSeasonForDay if the season table changes.
+    const base = { ...initialGameState(), currentDay: 70, phase: 'season_4_won' } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    track.mockClear();
+
+    const continued: GameState = { ...base, phase: 'playing', endlessMode: true, currentDay: 71, coinBalance: 500 };
+    rerender({ state: continued });
+
+    expect(track).toHaveBeenCalledWith(
+      'endless_mode_entered',
+      expect.objectContaining({ day: 71, season_number: 4, coin_balance: 500 }),
+    );
+
+    track.mockClear();
+    rerender({ state: { ...continued, currentDay: 72 } });
+    expect(track).not.toHaveBeenCalledWith('endless_mode_entered', expect.anything());
+  });
+});
