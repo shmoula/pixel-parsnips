@@ -23,6 +23,7 @@ function makeLog(over: Partial<DailyLogEntry> = {}): DailyLogEntry {
     closingBalance: 89,
     exhaustedPlots: [],
     pestDestroyedPlots: [],
+    pestPlotsAtRisk: 0,
     flashDroughtDaysAfter: 0,
     streakBefore: 0,
     streakAfter: 0,

@@ -1,4 +1,13 @@
-import type { DailyLogEntry, FarmEventChoiceId, FarmEventId, GameState, WeatherId } from '../engine/types';
+import type {
+  BuildingId,
+  CropId,
+  DailyLogEntry,
+  FarmEventChoiceId,
+  FarmEventId,
+  GameState,
+  MarketEventKind,
+  WeatherId,
+} from '../engine/types';
 import type { Medal } from '../engine/medals';
 import type { OnboardingStep } from '../engine/onboarding';
 
@@ -32,6 +41,21 @@ export interface EventPropsMap {
     lease_deducted: number;
     exhausted_plot_count: number;
     phase_after: GameState['phase'];
+    /** 023 — 008 harvest streak. */
+    streak_after: number;
+    streak_bonus: number;
+    /** 023 — 003 disasters. */
+    pest_destroyed_count: number;
+    pest_plots_at_risk: number;
+    flash_drought_days_after: number;
+    /** 023 — 012 market events. */
+    market_event_kind: MarketEventKind | null;
+    market_crop_id: CropId | null;
+    /** 023 — 019 building effect, not just purchase. */
+    buildings_applied: BuildingId[];
+    /** 023 — 022 buff uptake and contract pressure. */
+    event_buff_count: number;
+    contract_active: boolean;
   };
   plot_unlocked: { unlocked_plots_after: number; price: number; coin_balance_after: number };
   season_completed: {
@@ -81,7 +105,7 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   page_loaded: 1,
   play_started: 2,
   milestone_reached: 1,
-  day_completed: 1,
+  day_completed: 2,
   plot_unlocked: 1,
   season_completed: 1,
   run_ended: 1,
@@ -112,6 +136,16 @@ export function buildDayCompletedProps(
     lease_deducted: log.landLeaseDeducted,
     exhausted_plot_count: log.exhaustedPlots.length,
     phase_after: phaseAfter,
+    streak_after: log.streakAfter,
+    streak_bonus: log.streakBonus,
+    pest_destroyed_count: log.pestDestroyedPlots.length,
+    pest_plots_at_risk: log.pestPlotsAtRisk,
+    flash_drought_days_after: log.flashDroughtDaysAfter,
+    market_event_kind: log.marketActive?.kind ?? null,
+    market_crop_id: log.marketActive?.cropId ?? null,
+    buildings_applied: log.buildingsApplied,
+    event_buff_count: log.eventBuffsApplied?.length ?? 0,
+    contract_active: log.contractProgress != null,
   };
 }
 
