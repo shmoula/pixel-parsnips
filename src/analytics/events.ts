@@ -107,6 +107,8 @@ export interface EventPropsMap {
   endless_mode_entered: { day: number; season_number: number; coin_balance: number };
   /** 023 — a still-playable run was restarted. Properties describe the OUTGOING run. */
   run_abandoned: { days_played: number; season_number: number; coin_balance: number };
+  /** 023 — activation funnel: first seed in the ground this run. */
+  first_plant_placed: { day: number; crop_id: CropId };
 }
 
 export type AnalyticsEventName = keyof EventPropsMap;
@@ -132,6 +134,7 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   contract_expired: 1,
   endless_mode_entered: 1,
   run_abandoned: 1,
+  first_plant_placed: 1,
 };
 
 export function buildDayCompletedProps(

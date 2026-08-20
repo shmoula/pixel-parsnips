@@ -13,6 +13,12 @@ interface RunEndedGuard {
   current: boolean;
 }
 
+/** Once-per-run guards for the activation "firsts". Reset by detectRunLifecycle. */
+interface RunFirsts {
+  plant: boolean;
+  harvest: boolean;
+}
+
 /** day_completed — fire when a new daily log is produced. */
 function detectDayCompleted(prev: GameState, state: GameState): void {
   if (state.lastDailyLog && state.lastDailyLog !== prev.lastDailyLog) {
@@ -85,6 +91,7 @@ function detectRunLifecycle(
   state: GameState,
   firedMilestones: Set<string>,
   runEndedFired: RunEndedGuard,
+  firsts: RunFirsts,
 ): void {
   // New-run reset — a fresh initialGameState (day 1, playing) starts a new run.
   if (state.phase === 'playing' && state.currentDay === 1 && prev.currentDay !== 1) {
@@ -100,6 +107,8 @@ function detectRunLifecycle(
     }
     firedMilestones.clear();
     runEndedFired.current = false;
+    firsts.plant = false;
+    firsts.harvest = false;
   }
 
   // run_ended — first transition into a terminal phase this run.
@@ -202,11 +211,26 @@ function detectFarmEvents(prev: GameState, state: GameState): void {
   }
 }
 
+/** first_plant_placed — the first plot to go from empty to planted this run. */
+function detectFirstPlant(prev: GameState, state: GameState, firsts: RunFirsts): void {
+  if (firsts.plant) return;
+  for (let i = 0; i < state.plots.length; i += 1) {
+    const after = state.plots[i];
+    const before = prev.plots[i];
+    if (after.cropId !== null && (before === undefined || before.cropId === null)) {
+      firsts.plant = true;
+      track('first_plant_placed', { day: state.currentDay, crop_id: after.cropId });
+      return;
+    }
+  }
+}
+
 /** Fires all state-derived analytics events by diffing engine state across renders. */
 export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): void {
   const prevRef = useRef<GameState | null>(null);
   const firedMilestonesRef = useRef<Set<string>>(new Set());
   const runEndedFiredRef = useRef<RunEndedGuard>({ current: false });
+  const runFirstsRef = useRef<RunFirsts>({ plant: false, harvest: false });
 
   useEffect(() => {
     const prev = prevRef.current;
@@ -218,8 +242,9 @@ export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): v
     detectSeason2(prev, state, firedMilestonesRef.current);
     detectSeasonCompleted(prev, state);
     detectEndlessMode(prev, state);
-    detectRunLifecycle(prev, state, firedMilestonesRef.current, runEndedFiredRef.current);
+    detectRunLifecycle(prev, state, firedMilestonesRef.current, runEndedFiredRef.current, runFirstsRef.current);
     detectShopPurchased(prev, state);
     detectFarmEvents(prev, state);
+    detectFirstPlant(prev, state, runFirstsRef.current);
   }, [state]);
 }

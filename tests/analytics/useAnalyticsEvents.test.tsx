@@ -328,3 +328,53 @@ describe('useAnalyticsEvents run_abandoned', () => {
     expect(track).not.toHaveBeenCalledWith('run_abandoned', expect.anything());
   });
 });
+
+describe('useAnalyticsEvents first_plant_placed', () => {
+  function withPlantedPlot(state: GameState, cropId: 'radish' | 'parsnip' | 'pumpkin'): GameState {
+    const plots = state.plots.map((p, i) =>
+      i === 0 ? { ...p, cropId, dayPlanted: state.currentDay, daysRemaining: 3 } : p,
+    );
+    return { ...state, plots };
+  }
+
+  it('fires once for the first plant of a run', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base as GameState },
+    });
+    track.mockClear();
+
+    rerender({ state: withPlantedPlot(base, 'radish') });
+
+    expect(track).toHaveBeenCalledWith('first_plant_placed', { day: 1, crop_id: 'radish' });
+  });
+
+  it('does not fire again for later plants in the same run', () => {
+    const base = initialGameState();
+    const planted = withPlantedPlot(base, 'radish');
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base as GameState },
+    });
+    rerender({ state: planted });
+    track.mockClear();
+
+    const second = { ...planted, plots: planted.plots.map((p, i) => (i === 1 ? { ...p, cropId: 'parsnip' as const, dayPlanted: 1, daysRemaining: 4 } : p)) };
+    rerender({ state: second });
+
+    expect(track).not.toHaveBeenCalledWith('first_plant_placed', expect.anything());
+  });
+
+  it('re-arms after a new run starts', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base as GameState },
+    });
+    rerender({ state: { ...withPlantedPlot(base, 'radish'), currentDay: 5 } });
+    rerender({ state: initialGameState() });
+    track.mockClear();
+
+    rerender({ state: withPlantedPlot(initialGameState(), 'pumpkin') });
+
+    expect(track).toHaveBeenCalledWith('first_plant_placed', { day: 1, crop_id: 'pumpkin' });
+  });
+});
