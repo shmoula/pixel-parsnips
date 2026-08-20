@@ -105,15 +105,16 @@ All four are detected in `useAnalyticsEvents` from the `prev` → `state` diff.
 | Event | Properties | Detector |
 |---|---|---|
 | `endless_mode_entered` | `day`, `season_number`, `coin_balance` | `!prev.endlessMode && state.endlessMode`. Self-resetting: a new run returns the flag to false, so no guard is needed. |
-| `run_abandoned` | `days_played`, `season_number`, `coin_balance`, `phase_before` | The existing new-run reset branch in `detectRunLifecycle`, taken only when `prev.phase === 'playing'`. |
+| `run_abandoned` | `days_played`, `season_number`, `coin_balance` | The existing new-run reset branch in `detectRunLifecycle`, taken only when `prev.phase === 'playing'`. |
 | `first_plant_placed` | `day`, `crop_id` | First plot whose `cropId` goes `null` → set this run; once-per-run ref guard. |
 | `first_harvest_collected` | `day`, `coin_balance_after`, `harvest_count` | First `lastDailyLog` identity change with `harvests.length > 0`; once-per-run ref guard. |
 
 **`run_abandoned` reads `prev`, not `state`.** By the time the reset is detected the new state is
 already `initialGameState()` at day 1, so every property must come from the outgoing run:
 `days_played` is `prev.currentDay`, `season_number` is `getSeasonForDay(prev.currentDay).number`,
-`coin_balance` is `prev.coinBalance`, `phase_before` is `prev.phase`. Getting this wrong would emit
-a uniform day-1 abandon for every run.
+and `coin_balance` is `prev.coinBalance`. Getting this wrong would emit a uniform day-1 abandon for
+every run. No `phase_before` property is carried: the emit condition already requires
+`prev.phase === 'playing'`, so it could only ever hold one value.
 
 **Ordering constraint.** Within `detectRunLifecycle`, `run_abandoned` must be emitted *before* the
 per-run guards are cleared, and the two new first-* guards must be reset in the same branch that
