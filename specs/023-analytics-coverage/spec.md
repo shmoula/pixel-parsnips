@@ -184,6 +184,23 @@ Covers the highest-volume event, which has no tile today, plus the systems Phase
 7. Market exposure — `day_completed` by `market_event_kind`
 8. Streak health — median `streak_after`, summed `streak_bonus`
 
+**Provisioned 2026-08-20** — dashboard id **907106**
+([link](https://eu.posthog.com/project/216788/dashboard/907106)). Insight short-ids:
+
+| Tile | short-id |
+|---|---|
+| Purchases over time | `M1AkNYIp` |
+| Top items bought | `H6PvDNEn` |
+| Building adoption | `YohhJfDB` |
+| Spend per purchase | `XlQCEs5n` |
+| Disaster incidence | `iwA3AIoL` |
+| Pest severity | `ghtgFelD` |
+| Market exposure | `jbQyHWdV` |
+| Streak health | `L8E3o2X1` |
+
+Tiles 5–8 (`day_completed` v2 properties) render empty until the enriched build
+ships to production; they were provisioned per plan ahead of the deploy.
+
 ### 3. "Pixel Parsnips — Core" (extend, id 798528)
 
 1. **Activation funnel v2** — `page_loaded → play_started → first_plant_placed →
