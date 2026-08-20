@@ -57,7 +57,14 @@ export interface EventPropsMap {
     event_buff_count: number;
     contract_active: boolean;
   };
-  plot_unlocked: { unlocked_plots_after: number; price: number; coin_balance_after: number };
+  plot_unlocked: {
+    unlocked_plots_after: number;
+    price: number;
+    coin_balance_after: number;
+    /** 023 — restores the "median day of first plot unlock" KPI. */
+    day: number;
+    season_number: number;
+  };
   season_completed: {
     season_number: number;
     outcome: SeasonOutcome;
@@ -106,7 +113,7 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   play_started: 2,
   milestone_reached: 1,
   day_completed: 2,
-  plot_unlocked: 1,
+  plot_unlocked: 2,
   season_completed: 1,
   run_ended: 1,
   shop_purchased: 1,

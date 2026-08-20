@@ -34,6 +34,8 @@ function detectPlotUnlocked(prev: GameState, state: GameState, firedMilestones: 
     unlocked_plots_after: state.unlockedPlots,
     price,
     coin_balance_after: state.coinBalance,
+    day: state.currentDay,
+    season_number: getSeasonForDay(state.currentDay).number,
   });
   if (prev.unlockedPlots === DEFAULT_ECONOMY.startingPlots && !firedMilestones.has('first_plot_unlocked')) {
     firedMilestones.add('first_plot_unlocked');

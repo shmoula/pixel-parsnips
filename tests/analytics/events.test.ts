@@ -52,6 +52,7 @@ describe('events schema', () => {
 
   it('versions the 023 enriched events', () => {
     expect(EVENT_VERSIONS.day_completed).toBe(2);
+    expect(EVENT_VERSIONS.plot_unlocked).toBe(2);
   });
 });
 

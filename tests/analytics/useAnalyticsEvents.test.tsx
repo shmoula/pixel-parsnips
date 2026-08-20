@@ -115,6 +115,19 @@ describe('useAnalyticsEvents plot_unlocked + first-plot milestone', () => {
     });
     expect(track.mock.calls.filter(([n]) => n === 'plot_unlocked')).toHaveLength(2);
   });
+
+  it('carries the run day and season on plot_unlocked', () => {
+    const base = { ...initialGameState(), currentDay: 6 } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    track.mockClear();
+
+    rerender({ state: buyPlotOrThrow(base) });
+
+    const plotCall = track.mock.calls.find(([n]) => n === 'plot_unlocked');
+    expect(plotCall![1]).toMatchObject({ day: 6, season_number: 1 });
+  });
 });
 
 describe('useAnalyticsEvents season_2 milestone', () => {
