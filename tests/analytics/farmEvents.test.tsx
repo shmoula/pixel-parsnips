@@ -40,7 +40,7 @@ beforeEach(() => track.mockClear());
 describe('useAnalyticsEvents farm_event_fired', () => {
   it('fires once when pending transitions null -> set', () => {
     const base = initialGameState();
-    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
       initialProps: { state: base as GameState },
     });
     track.mockClear();
@@ -65,7 +65,7 @@ describe('useAnalyticsEvents farm_event_fired', () => {
 describe('useAnalyticsEvents farm_event_choice', () => {
   it('fires when lastResolved changes', () => {
     const base = initialGameState();
-    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
       initialProps: { state: base as GameState },
     });
     track.mockClear();
@@ -92,7 +92,7 @@ describe('useAnalyticsEvents farm_event_choice', () => {
 describe('useAnalyticsEvents contract_completed', () => {
   it('fires when a new lastDailyLog carries contractCompleted', () => {
     const base = initialGameState();
-    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
       initialProps: { state: base as GameState },
     });
     track.mockClear();
@@ -113,7 +113,7 @@ describe('useAnalyticsEvents contract_completed', () => {
 describe('useAnalyticsEvents contract_expired', () => {
   it('fires when a new lastDailyLog carries contractExpired', () => {
     const base = initialGameState();
-    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
       initialProps: { state: base as GameState },
     });
     track.mockClear();
@@ -134,7 +134,7 @@ describe('useAnalyticsEvents contract_expired', () => {
 describe('useAnalyticsEvents farm-event detectors stay silent on unrelated changes', () => {
   it('does not fire any farm-event/contract events when advancing a quiet day', () => {
     const base = initialGameState();
-    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
       initialProps: { state: base as GameState },
     });
     track.mockClear();

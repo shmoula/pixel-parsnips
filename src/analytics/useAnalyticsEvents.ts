@@ -239,7 +239,7 @@ function detectFirstHarvest(prev: GameState, state: GameState, firsts: RunFirsts
 }
 
 /** Fires all state-derived analytics events by diffing engine state across renders. */
-export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): void {
+export function useAnalyticsEvents(state: GameState): void {
   const prevRef = useRef<GameState | null>(null);
   const firedMilestonesRef = useRef<Set<string>>(new Set());
   const runEndedFiredRef = useRef<RunEndedGuard>({ current: false });
