@@ -287,3 +287,44 @@ describe('useAnalyticsEvents endless_mode_entered', () => {
     expect(track).not.toHaveBeenCalledWith('endless_mode_entered', expect.anything());
   });
 });
+
+describe('useAnalyticsEvents run_abandoned', () => {
+  it('fires with the outgoing run values when a playable run is restarted', () => {
+    const mid = { ...initialGameState(), currentDay: 12, coinBalance: 240 } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: mid },
+    });
+    track.mockClear();
+
+    rerender({ state: initialGameState() });
+
+    expect(track).toHaveBeenCalledWith(
+      'run_abandoned',
+      expect.objectContaining({ days_played: 12, coin_balance: 240, season_number: 1 }),
+    );
+  });
+
+  it('does not fire when restarting after the run already ended', () => {
+    const dead = { ...initialGameState(), currentDay: 9, phase: 'bankrupt' } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: dead },
+    });
+    track.mockClear();
+
+    rerender({ state: initialGameState() });
+
+    expect(track).not.toHaveBeenCalledWith('run_abandoned', expect.anything());
+  });
+
+  it('does not fire when a season advances mid-run', () => {
+    const base = { ...initialGameState(), currentDay: 7 } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base },
+    });
+    track.mockClear();
+
+    rerender({ state: { ...base, currentDay: 8 } });
+
+    expect(track).not.toHaveBeenCalledWith('run_abandoned', expect.anything());
+  });
+});

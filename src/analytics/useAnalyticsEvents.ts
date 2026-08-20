@@ -88,6 +88,16 @@ function detectRunLifecycle(
 ): void {
   // New-run reset — a fresh initialGameState (day 1, playing) starts a new run.
   if (state.phase === 'playing' && state.currentDay === 1 && prev.currentDay !== 1) {
+    // A still-playable outgoing run means the player quit rather than finished;
+    // a terminal prev.phase is the ordinary restart after run_ended. Read prev:
+    // `state` is already the fresh day-1 run.
+    if (prev.phase === 'playing') {
+      track('run_abandoned', {
+        days_played: prev.currentDay,
+        season_number: getSeasonForDay(prev.currentDay).number,
+        coin_balance: prev.coinBalance,
+      });
+    }
     firedMilestones.clear();
     runEndedFired.current = false;
   }

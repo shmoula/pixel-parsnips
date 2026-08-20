@@ -105,6 +105,8 @@ export interface EventPropsMap {
   contract_expired: { event_id: FarmEventId };
   /** 023 — the player chose to keep farming after winning season 4. */
   endless_mode_entered: { day: number; season_number: number; coin_balance: number };
+  /** 023 — a still-playable run was restarted. Properties describe the OUTGOING run. */
+  run_abandoned: { days_played: number; season_number: number; coin_balance: number };
 }
 
 export type AnalyticsEventName = keyof EventPropsMap;
@@ -129,6 +131,7 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   contract_completed: 1,
   contract_expired: 1,
   endless_mode_entered: 1,
+  run_abandoned: 1,
 };
 
 export function buildDayCompletedProps(
