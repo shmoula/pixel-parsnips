@@ -232,6 +232,11 @@ Delete dashboard 795789 ("Your starter dashboard"). Its tiles chart `$pageview`,
 session data, all disabled in `track.ts`, so they render empty and misrepresent the project's
 instrumentation. Deletion is irreversible and will be confirmed with the user at execution time.
 
+**Outcome 2026-08-20** — user confirmed; dashboard **795789** deleted via the PostHog MCP
+(soft-delete, `deleted: true`). It held 16 boilerplate tiles (`$pageview` / `$screen` /
+`$autocapture` / retention / referrers, all `created_by: null`), every one empty because those
+events are disabled in `track.ts`.
+
 ## Testing
 
 TDD, Vitest + jsdom, `posthog-js` mocked, extending the existing files in `tests/analytics/`.
