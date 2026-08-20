@@ -109,6 +109,8 @@ export interface EventPropsMap {
   run_abandoned: { days_played: number; season_number: number; coin_balance: number };
   /** 023 — activation funnel: first seed in the ground this run. */
   first_plant_placed: { day: number; crop_id: CropId };
+  /** 023 — activation funnel: the run's first harvest payout. */
+  first_harvest_collected: { day: number; coin_balance_after: number; harvest_count: number };
 }
 
 export type AnalyticsEventName = keyof EventPropsMap;
@@ -135,6 +137,7 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   endless_mode_entered: 1,
   run_abandoned: 1,
   first_plant_placed: 1,
+  first_harvest_collected: 1,
 };
 
 export function buildDayCompletedProps(

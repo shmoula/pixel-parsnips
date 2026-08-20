@@ -225,6 +225,19 @@ function detectFirstPlant(prev: GameState, state: GameState, firsts: RunFirsts):
   }
 }
 
+/** first_harvest_collected — the first new daily log this run that contains a harvest. */
+function detectFirstHarvest(prev: GameState, state: GameState, firsts: RunFirsts): void {
+  if (firsts.harvest) return;
+  const log = state.lastDailyLog;
+  if (log === null || log === prev.lastDailyLog || log.harvests.length === 0) return;
+  firsts.harvest = true;
+  track('first_harvest_collected', {
+    day: log.day,
+    coin_balance_after: state.coinBalance,
+    harvest_count: log.harvests.length,
+  });
+}
+
 /** Fires all state-derived analytics events by diffing engine state across renders. */
 export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): void {
   const prevRef = useRef<GameState | null>(null);
@@ -246,5 +259,6 @@ export function useAnalyticsEvents(state: GameState, _endOfRunRecap: unknown): v
     detectShopPurchased(prev, state);
     detectFarmEvents(prev, state);
     detectFirstPlant(prev, state, runFirstsRef.current);
+    detectFirstHarvest(prev, state, runFirstsRef.current);
   }, [state]);
 }

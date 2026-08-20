@@ -378,3 +378,40 @@ describe('useAnalyticsEvents first_plant_placed', () => {
     expect(track).toHaveBeenCalledWith('first_plant_placed', { day: 1, crop_id: 'pumpkin' });
   });
 });
+
+describe('useAnalyticsEvents first_harvest_collected', () => {
+  const harvest = { plotId: 0, cropId: 'radish' as const, baseYield: 4, weatherMultiplier: 1, adjustedYield: 4 };
+
+  it('fires on the first day whose log contains a harvest', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base as GameState },
+    });
+
+    // A harvestless day must not trigger it.
+    rerender({ state: { ...base, currentDay: 2, lastDailyLog: makeLog(1) } });
+    expect(track).not.toHaveBeenCalledWith('first_harvest_collected', expect.anything());
+
+    const withHarvest = { ...makeLog(2), harvests: [harvest] };
+    rerender({ state: { ...base, currentDay: 3, coinBalance: 130, lastDailyLog: withHarvest } });
+
+    expect(track).toHaveBeenCalledWith('first_harvest_collected', {
+      day: 2,
+      coin_balance_after: 130,
+      harvest_count: 1,
+    });
+  });
+
+  it('does not fire on later harvest days in the same run', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state, null), {
+      initialProps: { state: base as GameState },
+    });
+    rerender({ state: { ...base, currentDay: 2, lastDailyLog: { ...makeLog(1), harvests: [harvest] } } });
+    track.mockClear();
+
+    rerender({ state: { ...base, currentDay: 3, lastDailyLog: { ...makeLog(2), harvests: [harvest] } } });
+
+    expect(track).not.toHaveBeenCalledWith('first_harvest_collected', expect.anything());
+  });
+});
