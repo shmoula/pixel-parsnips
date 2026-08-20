@@ -213,6 +213,19 @@ ships to production; they were provisioned per plan ahead of the deploy.
 4. **Expansion pacing** — updates the existing insight in place (`BYWNR0xz`) to median `day` on
    `plot_unlocked`, retiring its plots-reached proxy note once v2 data flows
 
+**Provisioned 2026-08-20** — dashboard id **798528** (extended in place):
+
+| Change | Insight | short-id |
+|---|---|---|
+| Activation funnel v2 (5-step, renamed) — updated in place | `3Tcoqzoj` (id 4866069) | `3Tcoqzoj` |
+| Expansion pacing → median `day` — updated in place | `BYWNR0xz` (id 4866078) | `BYWNR0xz` |
+| Run endings — completed vs abandoned *(new)* | id 5568773 | `O5PtIea4` |
+| Endless mode adoption *(new)* | id 5568783 | `GhrFRFpS` |
+
+The two in-place updates preserved their short-ids and dashboard slots. The `run_abandoned`,
+`endless_mode_entered`, `first_plant_placed` and `first_harvest_collected` series render empty
+until the enriched build ships to production.
+
 ## Phase D — retire the starter dashboard
 
 Delete dashboard 795789 ("Your starter dashboard"). Its tiles chart `$pageview`, autocapture and
