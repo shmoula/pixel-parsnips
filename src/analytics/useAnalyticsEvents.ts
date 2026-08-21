@@ -82,14 +82,23 @@ function detectSeasonCompleted(prev: GameState, state: GameState): void {
 
 /** A fresh run has begun. Usually that is the day-1 playing state reached from a
  *  later day. It is ALSO a restart when the player resets while still on day 1 —
- *  detectable only by an in-run value regressing, which no normal day-1 action does
- *  (planting fills a plot; buying raises unlockedPlots; disasters only fire on nextDay). */
+ *  detectable only by an in-run value regressing, which no normal day-1 action does.
+ *  A restart resets every purchasable resource to its initial value, so any of them
+ *  dropping is proof of a fresh run: unlockedPlots falls, a filled plot empties, a
+ *  seed/fertilizer stock shrinks, or an owned building is gone. */
 function isNewRunStart(prev: GameState, state: GameState): boolean {
   if (state.phase !== 'playing' || state.currentDay !== 1) return false;
   if (prev.currentDay !== 1) return true;
   return (
     state.unlockedPlots < prev.unlockedPlots ||
-    prev.plots.some((p, i) => p.cropId !== null && state.plots[i]?.cropId === null)
+    prev.plots.some((p, i) => p.cropId !== null && state.plots[i]?.cropId === null) ||
+    state.fertilizerInventory < prev.fertilizerInventory ||
+    (Object.keys(prev.seedInventory) as CropId[]).some(
+      crop => state.seedInventory[crop] < prev.seedInventory[crop],
+    ) ||
+    (Object.keys(prev.buildings) as Array<keyof GameState['buildings']>).some(
+      id => prev.buildings[id] && !state.buildings[id],
+    )
   );
 }
 

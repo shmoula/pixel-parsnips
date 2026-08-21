@@ -382,6 +382,49 @@ describe('useAnalyticsEvents day-1 restart', () => {
     );
   });
 
+  it('fires run_abandoned when a day-1 run is restarted after buying seeds', () => {
+    const base = { ...initialGameState(), seedInventory: { radish: 2, parsnip: 0, pumpkin: 0 } } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
+      initialProps: { state: base },
+    });
+    track.mockClear();
+
+    rerender({ state: initialGameState() as GameState });
+    expect(track).toHaveBeenCalledWith(
+      'run_abandoned',
+      expect.objectContaining({ days_played: 1, season_number: 1 }),
+    );
+  });
+
+  it('fires run_abandoned when a day-1 run is restarted after buying fertilizer', () => {
+    const base = { ...initialGameState(), fertilizerInventory: 1 } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
+      initialProps: { state: base },
+    });
+    track.mockClear();
+
+    rerender({ state: initialGameState() as GameState });
+    expect(track).toHaveBeenCalledWith(
+      'run_abandoned',
+      expect.objectContaining({ days_played: 1, season_number: 1 }),
+    );
+  });
+
+  it('fires run_abandoned when a day-1 run is restarted after buying a building', () => {
+    const fresh = initialGameState();
+    const base = { ...fresh, buildings: { ...fresh.buildings, scarecrow: true } } as GameState;
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
+      initialProps: { state: base },
+    });
+    track.mockClear();
+
+    rerender({ state: initialGameState() as GameState });
+    expect(track).toHaveBeenCalledWith(
+      'run_abandoned',
+      expect.objectContaining({ days_played: 1, season_number: 1 }),
+    );
+  });
+
   it('does not fire run_abandoned on normal day-1 planting (no regression)', () => {
     const base = initialGameState();
     const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {

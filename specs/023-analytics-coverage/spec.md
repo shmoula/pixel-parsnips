@@ -47,7 +47,11 @@ declared event has test coverage.
 - Make the four dark gameplay systems measurable from the event already emitted every in-game day.
 - Repair the one stated KPI that current properties cannot answer.
 - Close the run-lifecycle and activation blind spots with the smallest event surface that works.
-- Give every emitted event at least one tile, and every dashboard a spec it maps to.
+- Give every emitted event at least one tile, and every dashboard a spec it maps to. The sole
+  intentional exception is `milestone_reached`: the Activation funnel v2 (below) drops its old
+  milestone step, and its two signals are already charted elsewhere — `first_plot_unlocked`
+  duplicates the `plot_unlocked` expansion-pacing tile, and `season_2_reached` is covered by the
+  season data on `day_completed`/`season_completed`. No dedicated tile is added for it.
 
 ## Non-goals
 
