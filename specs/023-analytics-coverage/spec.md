@@ -269,6 +269,7 @@ Phases A and B ship as code and can merge independently of C and D.
 | **Mixed-version data** — v1 rows lack the new props | Filter on `event_version`, or segment by `app_version`, which now reports a real build id per the branch's first commit. |
 | **`first_plant_placed` re-fires after a mid-run reload** | Documented and accepted. If the metric proves noisy, the follow-up is a persisted guard in the existing analytics localStorage namespace — deliberately not built now, since it adds a persistence surface for an unmeasured problem. |
 | **Deleting 795789 is irreversible** | Explicit confirmation at execution time; it is PostHog boilerplate, not authored work. |
+| **Day-1 restart guard leak** — the new-run reset branch was gated on `prev.currentDay !== 1`, so restarting while still on day 1 skipped it, leaking `firsts.plant`/`firedMilestones` into the next run and missing the abandon | Fixed post-implementation (`isNewRunStart`): a same-day-1 restart is detected economy-independently via an in-run regression (a planted plot emptied, or `unlockedPlots` decreased). Known residual edge: a day-1 restart whose only action was buying seeds/a building emits no `run_abandoned` (days_played would be 1, no guard leak) — a conservative no-false-fire trade-off. |
 | **Widened `day_completed` grows event size** | Ten scalar props on the project's second-highest-volume event is negligible against the EU free tier; curated breadth was chosen over a full mirror partly for this reason. |
 
 ## Out of scope
