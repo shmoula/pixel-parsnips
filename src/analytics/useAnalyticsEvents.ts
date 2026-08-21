@@ -80,26 +80,32 @@ function detectSeasonCompleted(prev: GameState, state: GameState): void {
   }
 }
 
+/** A pristine day-1 run: every purchasable/plantable resource still at its
+ *  initial value — exactly what `initialGameState` produces and what a restart
+ *  returns to. Compared as an ABSOLUTE snapshot, not a delta, so a normal day-1
+ *  action that consumes a resource (planting spends a seed, applying fertilizer
+ *  spends a unit) is never mistaken for a reset. */
+function isPristineDayOneRun(s: GameState): boolean {
+  return (
+    s.coinBalance === DEFAULT_ECONOMY.startingBalance &&
+    s.fertilizerInventory === 0 &&
+    s.unlockedPlots === DEFAULT_ECONOMY.startingPlots &&
+    Object.values(s.seedInventory).every(count => count === 0) &&
+    s.plots.every(p => p.cropId === null) &&
+    Object.values(s.buildings).every(owned => !owned)
+  );
+}
+
 /** A fresh run has begun. Usually that is the day-1 playing state reached from a
- *  later day. It is ALSO a restart when the player resets while still on day 1 —
- *  detectable only by an in-run value regressing, which no normal day-1 action does.
- *  A restart resets every purchasable resource to its initial value, so any of them
- *  dropping is proof of a fresh run: unlockedPlots falls, a filled plot empties, a
- *  seed/fertilizer stock shrinks, or an owned building is gone. */
+ *  later day. It is ALSO a restart when the player resets while still on day 1,
+ *  detected by the state snapping back to a pristine day-1 snapshot from a run the
+ *  player had already acted on (bought seeds/fertilizer/a plot/a building, or
+ *  planted). Using the absolute snapshot avoids misreading a consuming day-1
+ *  action — e.g. planting a bought seed — as a restart. */
 function isNewRunStart(prev: GameState, state: GameState): boolean {
   if (state.phase !== 'playing' || state.currentDay !== 1) return false;
   if (prev.currentDay !== 1) return true;
-  return (
-    state.unlockedPlots < prev.unlockedPlots ||
-    prev.plots.some((p, i) => p.cropId !== null && state.plots[i]?.cropId === null) ||
-    state.fertilizerInventory < prev.fertilizerInventory ||
-    (Object.keys(prev.seedInventory) as CropId[]).some(
-      crop => state.seedInventory[crop] < prev.seedInventory[crop],
-    ) ||
-    (Object.keys(prev.buildings) as Array<keyof GameState['buildings']>).some(
-      id => prev.buildings[id] && !state.buildings[id],
-    )
-  );
+  return isPristineDayOneRun(state) && !isPristineDayOneRun(prev);
 }
 
 /**

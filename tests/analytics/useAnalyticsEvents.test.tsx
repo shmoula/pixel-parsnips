@@ -5,7 +5,7 @@ const track = vi.hoisted(() => vi.fn());
 vi.mock('../../src/analytics/track', () => ({ track }));
 
 import { useAnalyticsEvents } from '../../src/analytics/useAnalyticsEvents';
-import { buyPlot, initialGameState } from '../../src/engine/gameEngine';
+import { buyPlot, buySeed, initialGameState, plantSeed } from '../../src/engine/gameEngine';
 import type { DailyLogEntry, GameState } from '../../src/engine/types';
 
 function makeLog(day: number): DailyLogEntry {
@@ -432,6 +432,25 @@ describe('useAnalyticsEvents day-1 restart', () => {
     });
     track.mockClear();
     rerender({ state: plantPlot0(base, 'radish') });
+    expect(track).not.toHaveBeenCalledWith('run_abandoned', expect.anything());
+  });
+
+  it('does not fire run_abandoned when a bought seed is planted on day 1 (real consumption)', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
+      initialProps: { state: base as GameState },
+    });
+    track.mockClear();
+
+    // Buy a radish seed (seedInventory 0 -> 1), then plant it (seedInventory
+    // 1 -> 0) via the real engine. The seed-count drop must NOT read as a reset.
+    const bought = buySeed(base, 'radish', 1);
+    if (!bought.ok) throw new Error(`buySeed failed: ${bought.error}`);
+    rerender({ state: bought.state });
+    const planted = plantSeed(bought.state, 0, 'radish');
+    if (!planted.ok) throw new Error(`plantSeed failed: ${planted.error}`);
+    rerender({ state: planted.state });
+
     expect(track).not.toHaveBeenCalledWith('run_abandoned', expect.anything());
   });
 
