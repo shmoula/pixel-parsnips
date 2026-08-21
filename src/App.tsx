@@ -60,7 +60,7 @@ function App() {
   }, []);
 
   const engine = useGameEngine();
-  useAnalyticsEvents(engine.state, engine.endOfRunRecap);
+  useAnalyticsEvents(engine.state);
   const { state, restart, continueSeason, endRunVictory, endOfRunRecap } = engine;
 
   // Bankruptcy — terminal run-end (existing behavior)

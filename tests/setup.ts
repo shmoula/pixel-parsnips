@@ -21,7 +21,8 @@ if (!('ResizeObserver' in globalThis)) {
 
 // jsdom has no matchMedia; default to "no preference" (motion allowed).
 // Individual tests can override window.matchMedia to simulate reduced motion.
-if (!window.matchMedia) {
+// Guarded so node-environment tests (which have no `window`) can share this setup.
+if (typeof window !== 'undefined' && !window.matchMedia) {
   window.matchMedia = (query: string): MediaQueryList =>
     ({
       matches: false,

@@ -23,6 +23,7 @@ function makeLog(over: Partial<DailyLogEntry> = {}): DailyLogEntry {
     closingBalance: 100,
     exhaustedPlots: [2],
     pestDestroyedPlots: [],
+    pestPlotsAtRisk: 0,
     flashDroughtDaysAfter: 0,
     streakBefore: 0,
     streakAfter: 1,
@@ -48,6 +49,11 @@ describe('events schema', () => {
     expect(EVENT_VERSIONS.onboarding_replay_requested).toBe(1);
     expect(EVENT_VERSIONS.empty_day_safeguard).toBe(1);
   });
+
+  it('versions the 023 enriched events', () => {
+    expect(EVENT_VERSIONS.day_completed).toBe(2);
+    expect(EVENT_VERSIONS.plot_unlocked).toBe(2);
+  });
 });
 
 describe('buildDayCompletedProps', () => {
@@ -63,7 +69,53 @@ describe('buildDayCompletedProps', () => {
       lease_deducted: 5,
       exhausted_plot_count: 1,
       phase_after: 'playing',
+      streak_after: 1,
+      streak_bonus: 0,
+      pest_destroyed_count: 0,
+      pest_plots_at_risk: 0,
+      flash_drought_days_after: 0,
+      market_event_kind: null,
+      market_crop_id: null,
+      buildings_applied: [],
+      event_buff_count: 0,
+      contract_active: false,
     });
+  });
+
+  it('surfaces disaster, market, building and 022 system state', () => {
+    const props = buildDayCompletedProps(
+      makeLog({
+        pestDestroyedPlots: [0, 3],
+        pestPlotsAtRisk: 4,
+        flashDroughtDaysAfter: 2,
+        streakAfter: 3,
+        streakBonus: 15,
+        marketActive: { cropId: 'pumpkin', kind: 'shortage', multiplier: 1.5, daysRemaining: 2 },
+        buildingsApplied: ['irrigation_well'],
+        eventBuffsApplied: [{ eventId: 'bountiful_spring', multiplier: 1.25, harvestsAffected: 2 }],
+        contractProgress: { cropId: 'radish', done: 1, total: 3, deadlineDay: 9 },
+      }),
+      2,
+      'playing',
+    );
+    expect(props).toMatchObject({
+      pest_destroyed_count: 2,
+      pest_plots_at_risk: 4,
+      flash_drought_days_after: 2,
+      streak_after: 3,
+      streak_bonus: 15,
+      market_event_kind: 'shortage',
+      market_crop_id: 'pumpkin',
+      buildings_applied: ['irrigation_well'],
+      event_buff_count: 1,
+      contract_active: true,
+    });
+  });
+
+  it('treats absent optional 022 fields as empty rather than undefined', () => {
+    const props = buildDayCompletedProps(makeLog({ eventBuffsApplied: undefined, contractProgress: undefined }), 1, 'playing');
+    expect(props.event_buff_count).toBe(0);
+    expect(props.contract_active).toBe(false);
   });
 });
 

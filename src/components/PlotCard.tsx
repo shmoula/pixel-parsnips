@@ -99,7 +99,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
       className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-[#3D2510]/80 bg-[#160F07] opacity-80 select-none p-1"
     >
       <span className="text-2xl opacity-60">🔒</span>
-      <span className="font-pixel text-caption text-farm-stone">Locked</span>
+      <span className="font-pixel text-caption text-[#B8A894]">Locked</span>
     </div>
   );
 }
