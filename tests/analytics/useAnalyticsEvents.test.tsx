@@ -329,6 +329,80 @@ describe('useAnalyticsEvents run_abandoned', () => {
   });
 });
 
+describe('useAnalyticsEvents day-1 restart', () => {
+  function plantPlot0(state: GameState, cropId: 'radish' | 'parsnip' | 'pumpkin'): GameState {
+    return {
+      ...state,
+      plots: state.plots.map((p, i) =>
+        i === 0 ? { ...p, cropId, dayPlanted: state.currentDay, daysRemaining: 3 } : p,
+      ),
+    };
+  }
+
+  function buyPlotOrThrow(state: GameState): GameState {
+    const result = buyPlot(state);
+    if (!result.ok) throw new Error(`buyPlot failed: ${result.error}`);
+    return result.state;
+  }
+
+  it('fires run_abandoned and re-arms first_plant_placed when a day-1 run is restarted after planting', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
+      initialProps: { state: base as GameState },
+    });
+    // Plant on day 1 -> first_plant_placed fires and firsts.plant becomes true.
+    rerender({ state: plantPlot0(base, 'radish') });
+    track.mockClear();
+
+    // Restart while still on day 1 -> fresh initialGameState.
+    rerender({ state: initialGameState() as GameState });
+    expect(track).toHaveBeenCalledWith(
+      'run_abandoned',
+      expect.objectContaining({ days_played: 1, season_number: 1 }),
+    );
+
+    // Next run: planting must fire first_plant_placed again (guard re-armed).
+    track.mockClear();
+    rerender({ state: plantPlot0(initialGameState(), 'pumpkin') });
+    expect(track).toHaveBeenCalledWith('first_plant_placed', { day: 1, crop_id: 'pumpkin' });
+  });
+
+  it('fires run_abandoned when a day-1 run is restarted after buying a plot', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
+      initialProps: { state: base as GameState },
+    });
+    rerender({ state: buyPlotOrThrow(base) });
+    track.mockClear();
+
+    rerender({ state: initialGameState() as GameState });
+    expect(track).toHaveBeenCalledWith(
+      'run_abandoned',
+      expect.objectContaining({ days_played: 1, season_number: 1 }),
+    );
+  });
+
+  it('does not fire run_abandoned on normal day-1 planting (no regression)', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
+      initialProps: { state: base as GameState },
+    });
+    track.mockClear();
+    rerender({ state: plantPlot0(base, 'radish') });
+    expect(track).not.toHaveBeenCalledWith('run_abandoned', expect.anything());
+  });
+
+  it('does not fire run_abandoned on a no-op pristine day-1 restart', () => {
+    const base = initialGameState();
+    const { rerender } = renderHook(({ state }) => useAnalyticsEvents(state), {
+      initialProps: { state: base as GameState },
+    });
+    track.mockClear();
+    rerender({ state: initialGameState() as GameState });
+    expect(track).not.toHaveBeenCalledWith('run_abandoned', expect.anything());
+  });
+});
+
 describe('useAnalyticsEvents first_plant_placed', () => {
   function withPlantedPlot(state: GameState, cropId: 'radish' | 'parsnip' | 'pumpkin'): GameState {
     const plots = state.plots.map((p, i) =>

@@ -80,6 +80,19 @@ function detectSeasonCompleted(prev: GameState, state: GameState): void {
   }
 }
 
+/** A fresh run has begun. Usually that is the day-1 playing state reached from a
+ *  later day. It is ALSO a restart when the player resets while still on day 1 —
+ *  detectable only by an in-run value regressing, which no normal day-1 action does
+ *  (planting fills a plot; buying raises unlockedPlots; disasters only fire on nextDay). */
+function isNewRunStart(prev: GameState, state: GameState): boolean {
+  if (state.phase !== 'playing' || state.currentDay !== 1) return false;
+  if (prev.currentDay !== 1) return true;
+  return (
+    state.unlockedPlots < prev.unlockedPlots ||
+    prev.plots.some((p, i) => p.cropId !== null && state.plots[i]?.cropId === null)
+  );
+}
+
 /**
  * New-run reset followed by run_ended. A fresh initialGameState (day 1, playing,
  * from a non-day-1 prev) resets the per-run guards; then run_ended fires once on
@@ -93,8 +106,9 @@ function detectRunLifecycle(
   runEndedFired: RunEndedGuard,
   firsts: RunFirsts,
 ): void {
-  // New-run reset — a fresh initialGameState (day 1, playing) starts a new run.
-  if (state.phase === 'playing' && state.currentDay === 1 && prev.currentDay !== 1) {
+  // New-run reset — a fresh run (day 1, playing), whether from a later day or a
+  // same-day-1 restart detected via an in-run regression (see isNewRunStart).
+  if (isNewRunStart(prev, state)) {
     // A still-playable outgoing run means the player quit rather than finished;
     // a terminal prev.phase is the ordinary restart after run_ended. Read prev:
     // `state` is already the fresh day-1 run.
