@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { HUD } from '../../src/components/HUD';
 
@@ -223,5 +223,36 @@ describe('contract chip (022)', () => {
   it('is hidden without a contract', () => {
     renderHUD({ contract: null });
     expect(screen.queryByLabelText(/contract:/i)).toBeNull();
+  });
+});
+
+describe('HUD — 024 chips are inert at desktop widths', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubDesktop() {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(min-width: 640px)',
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }));
+  }
+
+  it('renders neither the season nor the reputation chip as a button at sm+', () => {
+    stubDesktop();
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
+    expect(screen.queryByRole('button', { name: /season 1 · spring thaw/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /reputation/i })).toBeNull();
+  });
+
+  it('still shows both chips content at sm+', () => {
+    stubDesktop();
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
+    expect(screen.getByText(/Season 1 · Spring Thaw/)).toBeInTheDocument();
+    expect(screen.getByText(/Struggling Smallholder/)).toBeInTheDocument();
   });
 });
