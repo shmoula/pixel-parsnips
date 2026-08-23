@@ -151,6 +151,7 @@ export function HUD({
     <header
       aria-label="Game status"
       className="
+        relative z-20
         flex flex-wrap items-stretch gap-2 px-4 py-2
         bg-[#0E0A04]/95 backdrop-blur-sm
         border-b border-[#5C3D1E]/50
