@@ -51,6 +51,15 @@ interface ArmedRowProps {
   label: string;
   /** Shown after the first activation, in place of `label`. */
   armedLabel: string;
+  /**
+   * Read aloud when the row arms. The visible label swaps silently on an
+   * already-focused control, so assistive tech would otherwise hear nothing.
+   * Reported up via `onArmedChange` because the live region that voices it must
+   * live outside the `role="menu"`, whose only allowed children are menu items.
+   */
+  armedAnnouncement: string;
+  /** Called with the announcement when armed, and `''` when it disarms. */
+  onArmedChange: (announcement: string) => void;
   onConfirm: () => void;
 }
 
@@ -59,14 +68,15 @@ interface ArmedRowProps {
  * after ARM_TIMEOUT_MS so a much-later tap cannot confirm without a fresh first
  * tap. Mirrors the UnwinnableBanner pattern in GameBoard.
  */
-function ArmedRow({ label, armedLabel, onConfirm }: ArmedRowProps) {
+function ArmedRow({ label, armedLabel, armedAnnouncement, onArmedChange, onConfirm }: ArmedRowProps) {
   const [armed, setArmed] = useState(false);
 
   useEffect(() => {
+    onArmedChange(armed ? armedAnnouncement : '');
     if (!armed) return;
     const timer = setTimeout(() => setArmed(false), ARM_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [armed]);
+  }, [armed, armedAnnouncement, onArmedChange]);
 
   return (
     <button
@@ -99,6 +109,11 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
   const [muted, setMutedState] = useState(() => isMuted());
   const [optedOut, setOptedOut] = useState(() => isOptedOut());
   const [creditsOpen, setCreditsOpen] = useState(false);
+  // Each two-step row reports its arming here so it can be voiced from a live
+  // region outside the menu (see ArmedRow). Kept per-row so one row's auto-
+  // disarm never clears the other's announcement.
+  const [restartAnnounce, setRestartAnnounce] = useState('');
+  const [replayAnnounce, setReplayAnnounce] = useState('');
   // DNT hard-disables tracking regardless of the local flag; reflect that so the
   // row never implies analytics are live when track() will always no-op.
   const dntActive = isDoNotTrack();
@@ -183,6 +198,11 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
       </button>
 
       {open && (
+        <>
+        {/* Outside role="menu" (whose only allowed children are menu items) and
+            kept mounted so a change from '' to text registers as a live update. */}
+        <span className="sr-only" aria-live="assertive">{restartAnnounce}</span>
+        <span className="sr-only" aria-live="assertive">{replayAnnounce}</span>
         <div
           ref={popoverRef}
           role="menu"
@@ -196,6 +216,8 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
           <ArmedRow
             label="Restart run"
             armedLabel="Tap again to restart"
+            armedAnnouncement="Restart run armed. Activate again to confirm."
+            onArmedChange={setRestartAnnounce}
             onConfirm={() => {
               setOpen(false);
               onRestart();
@@ -204,6 +226,8 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
           <ArmedRow
             label="Replay tutorial (restarts run)"
             armedLabel="Tap again to replay"
+            armedAnnouncement="Replay tutorial armed. Activate again to confirm — this restarts your run."
+            onArmedChange={setReplayAnnounce}
             onConfirm={() => {
               setOpen(false);
               onReplayTutorial();
@@ -221,6 +245,7 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
             Credits
           </button>
         </div>
+        </>
       )}
 
       {creditsOpen && (

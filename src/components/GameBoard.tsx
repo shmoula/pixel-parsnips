@@ -224,6 +224,13 @@ function UnwinnableBanner({ isUnwinnable, onRestart }: { isUnwinnable: boolean; 
       >
         {armed ? 'Tap again to confirm' : 'Start new run'}
       </button>
+      {/* The button's label swaps silently on an already-focused control, so
+          assistive tech hears nothing when it arms. Mirror the change into a
+          dedicated live region (separate from this alert, which already fired
+          on mount) so the confirm step is announced. */}
+      <span className="sr-only" aria-live="assertive">
+        {armed ? 'Start new run armed. Activate again to confirm.' : ''}
+      </span>
     </div>
   );
 }

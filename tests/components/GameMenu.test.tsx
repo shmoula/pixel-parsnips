@@ -207,6 +207,30 @@ describe('GameMenu — run-resetting rows', () => {
     }
   });
 
+  it('announces to assistive tech that a second tap confirms the restart', async () => {
+    render(<GameMenu onRestart={noop} onReplayTutorial={noop} />);
+    await openMenu();
+
+    // Nothing is announced before the row is armed.
+    expect(screen.queryByText(/activate again to confirm/i)).toBeNull();
+
+    await userEvent.click(screen.getByRole('menuitem', { name: /restart run/i }));
+
+    // The silent label swap is mirrored into a live region so it is read aloud.
+    expect(screen.getByText(/restart run armed\. activate again to confirm/i)).toBeInTheDocument();
+  });
+
+  it('announces the replay-tutorial arming, warning it restarts the run', async () => {
+    render(<GameMenu onRestart={noop} onReplayTutorial={noop} />);
+    await openMenu();
+
+    await userEvent.click(screen.getByRole('menuitem', { name: /replay tutorial \(restarts run\)/i }));
+
+    expect(
+      screen.getByText(/replay tutorial armed\. activate again to confirm — this restarts your run/i),
+    ).toBeInTheDocument();
+  });
+
   it('says out loud that replaying the tutorial restarts the run', async () => {
     const onReplayTutorial = vi.fn();
     render(<GameMenu onRestart={noop} onReplayTutorial={onReplayTutorial} />);
