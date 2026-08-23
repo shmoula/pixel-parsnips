@@ -4,7 +4,7 @@ const { setAnalyticsOptOut, track } = vi.hoisted(() => ({
   track: vi.fn(),
 }));
 vi.mock('../../src/analytics/track', () => ({ setAnalyticsOptOut, track }));
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameMenu } from '../../src/components/GameMenu';
 import { AUDIO_KEY, isMuted } from '../../src/audio/sfx';
@@ -37,9 +37,8 @@ describe('GameMenu — popover shell', () => {
     await openMenu();
     expect(screen.getByRole('menu')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /game menu/i })).toHaveAttribute('aria-expanded', 'true');
-    // NOTE: Task 6 will add `menuitem` action rows and this becomes getAllByRole('menuitem').
-    // Until then the Sound row (menuitemcheckbox) is the first row.
-    expect(screen.getByRole('menuitemcheckbox', { name: /sound/i })).toHaveFocus();
+    const rows = screen.getAllByRole('menuitem');
+    expect(rows[0]).toHaveFocus();
   });
 
   it('closes on Escape and returns focus to the gear', async () => {
@@ -144,5 +143,80 @@ describe('GameMenu — analytics row', () => {
 
     expect(localStorage.getItem(ANALYTICS_OPT_OUT_KEY)).toBeNull();
     expect(setAnalyticsOptOut).not.toHaveBeenCalled();
+  });
+});
+
+describe('GameMenu — run-resetting rows', () => {
+  it('requires two activations to restart', async () => {
+    const onRestart = vi.fn();
+    render(<GameMenu onRestart={onRestart} onReplayTutorial={noop} />);
+    await openMenu();
+
+    const row = screen.getByRole('menuitem', { name: /restart run/i });
+    await userEvent.click(row);
+    expect(onRestart).not.toHaveBeenCalled();
+
+    const armed = screen.getByRole('menuitem', { name: /tap again to restart/i });
+    await userEvent.click(armed);
+    expect(onRestart).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the menu once restart is confirmed', async () => {
+    render(<GameMenu onRestart={noop} onReplayTutorial={noop} />);
+    await openMenu();
+    await userEvent.click(screen.getByRole('menuitem', { name: /restart run/i }));
+    await userEvent.click(screen.getByRole('menuitem', { name: /tap again to restart/i }));
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('disarms restart when the menu is closed and reopened', async () => {
+    const onRestart = vi.fn();
+    render(<GameMenu onRestart={onRestart} onReplayTutorial={noop} />);
+    await openMenu();
+    await userEvent.click(screen.getByRole('menuitem', { name: /restart run/i }));
+
+    await userEvent.keyboard('{Escape}');
+    await openMenu();
+
+    // Back to the unarmed label; a single click must not restart.
+    await userEvent.click(screen.getByRole('menuitem', { name: /restart run/i }));
+    expect(onRestart).not.toHaveBeenCalled();
+  });
+
+  it('disarms restart after the arm window elapses', () => {
+    // NOTE: userEvent + vitest v4 fake timers deadlock (the click promise never
+    // settles), so this uses fireEvent + act like the repo's other fake-timer
+    // tests. The behaviour under test — the arm window expiring — is unchanged.
+    vi.useFakeTimers();
+    try {
+      const onRestart = vi.fn();
+      render(<GameMenu onRestart={onRestart} onReplayTutorial={noop} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /game menu/i }));
+      fireEvent.click(screen.getByRole('menuitem', { name: /restart run/i }));
+      expect(screen.getByRole('menuitem', { name: /tap again to restart/i })).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(screen.getByRole('menuitem', { name: /restart run/i })).toBeInTheDocument();
+      expect(onRestart).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('says out loud that replaying the tutorial restarts the run', async () => {
+    const onReplayTutorial = vi.fn();
+    render(<GameMenu onRestart={noop} onReplayTutorial={onReplayTutorial} />);
+    await openMenu();
+
+    const row = screen.getByRole('menuitem', { name: /replay tutorial \(restarts run\)/i });
+    await userEvent.click(row);
+    expect(onReplayTutorial).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('menuitem', { name: /tap again to replay/i }));
+    expect(onReplayTutorial).toHaveBeenCalledTimes(1);
   });
 });

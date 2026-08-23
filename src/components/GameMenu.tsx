@@ -14,6 +14,9 @@ const ROW_CLASS = `
   disabled:opacity-60 disabled:hover:bg-transparent
 `;
 
+/** How long a two-step row stays armed before disarming itself. */
+const ARM_TIMEOUT_MS = 5000;
+
 interface ToggleRowProps {
   label: string;
   /** True when the feature is ON (not when it is disabled). */
@@ -43,6 +46,39 @@ function ToggleRow({ label, on, onToggle, disabled = false, note }: ToggleRowPro
   );
 }
 
+interface ArmedRowProps {
+  label: string;
+  /** Shown after the first activation, in place of `label`. */
+  armedLabel: string;
+  onConfirm: () => void;
+}
+
+/**
+ * A row that destroys the live run, so it takes two activations. Auto-disarms
+ * after ARM_TIMEOUT_MS so a much-later tap cannot confirm without a fresh first
+ * tap. Mirrors the UnwinnableBanner pattern in GameBoard.
+ */
+function ArmedRow({ label, armedLabel, onConfirm }: ArmedRowProps) {
+  const [armed, setArmed] = useState(false);
+
+  useEffect(() => {
+    if (!armed) return;
+    const timer = setTimeout(() => setArmed(false), ARM_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [armed]);
+
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={() => (armed ? onConfirm() : setArmed(true))}
+      className={`${ROW_CLASS} ${armed ? 'text-farm-red' : ''}`}
+    >
+      {armed ? armedLabel : label}
+    </button>
+  );
+}
+
 interface GameMenuProps {
   /** Abandons the live run and starts a fresh one. */
   onRestart: () => void;
@@ -57,7 +93,7 @@ interface GameMenuProps {
  * tutorial replay and asset credits. Rendered from the HUD only — the bankruptcy
  * and season-transition screens deliberately carry no chrome.
  */
-export function GameMenu({ onRestart: _onRestart, onReplayTutorial: _onReplayTutorial }: GameMenuProps) {
+export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
   const [open, setOpen] = useState(false);
   const [muted, setMutedState] = useState(() => isMuted());
   const [optedOut, setOptedOut] = useState(() => isOptedOut());
@@ -143,7 +179,22 @@ export function GameMenu({ onRestart: _onRestart, onReplayTutorial: _onReplayTut
             bg-farm-soil border border-[#5C3D1E] rounded-lg
           "
         >
-          {/* Task 6 inserts the Restart and Replay tutorial rows here. */}
+          <ArmedRow
+            label="Restart run"
+            armedLabel="Tap again to restart"
+            onConfirm={() => {
+              setOpen(false);
+              onRestart();
+            }}
+          />
+          <ArmedRow
+            label="Replay tutorial (restarts run)"
+            armedLabel="Tap again to replay"
+            onConfirm={() => {
+              setOpen(false);
+              onReplayTutorial();
+            }}
+          />
           <ToggleRow label="Sound" on={!muted} onToggle={toggleSound} />
           <ToggleRow
             label="Anonymous analytics"
