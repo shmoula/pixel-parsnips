@@ -46,6 +46,7 @@ function makeProps(overrides: {
     buildingCards: [],
     onBuyBuilding: vi.fn().mockReturnValue(false),
     onRestart: vi.fn(),
+    onReplayTutorial: vi.fn(),
     pendingFarmEvent: overrides.pendingFarmEvent ?? null,
     onResolveFarmEvent: overrides.onResolveFarmEvent ?? vi.fn().mockReturnValue(true),
   };

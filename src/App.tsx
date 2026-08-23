@@ -63,6 +63,14 @@ function App() {
   useAnalyticsEvents(engine.state);
   const { state, restart, continueSeason, endRunVictory, endOfRunRecap } = engine;
 
+  // Shared by the bankruptcy screen and the in-run game menu (024): flag the
+  // tutorial for replay, then reset the run so it starts from day 1.
+  const handleReplayTutorial = () => {
+    track('onboarding_replay_requested', {});
+    requestOnboardingReplay();
+    restart();
+  };
+
   // Bankruptcy — terminal run-end (existing behavior)
   if (state.phase === 'bankrupt') {
     const seasonReached = endOfRunRecap ? endOfRunRecap.seasonReached : 1;
@@ -92,7 +100,7 @@ function App() {
             newBests={newBests}
             lastDailyLog={state.lastDailyLog}
             onRestart={restart}
-            onReplayTutorial={() => { track('onboarding_replay_requested', {}); requestOnboardingReplay(); restart(); }}
+            onReplayTutorial={handleReplayTutorial}
             showEventsUnlockTease={!state.farmEvents.enabled}
           />
         </Suspense>
@@ -129,6 +137,7 @@ function App() {
         buildingCards={engine.getBuildingCards()}
         onBuyBuilding={engine.buyBuilding}
         onRestart={restart}
+        onReplayTutorial={handleReplayTutorial}
         pendingFarmEvent={engine.getPendingFarmEvent()}
         onResolveFarmEvent={engine.resolveFarmEvent}
       />

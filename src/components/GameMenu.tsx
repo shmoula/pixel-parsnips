@@ -118,6 +118,10 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
 
   // Escape and outside-click both dismiss. Bound to the document so they work
   // wherever focus currently sits — including inside the popover.
+  // This also covers the "a game modal opened while the menu was up" case: every
+  // path to a modal (Next Day, the action bar) begins with a click outside the
+  // popover, which lands here first. No explicit force-close prop is needed, and
+  // the modals' higher z-index covers the popover in any case.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {

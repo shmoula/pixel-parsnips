@@ -325,6 +325,8 @@ interface GameBoardProps {
   onBuyBuilding: (id: BuildingId) => boolean;
   /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
   onRestart: () => void;
+  /** 024 — threaded to the HUD's game menu; flags tutorial replay and restarts. */
+  onReplayTutorial: () => void;
   /** 022 — the pending farm event to present, or null. Next Day is blocked while set. */
   pendingFarmEvent: PendingFarmEventView | null;
   /** 022 — apply a farm-event choice; returns false when it could not be applied. */
@@ -349,6 +351,7 @@ export function GameBoard({
   buildingCards,
   onBuyBuilding,
   onRestart,
+  onReplayTutorial,
   pendingFarmEvent,
   onResolveFarmEvent,
 }: GameBoardProps) {
@@ -500,6 +503,8 @@ export function GameBoard({
         heldBalance={celebrationHud.heldBalance}
         tickBalance={celebrationHud.tickBalance}
         contract={contractChip}
+        onRestart={onRestart}
+        onReplayTutorial={onReplayTutorial}
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}

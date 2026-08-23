@@ -7,7 +7,7 @@ import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { Coin } from './Coin';
 import { EmojiIcon } from './EmojiIcon';
 import { ExpandableChip } from './ExpandableChip';
-import { MuteToggle } from './MuteToggle';
+import { GameMenu } from './GameMenu';
 import { nextDayLabel, nextDayText } from './nextDayCopy';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
@@ -102,6 +102,10 @@ interface HUDProps {
   tickBalance?: boolean;
   /** 022 — live delivery-contract progress, or null (chip hidden). */
   contract: ContractChipData;
+  /** 024 — abandons the live run from the game menu. */
+  onRestart: () => void;
+  /** 024 — flags the tutorial for replay and restarts, from the game menu. */
+  onReplayTutorial: () => void;
 }
 
 export function HUD({
@@ -117,6 +121,8 @@ export function HUD({
   heldBalance,
   tickBalance,
   contract,
+  onRestart,
+  onReplayTutorial,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
   const reputation = getReputationTier(currentDay);
@@ -234,7 +240,7 @@ export function HUD({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <MuteToggle />
+          <GameMenu onRestart={onRestart} onReplayTutorial={onReplayTutorial} />
           <button
             type="button"
             aria-label="View last turn summary"
