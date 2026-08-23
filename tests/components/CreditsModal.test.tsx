@@ -28,6 +28,14 @@ describe('CreditsModal', () => {
     expect(screen.getByText(/Synthesised in-browser/i)).toBeInTheDocument();
   });
 
+  it('links to the source repository for the MIT-licensed game code', () => {
+    render(<CreditsModal onClose={() => {}} />);
+    const link = screen.getByRole('link', { name: /github\.com\/shmoula\/pixel-parsnips/i });
+    expect(link).toHaveAttribute('href', 'https://github.com/shmoula/pixel-parsnips');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
   it('is a labelled modal dialog', () => {
     render(<CreditsModal onClose={() => {}} />);
     const dialog = screen.getByRole('dialog', { name: /credits/i });

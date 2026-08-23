@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 const LPC_URL = 'https://opengameart.org/content/lpc-crops';
+const REPO_URL = 'https://github.com/shmoula/pixel-parsnips';
 
 function Section({ heading, children }: { heading: string; children: ReactNode }) {
   return (
@@ -77,7 +78,15 @@ export function CreditsModal({ onClose }: { onClose: () => void }) {
         </Section>
 
         <p className="font-pixel text-caption text-farm-stone leading-relaxed">
-          Game code © 2026 Vaclav Balak, MIT licensed.
+          Game code © 2026 Vaclav Balak, MIT licensed.{' '}
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-farm-gold underline break-all"
+          >
+            github.com/shmoula/pixel-parsnips
+          </a>
         </p>
 
         <button
