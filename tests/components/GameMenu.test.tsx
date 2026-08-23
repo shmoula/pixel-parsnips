@@ -224,23 +224,26 @@ describe('GameMenu — run-resetting rows', () => {
     render(<GameMenu onRestart={noop} onReplayTutorial={noop} />);
     await openMenu();
 
-    await userEvent.click(screen.getByRole('menuitem', { name: /replay tutorial \(restarts run\)/i }));
+    await userEvent.click(screen.getByRole('menuitem', { name: /^replay tutorial$/i }));
 
     expect(
       screen.getByText(/replay tutorial armed\. activate again to confirm — this restarts your run/i),
     ).toBeInTheDocument();
   });
 
-  it('says out loud that replaying the tutorial restarts the run', async () => {
+  it('warns that replaying restarts the run once armed, not in the resting label', async () => {
     const onReplayTutorial = vi.fn();
     render(<GameMenu onRestart={noop} onReplayTutorial={onReplayTutorial} />);
     await openMenu();
 
-    const row = screen.getByRole('menuitem', { name: /replay tutorial \(restarts run\)/i });
+    // Resting label is just "Replay tutorial" — the "(restarts run)" warning is
+    // not there, so the row stays one line.
+    const row = screen.getByRole('menuitem', { name: /^replay tutorial$/i });
     await userEvent.click(row);
     expect(onReplayTutorial).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('menuitem', { name: /tap again to replay/i }));
+    // Armed: the warning appears alongside the confirm affordance.
+    await userEvent.click(screen.getByRole('menuitem', { name: /tap again to replay \(restarts run\)/i }));
     expect(onReplayTutorial).toHaveBeenCalledTimes(1);
   });
 });

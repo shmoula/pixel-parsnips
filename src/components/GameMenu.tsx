@@ -224,8 +224,8 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
             }}
           />
           <ArmedRow
-            label="Replay tutorial (restarts run)"
-            armedLabel="Tap again to replay"
+            label="Replay tutorial"
+            armedLabel="Tap again to replay (restarts run)"
             armedAnnouncement="Replay tutorial armed. Activate again to confirm — this restarts your run."
             onArmedChange={setReplayAnnounce}
             onConfirm={() => {

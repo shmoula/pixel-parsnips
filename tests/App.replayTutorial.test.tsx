@@ -31,7 +31,7 @@ describe('App — 024 in-run replay tutorial', () => {
 
     // Open the game menu and confirm the two-step "Replay tutorial" row.
     await userEvent.click(screen.getByRole('button', { name: /game menu/i }));
-    await userEvent.click(screen.getByRole('menuitem', { name: /replay tutorial \(restarts run\)/i }));
+    await userEvent.click(screen.getByRole('menuitem', { name: /^replay tutorial$/i }));
     await userEvent.click(screen.getByRole('menuitem', { name: /tap again to replay/i }));
 
     // The welcome step must now be showing — the whole point of "replay". Before
