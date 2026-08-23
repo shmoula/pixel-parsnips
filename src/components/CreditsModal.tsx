@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 const LPC_URL = 'https://opengameart.org/content/lpc-crops';
 
@@ -35,7 +36,12 @@ export function CreditsModal({ onClose }: { onClose: () => void }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  return (
+  // Portalled to <body>: rendered from GameMenu, this modal sits inside the HUD
+  // header, whose backdrop-blur makes it the containing block for `position:
+  // fixed`. Without the portal, `fixed inset-0` would resolve to the 64px header
+  // box rather than the viewport, centring the dialog on the header and clipping
+  // its top. The portal lifts it out so it centres on the viewport.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -87,6 +93,7 @@ export function CreditsModal({ onClose }: { onClose: () => void }) {
           Close
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

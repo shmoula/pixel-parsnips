@@ -51,8 +51,9 @@ describe('CreditsModal', () => {
   });
 
   it('has no accessibility violations', async () => {
-    const { container } = render(<CreditsModal onClose={() => {}} />);
+    // Portalled to document.body, so scan the body rather than render's container.
+    render(<CreditsModal onClose={() => {}} />);
     // @ts-expect-error matcher registered in tests/setup.ts
-    expect(await import('vitest-axe').then((m) => m.axe(container))).toHaveNoViolations();
+    expect(await import('vitest-axe').then((m) => m.axe(document.body))).toHaveNoViolations();
   });
 });
