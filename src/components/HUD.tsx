@@ -241,7 +241,6 @@ export function HUD({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <GameMenu onRestart={onRestart} onReplayTutorial={onReplayTutorial} />
           <button
             type="button"
             aria-label="View last turn summary"
@@ -275,6 +274,7 @@ export function HUD({
                 (measured) onto the letters' optical centre. */}
             {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
           </button>
+          <GameMenu onRestart={onRestart} onReplayTutorial={onReplayTutorial} />
         </div>
       </div>
     </header>
