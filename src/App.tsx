@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useGameEngine } from './engine/useGameEngine';
 import { GameBoard } from './components/GameBoard';
 import {
@@ -62,12 +62,23 @@ function App() {
   useAnalyticsEvents(engine.state);
   const { state, restart, continueSeason, endRunVictory, endOfRunRecap } = engine;
 
+  // Bumped by a replay-tutorial request to remount GameBoard (see below).
+  const [replayNonce, setReplayNonce] = useState(0);
+
   // Shared by the bankruptcy screen and the in-run game menu (024): flag the
   // tutorial for replay, then reset the run so it starts from day 1.
+  //
+  // The nonce bump remounts GameBoard so the tutorial actually restarts. The
+  // onboarding activation is a one-time, mount-only read of the persisted record
+  // (useOnboarding), so from the bankruptcy screen — where GameBoard is unmounted
+  // and remounts on restart — replay already worked. From the in-run menu
+  // GameBoard stays mounted across restart(), so without a forced remount the
+  // record reset would never be re-read and the tutorial would not reappear.
   const handleReplayTutorial = () => {
     track('onboarding_replay_requested', {});
     requestOnboardingReplay();
     restart();
+    setReplayNonce(n => n + 1);
   };
 
   // Bankruptcy — terminal run-end (existing behavior)
@@ -118,6 +129,10 @@ function App() {
     <>
       <GrainFilter />
       <GameBoard
+        // Remount on replay-tutorial so the mount-only onboarding init re-reads
+        // the freshly reset record and the tutorial restarts. A plain restart
+        // does not bump this, so it stays a no-remount reset.
+        key={replayNonce}
         state={state}
         lastDailyLog={engine.lastDailyLog}
         onNextDay={engine.nextDay}
