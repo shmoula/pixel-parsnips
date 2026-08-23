@@ -54,6 +54,10 @@ describe('events schema', () => {
     expect(EVENT_VERSIONS.day_completed).toBe(2);
     expect(EVENT_VERSIONS.plot_unlocked).toBe(2);
   });
+
+  it('declares credits_viewed at version 1', () => {
+    expect(EVENT_VERSIONS.credits_viewed).toBe(1);
+  });
 });
 
 describe('buildDayCompletedProps', () => {
