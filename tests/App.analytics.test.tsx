@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, screen } from '@testing-library/react';
 
 const { initAnalytics } = vi.hoisted(() => ({
   initAnalytics: vi.fn(),
@@ -36,5 +36,12 @@ describe('App analytics bootstrap', () => {
     const [stateArg] = useAnalyticsEvents.mock.calls[0];
     expect(stateArg).toHaveProperty('phase');
     expect(stateArg).toHaveProperty('plots');
+  });
+});
+
+describe('App — 024 chrome consolidation', () => {
+  it('renders no floating analytics control', () => {
+    render(<App />);
+    expect(screen.queryByRole('button', { name: /^analytics:/i })).toBeNull();
   });
 });
