@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 const { setAnalyticsOptOut, track } = vi.hoisted(() => ({
   setAnalyticsOptOut: vi.fn(),
   track: vi.fn(),
@@ -11,6 +11,20 @@ import { AUDIO_KEY, isMuted } from '../../src/audio/sfx';
 import { ANALYTICS_OPT_OUT_KEY } from '../../src/analytics/consent';
 
 const noop = () => {};
+
+// The popover body and the credits modal are lazy-loaded (code-split off the
+// entry bundle). Resolve both chunks once up front: React.lazy caches the
+// resolved module, so every later render mounts them synchronously — keeping the
+// specs below (including the fake-timer one, where awaiting a dynamic import is
+// impractical) free of async menu queries.
+beforeAll(async () => {
+  render(<GameMenu onRestart={noop} onReplayTutorial={noop} />);
+  await userEvent.click(screen.getByRole('button', { name: /game menu/i }));
+  await screen.findByRole('menu');
+  await userEvent.click(screen.getByRole('menuitem', { name: /credits/i }));
+  await screen.findByRole('dialog', { name: /credits/i });
+  cleanup();
+});
 
 beforeEach(() => {
   localStorage.clear();

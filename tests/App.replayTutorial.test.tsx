@@ -29,9 +29,10 @@ describe('App — 024 in-run replay tutorial', () => {
     // Sanity: no tutorial welcome card showing yet.
     expect(screen.queryByRole('button', { name: /plant my farm/i })).toBeNull();
 
-    // Open the game menu and confirm the two-step "Replay tutorial" row.
+    // Open the game menu and confirm the two-step "Replay tutorial" row. The
+    // menu body is lazy-loaded, so wait for it to mount before the first click.
     await userEvent.click(screen.getByRole('button', { name: /game menu/i }));
-    await userEvent.click(screen.getByRole('menuitem', { name: /^replay tutorial$/i }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /^replay tutorial$/i }));
     await userEvent.click(screen.getByRole('menuitem', { name: /tap again to replay/i }));
 
     // The welcome step must now be showing — the whole point of "replay". Before
