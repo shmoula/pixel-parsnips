@@ -220,3 +220,28 @@ describe('GameMenu — run-resetting rows', () => {
     expect(onReplayTutorial).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('GameMenu — credits row', () => {
+  it('opens the credits modal, closes the popover, and tracks the view', async () => {
+    render(<GameMenu onRestart={noop} onReplayTutorial={noop} />);
+    await openMenu();
+
+    await userEvent.click(screen.getByRole('menuitem', { name: /credits/i }));
+
+    expect(screen.getByRole('dialog', { name: /credits/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(track).toHaveBeenCalledWith('credits_viewed', {});
+    expect(track).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns focus to the gear when the credits modal closes', async () => {
+    render(<GameMenu onRestart={noop} onReplayTutorial={noop} />);
+    await openMenu();
+    await userEvent.click(screen.getByRole('menuitem', { name: /credits/i }));
+
+    await userEvent.click(screen.getByRole('button', { name: /close/i }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: /game menu/i })).toHaveFocus();
+  });
+});

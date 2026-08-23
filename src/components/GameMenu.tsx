@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { isMuted, setMuted } from '../audio/sfx';
 import { isDoNotTrack, isOptedOut, optIn, optOut } from '../analytics/consent';
-import { setAnalyticsOptOut } from '../analytics/track';
+import { setAnalyticsOptOut, track } from '../analytics/track';
 import { EmojiIcon } from './EmojiIcon';
+import { CreditsModal } from './CreditsModal';
 
 /** Any row, action or toggle — `menuitem` and `menuitemcheckbox` both match. */
 const ANY_ROW = '[role^="menuitem"]';
@@ -97,6 +98,7 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
   const [open, setOpen] = useState(false);
   const [muted, setMutedState] = useState(() => isMuted());
   const [optedOut, setOptedOut] = useState(() => isOptedOut());
+  const [creditsOpen, setCreditsOpen] = useState(false);
   // DNT hard-disables tracking regardless of the local flag; reflect that so the
   // row never implies analytics are live when track() will always no-op.
   const dntActive = isDoNotTrack();
@@ -147,6 +149,14 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
     else optIn();
     setAnalyticsOptOut(next);
     setOptedOut(next);
+  }
+
+  function openCredits() {
+    track('credits_viewed', {});
+    // Not close(): the modal takes focus on mount, so bouncing focus through the
+    // gear first would be a visible detour. The modal returns it on close.
+    setOpen(false);
+    setCreditsOpen(true);
   }
 
   return (
@@ -203,8 +213,19 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
             disabled={dntActive}
             note={dntActive ? "Your browser's Do Not Track setting is on." : undefined}
           />
-          {/* Task 7 inserts the Credits row here. */}
+          <button type="button" role="menuitem" onClick={openCredits} className={ROW_CLASS}>
+            Credits
+          </button>
         </div>
+      )}
+
+      {creditsOpen && (
+        <CreditsModal
+          onClose={() => {
+            setCreditsOpen(false);
+            gearRef.current?.focus();
+          }}
+        />
       )}
     </div>
   );
