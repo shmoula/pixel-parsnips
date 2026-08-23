@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { isMuted, setMuted } from '../audio/sfx';
+import { isDoNotTrack, isOptedOut, optIn, optOut } from '../analytics/consent';
+import { setAnalyticsOptOut } from '../analytics/track';
 import { EmojiIcon } from './EmojiIcon';
 
 /** Any row, action or toggle — `menuitem` and `menuitemcheckbox` both match. */
@@ -58,6 +60,10 @@ interface GameMenuProps {
 export function GameMenu({ onRestart: _onRestart, onReplayTutorial: _onReplayTutorial }: GameMenuProps) {
   const [open, setOpen] = useState(false);
   const [muted, setMutedState] = useState(() => isMuted());
+  const [optedOut, setOptedOut] = useState(() => isOptedOut());
+  // DNT hard-disables tracking regardless of the local flag; reflect that so the
+  // row never implies analytics are live when track() will always no-op.
+  const dntActive = isDoNotTrack();
   const gearRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -98,6 +104,15 @@ export function GameMenu({ onRestart: _onRestart, onReplayTutorial: _onReplayTut
     setMutedState(next);
   }
 
+  function toggleAnalytics() {
+    if (dntActive) return;
+    const next = !optedOut;
+    if (next) optOut();
+    else optIn();
+    setAnalyticsOptOut(next);
+    setOptedOut(next);
+  }
+
   return (
     <div className="relative">
       <button
@@ -130,7 +145,13 @@ export function GameMenu({ onRestart: _onRestart, onReplayTutorial: _onReplayTut
         >
           {/* Task 6 inserts the Restart and Replay tutorial rows here. */}
           <ToggleRow label="Sound" on={!muted} onToggle={toggleSound} />
-          {/* Task 5 inserts the Anonymous analytics row here. */}
+          <ToggleRow
+            label="Anonymous analytics"
+            on={!optedOut && !dntActive}
+            onToggle={toggleAnalytics}
+            disabled={dntActive}
+            note={dntActive ? "Your browser's Do Not Track setting is on." : undefined}
+          />
           {/* Task 7 inserts the Credits row here. */}
         </div>
       )}
