@@ -39,7 +39,7 @@ export function PageBackdrop() {
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-[#140E06]"
+      className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-farm-page"
       style={
         soilUrl
           ? {

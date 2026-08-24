@@ -29,7 +29,7 @@ export function BottomActionBar({
       className="
         md:hidden fixed bottom-0 left-0 right-0 z-40
         flex items-stretch gap-2 px-3 pt-2
-        bg-[#0E0A04]/95 backdrop-blur-sm border-t border-[#5C3D1E]/50
+        bg-farm-bar/95 backdrop-blur-sm border-t border-farm-chipBorder/50
       "
       style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
     >

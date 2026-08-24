@@ -247,7 +247,7 @@ function VictoryVariant({
           onClick={onEndRun}
           className="
             flex-1 px-4 py-3 rounded font-pixel text-body
-            bg-[#261808] text-farm-parchment hover:bg-[#3A2510] border border-farm-stone/40
+            bg-farm-chip text-farm-parchment hover:bg-farm-chipHover border border-farm-stone/40
             transition-colors
           "
         >
