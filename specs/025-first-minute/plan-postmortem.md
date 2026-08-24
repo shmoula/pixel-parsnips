@@ -44,13 +44,18 @@ exactly the day two of the five titles are judged on.
 
 ---
 
-## Facts confirmed on the merged tree (2026-08-22)
+## Facts confirmed on the merged tree (2026-08-24, rebased onto `ee3e87a`)
+
+This branch is rebased onto master **after** the 025 presentation PR merged, so the line references
+below are post-merge. Two things that landed in that PR touch this plan's files: `BankruptcyScreen`
+gained the "Told you. Again?" echo above Restart, and its labels moved to `text-farm-parchment/70`.
+Neither conflicts — the death title goes above the medal badge, the echo stays above Restart.
 
 - `SCHEMA_VERSION` is **10** (`src/engine/constants.ts:12`).
 - `GameState` retains only `lastDailyLog` — one entry, no history (`src/engine/types.ts:229`).
 - `DISASTER_WEATHER_IDS` is exported from `seasons.ts:85` as
   `['blight', 'pest_infestation', 'flash_drought']`.
-- `deriveInsight` is a private function inside `BankruptcyScreen.tsx:24`, untested in isolation.
+- `deriveInsight` is a private function inside `BankruptcyScreen.tsx:25`, untested in isolation.
 - PostHog already receives `tax_deducted` per day via `day_completed`; the data exists in the
   warehouse and nowhere the running game can read it back.
 
@@ -131,7 +136,7 @@ In `src/engine/types.ts`, above `export interface GameState`:
  *
  * Six numbers rather than three: `harvestIncome` is the denominator the
  * "Fed the Taxman" title compares cumulative tax against, and the two running
- * counts let "Overextended" spot a recent purchase — neither a plot buy nor a
+ * counts let "Bought the Farm" spot a recent purchase — neither a plot buy nor a
  * building buy is timestamped anywhere else in GameState.
  */
 export interface RunDayRecord {
@@ -699,6 +704,10 @@ a taxman story, because the taxman is the game's thesis and the weather is noise
 
 The thresholds are first-pass and tunable; the ordering is not.
 
+**"Bought the Farm", not "Overextended".** The idiom means both *purchased land* and *died*, which is
+exactly the run being described. "Overextended" is the label a spreadsheet would use; the other four
+titles are punchlines and this one has to earn its place beside them.
+
 - [ ] **Step 1: Write the failing test**
 
 Append to `tests/engine/runPostMortem.test.ts`:
@@ -837,7 +846,7 @@ export type DeathCauseId =
 export const DEATH_TITLES: Record<DeathCauseId, string> = {
   fed_the_taxman: 'Fed the Taxman',
   weathered_out: 'Weathered Out',
-  overextended: 'Overextended',
+  overextended: 'Bought the Farm',
   idle_hands: 'Idle Hands',
   out_of_seed_money: 'Out of Seed Money',
 };
@@ -999,7 +1008,7 @@ Expected: FAIL — TypeScript rejects the unknown `runHistory` prop; no title re
 
 - [ ] **Step 3: Update `BankruptcyScreen.tsx`**
 
-Delete the local `deriveInsight` function (lines 24–39) and import instead:
+Delete the local `deriveInsight` function (lines 25–42) and import instead:
 
 ```tsx
 import { DEATH_TITLES, deriveEvidenceLine, deriveInsight, type DeathCauseId } from '../engine/runPostMortem';
