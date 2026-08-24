@@ -20,12 +20,14 @@ function renderScreen(props: Partial<React.ComponentProps<typeof BankruptcyScree
     <BankruptcyScreen
       daysPlayed={12}
       peakBalance={150}
+      peakHarvestStreak={3}
       disastersSurvived={1}
       seasonReached={1}
       medal="none"
       records={emptyRecords}
       newBests={new Set()}
       onRestart={vi.fn()}
+      onReplayTutorial={vi.fn()}
       showEventsUnlockTease={false}
       {...props}
     />,

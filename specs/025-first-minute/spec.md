@@ -14,11 +14,23 @@ one piece of real player feedback the project has (a tester who went bankrupt an
 
 This spec brightens the palette, promotes the tax to a first-class HUD element, and authors the
 failure framing at both ends of the run — welcome modal and bankruptcy screen. The bankruptcy
-screen gains the evidence to say *why* the run ended, which requires the run's first `GameState`
-addition since 022.
+screen also gains the evidence to say *why* the run ended, which requires the run's first `GameState`
+addition since 022 — that piece (Phase C) is engine work, tracked and delivered separately from the
+presentation change this PR carries (see **Delivery status** below).
 
 **Explicitly not a balance change.** Per [`01-STRATEGY.md`](../../../../game-ideas/01-STRATEGY.md):
 no economy tuning before 20 players' worth of data.
+
+## Delivery status
+
+This spec authors all four phases as one design; they ship on different tracks:
+
+| Phase | Content | Status |
+|---|---|---|
+| A | Palette tokens + contrast pass | **Delivered** in the presentation PR |
+| D | Framing copy (welcome modal + bankruptcy echo) | **Delivered** in the presentation PR |
+| B | Tax indicator (desktop chip + mobile caption) | **Trialed and reverted.** The rate is constant and the concrete nightly charge already appears in the day-end summary, so a permanent HUD element added cognitive load and header space without new information. The Phase B sections below are kept as the record of what was tried and why it was pulled |
+| C | Bankruptcy evidence line + death titles + `runHistory` (schema 11) | **Future work, separate branch.** Engine change, not part of the presentation delivery. The Phase C sections below are design-of-record for that branch, not a description of this PR |
 
 ## Problem
 
@@ -81,7 +93,8 @@ not a result:
 The literals are repeated across `HUD.tsx` and neighbours — measured on the merged tree:
 `#5C3D1E` 22 times in 7 files, `#261808` 12 times in 5, `#3A2510` 6 times in 5, `#0E0A04` twice.
 **Lift them into Tailwind tokens** in the same pass (`farm.chip`, `farm.chipBorder`,
-`farm.chipHover`, `farm.bar`) so the next tuning round is one file, not twelve.
+`farm.chipHover`, `farm.bar`, and `farm.page` — the flat colour behind the tiled soil backdrop) so
+the next tuning round is one file, not twelve.
 
 Two literals are deliberately **not** in scope: `#4A2F1A` in `Shop.tsx` (an awning stripe, not a
 background) and `#EB6A5C` (a foreground that gets re-derived from the contrast pass below).
@@ -110,6 +123,9 @@ manual "brighten every asset in Preview" step should become unnecessary; if it d
 did not go far enough.
 
 ## Phase B — the tax indicator
+
+> **Reverted.** See **Delivery status** above. This section is retained as the record of the trialed
+> design; the tax indicator is not present in the shipped HUD.
 
 ### Desktop (≥640px)
 
@@ -143,6 +159,9 @@ overflow 375px, **the goal abbreviates further; the tax does not** — it is the
 exists to make visible.
 
 ## Phase C — bankruptcy reframe
+
+> **Future work, separate branch.** See **Delivery status** above. This is engine/schema design of
+> record for a later branch, not part of the presentation delivery.
 
 ### C1 — run history (`SCHEMA_VERSION` 10 → 11)
 
@@ -190,7 +209,8 @@ Replaces the **content** of the existing Insight box; the box itself stays.
 
 Derived from `runHistory`: the longest run of consecutive days whose `closingBalance` sat in the top
 quartile of the run, plus the summed `taxDeducted` across those days. `deriveInsight` is **kept as
-the fallback** for runs too short to have a story (fewer than ~4 recorded days) and for migrated
+the fallback** for runs too short to have a story (fewer than five recorded days — i.e. days 1–4
+fall back) and for migrated
 saves with an empty history — a player who died on day 2 has no pattern to name, and generic advice
 beats a fabricated one.
 
@@ -250,8 +270,9 @@ Sits directly above the existing Restart button, which already provides the one-
 
 ## Testing
 
-- **Palette**: automated contrast assertions for the five pairs listed in Phase A; existing axe
-  tests stay green.
+- **Palette**: automated contrast assertions for all ten foreground/background pairs the harness
+  gates (Phase A names a representative subset "at minimum"; the harness expands it to the full ten);
+  existing axe tests stay green.
 - **Tax chip**: renders at ≥640px with the rate; pulses once when `lastDailyLog.day` advances with
   `taxDeducted > 0`; does not pulse under reduced motion; the old `Tax 6%` chrome span is gone.
 - **Tax on mobile**: below 640px no chip renders and the balance caption contains `Tax 6%`, with the
@@ -269,12 +290,13 @@ Sits directly above the existing Restart button, which already provides the one-
 
 | Phase | Content | Gate |
 |---|---|---|
-| D | Framing copy | tests green — smallest, most valuable, ships first |
-| B | Tax chip + mobile caption | tests green |
-| A | Palette tokens + contrast pass | contrast assertions green, **screenshots reviewed by the author** |
-| C | Schema 11 + evidence line + death titles | tests green, migration test green |
+| D | Framing copy | tests green — smallest, most valuable, ships first · **delivered** |
+| B | Tax chip + mobile caption | tests green · **trialed and reverted** (see Delivery status) |
+| A | Palette tokens + contrast pass | contrast assertions green, **screenshots reviewed by the author** · **delivered** |
+| C | Schema 11 + evidence line + death titles | tests green, migration test green · **future work, separate branch** |
 
-D and B are independent of A. A is the only phase needing a human look before merge.
+D and A are the presentation phases that ship here; A is the one needing a human look before merge.
+B was reverted and C is a separate engine branch.
 
 ## Risks & mitigations
 

@@ -295,6 +295,10 @@ git commit -m "feat(ui): echo the failure framing on the bankruptcy screen"
 
 ## Task 3: The tax chip on desktop
 
+> **Reverted (Phase B).** This task was implemented and then pulled — the constant rate added a
+> permanent HUD element without new information over the day-end summary. Kept as the record of what
+> was built; the tax chip is not in the shipped HUD. See the spec's **Delivery status**.
+
 **Files:**
 - Modify: `src/components/HUD.tsx`
 - Modify: `src/components/GameBoard.tsx`
@@ -508,6 +512,9 @@ git commit -m "feat(hud): promote the nightly tax to a chip beside the balance"
 ---
 
 ## Task 4: The tax on mobile
+
+> **Reverted (Phase B).** Pulled together with Task 3 — no tax caption ships in the mobile balance
+> chip. Kept as the record of the trialed design. See the spec's **Delivery status**.
 
 **Files:**
 - Modify: `src/components/HUD.tsx` (balance chip caption, ~line 189)
@@ -898,13 +905,13 @@ git commit -m "fix(a11y): raise three sub-4.5:1 text pairs to AA, gated by a con
 **Files:**
 - Modify: `src/theme/palette.ts`
 
-**Context:** The whole reason for Tasks 5–7. One file, six values, with the contrast harness as the
+**Context:** The whole reason for Tasks 5–7. One file, seven values, with the contrast harness as the
 gate. `70-DEEPDIVE.md` §3.3 is the argument: near-black browns fill the viewport, and as a first
 impression — and as a thumbnail in a feed of bright listings — that reads as unfinished or broken.
 
 **These values are a direction, not a result.** The author reviews screenshots before this merges.
 
-- [ ] **Step 1: Change the six values**
+- [ ] **Step 1: Change the seven values**
 
 In `src/theme/palette.ts`:
 

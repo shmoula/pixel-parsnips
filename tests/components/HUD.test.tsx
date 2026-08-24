@@ -11,6 +11,7 @@ const baseProps = {
   endlessMode: false,
   canAdvanceProductively: true,
   contract: null,
+  harvestStreak: 0,
   onRestart: vi.fn(),
   onReplayTutorial: vi.fn(),
 };
