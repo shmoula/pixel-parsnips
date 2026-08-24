@@ -20,12 +20,14 @@ function renderScreen(props: Partial<React.ComponentProps<typeof BankruptcyScree
     <BankruptcyScreen
       daysPlayed={12}
       peakBalance={150}
+      peakHarvestStreak={3}
       disastersSurvived={1}
       seasonReached={1}
       medal="none"
       records={emptyRecords}
       newBests={new Set()}
       onRestart={vi.fn()}
+      onReplayTutorial={vi.fn()}
       showEventsUnlockTease={false}
       {...props}
     />,
@@ -158,5 +160,17 @@ describe('BankruptcyScreen — 024 carries no chrome', () => {
     expect(screen.queryByRole('button', { name: /^analytics:/i })).toBeNull();
     // Restart is the one action this screen keeps.
     expect(screen.getByRole('button', { name: /restart game/i })).toBeInTheDocument();
+  });
+});
+
+describe('BankruptcyScreen — 025 failure echo', () => {
+  it('confirms the loss was expected, immediately above Restart', () => {
+    renderScreen();
+    const echo = screen.getByText(/told you\. again\?/i);
+    expect(echo).toBeInTheDocument();
+
+    const restart = screen.getByRole('button', { name: /restart game/i });
+    // The echo is the setup and Restart is the punchline; they must read together.
+    expect(echo.compareDocumentPosition(restart) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

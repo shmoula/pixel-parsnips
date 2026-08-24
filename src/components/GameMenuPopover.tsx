@@ -6,7 +6,7 @@ import { setAnalyticsOptOut } from '../analytics/track';
 const ROW_CLASS = `
   w-full text-left font-pixel text-caption px-3 py-2.5 min-h-[44px] rounded
   text-farm-parchment/90
-  hover:bg-[#3A2510] focus-visible:bg-[#3A2510]
+  hover:bg-farm-chipHover focus-visible:bg-farm-chipHover
   disabled:opacity-60 disabled:hover:bg-transparent
 `;
 
@@ -161,7 +161,7 @@ export function GameMenuPopover({
         className="
           absolute right-0 top-full mt-1 z-50 w-60
           flex flex-col gap-0.5 p-1
-          bg-farm-soil border border-[#5C3D1E] rounded-lg
+          bg-farm-soil border border-farm-chipBorder rounded-lg
         "
       >
         <ArmedRow

@@ -262,7 +262,16 @@ export function OnboardingOverlay({ step, harvestIncome, netIncome, isShopOpen =
         <div className="absolute inset-0 flex items-center justify-center p-6">
           <div className="pointer-events-auto max-w-xs w-full bg-farm-soil border border-farm-stone/40 rounded-xl p-5 flex flex-col gap-4 text-center">
             <p className="font-pixel text-body text-farm-parchment leading-relaxed">
-              Grow crops. Sell 'em. Don't go broke. Let's fill your farm with radishes!
+              Grow crops. Sell 'em. Don't go broke.
+            </p>
+            {/* 025 / 70-DEEPDIVE §4 — the expectation-setting line. The most common
+                first experience is bankruptcy; saying so up front turns it from a
+                complaint into the intended experience. */}
+            <p className="font-pixel text-body text-farm-gold leading-relaxed">
+              Most people go broke the first time. That's the game.
+            </p>
+            <p className="font-pixel text-caption text-farm-parchment/80 leading-relaxed">
+              Let's fill your farm with radishes.
             </p>
             <button
               type="button"

@@ -26,7 +26,7 @@ export function BuildingCard({ def, owned, canAfford, onBuy }: BuildingCardProps
   }
 
   return (
-    <div className="bg-[#261808] rounded-lg p-3 flex flex-col gap-1 border border-[#5C3D1E]/60">
+    <div className="bg-farm-chip rounded-lg p-3 flex flex-col gap-1 border border-farm-chipBorder/60">
       <div className="flex items-center gap-2">
         <span aria-hidden="true" className="text-lg">{def.emoji}</span>
         <div>

@@ -61,7 +61,7 @@ interface StatRowProps {
 function StatRow({ label, value, isNewBest }: StatRowProps) {
   return (
     <div className="flex justify-between items-center px-4 py-2 bg-farm-ink rounded">
-      <span className="font-pixel text-body text-farm-stone">
+      <span className="font-pixel text-body text-farm-parchment/70">
         {label}
         {isNewBest && <NewBestBadge />}
       </span>
@@ -138,7 +138,7 @@ export function BankruptcyScreen({
         aria-label="Personal records across all runs"
         className="flex flex-col gap-2 w-full max-w-xs px-4 py-3 bg-farm-ink rounded border border-farm-stone/30"
       >
-        <span className="font-pixel text-caption text-farm-stone uppercase tracking-widest">
+        <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
           Personal Records
         </span>
         {isFirstRun ? (
@@ -156,7 +156,7 @@ export function BankruptcyScreen({
       </section>
 
       <div className="flex flex-col gap-2 w-full max-w-xs px-4 py-3 bg-farm-ink rounded border border-farm-stone/30">
-        <span className="font-pixel text-caption text-farm-stone uppercase tracking-widest">Insight</span>
+        <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">Insight</span>
         <p className="font-pixel text-body text-farm-parchment leading-relaxed">{insight}</p>
       </div>
 
@@ -165,6 +165,10 @@ export function BankruptcyScreen({
           <EmojiIcon>🧳</EmojiIcon> Word of your farm is spreading — from your next run, visitors will arrive with offers.
         </p>
       )}
+
+      {/* 025 — the other end of the welcome modal's promise. A confirmation that
+          this was the intended first experience, not a consolation. */}
+      <p className="font-pixel text-body text-farm-gold">Told you. Again?</p>
 
       <div className="flex flex-col gap-2 w-full max-w-xs mt-2">
         <button

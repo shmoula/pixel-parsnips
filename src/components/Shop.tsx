@@ -167,6 +167,11 @@ export function Shop({
           : {
               background: [
                 'repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 8px)',
+                // Decorative fallback stripe — intentionally NOT PALETTE.soil.
+                // Keeping it a raw literal decouples this awning from the soil
+                // token, so it doesn't recolour when `soil` changes; after the
+                // 025 palette lift (soil is now #5E3D22) this value deliberately
+                // no longer matches soil.
                 '#4A2F1A',
               ].join(', '),
             }
@@ -211,7 +216,7 @@ export function Shop({
         <Awning />
         <p className="font-pixel text-[9px] text-farm-gold/60 tracking-widest uppercase mb-2">Supplies</p>
         <div className="flex flex-col gap-2">
-          <div className="bg-[#261808] rounded-lg p-3 flex flex-col gap-1 border border-[#5C3D1E]/60">
+          <div className="bg-farm-chip rounded-lg p-3 flex flex-col gap-1 border border-farm-chipBorder/60">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🌿</span>
@@ -263,7 +268,7 @@ export function Shop({
               />
             ))}
             {hasLockedBuildings && (
-              <div className="bg-[#261808]/60 rounded-lg p-3 flex items-center gap-2 border border-dashed border-[#5C3D1E]">
+              <div className="bg-farm-chip/60 rounded-lg p-3 flex items-center gap-2 border border-dashed border-farm-chipBorder">
                 <span aria-hidden="true" className="text-lg">🔒</span>
                 <p className="text-body text-farm-stone">
                   New buildings unlock in Season {nextBuildingSeason}

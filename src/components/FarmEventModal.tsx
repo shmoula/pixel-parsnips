@@ -59,7 +59,7 @@ export function FarmEventModal({ view, isNew, onChoose }: FarmEventModalProps) {
             type="button"
             autoFocus={!affordableA}
             onClick={() => onChoose('B')}
-            className="font-pixel text-body text-left px-4 py-3 min-h-[44px] rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-[#3A2510] transition-colors"
+            className="font-pixel text-body text-left px-4 py-3 min-h-[44px] rounded bg-farm-ink text-farm-parchment border border-farm-stone/40 hover:bg-farm-chipHover transition-colors"
           >
             <span className="block">{def.choiceB.label}</span>
             <span className="block text-caption text-farm-parchment/80 mt-1">{def.choiceB.summary}</span>

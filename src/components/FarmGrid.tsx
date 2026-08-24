@@ -1,4 +1,5 @@
 import type { PlotState } from '../engine/types';
+import { PALETTE } from '../theme/palette';
 import { PlotCard } from './PlotCard';
 
 interface FarmGridProps {
@@ -37,7 +38,7 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, recov
       {/* Decorative fence border frame */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 rounded-xl border-4 border-[#5C3D1E] pointer-events-none"
+        className="absolute inset-0 rounded-xl border-4 border-farm-chipBorder pointer-events-none"
       />
 
       {/* Pebbles — top-left cluster */}
@@ -48,9 +49,9 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, recov
         width="28"
         height="20"
       >
-        <ellipse cx="7"  cy="13" rx="6" ry="5"  fill="#5C3D1E" opacity="0.75" />
-        <ellipse cx="19" cy="8"  rx="5" ry="4"  fill="#5C3D1E" opacity="0.55" />
-        <ellipse cx="24" cy="16" rx="3" ry="2.5" fill="#5C3D1E" opacity="0.5" />
+        <ellipse cx="7"  cy="13" rx="6" ry="5"  fill={PALETTE.chipBorder} opacity="0.75" />
+        <ellipse cx="19" cy="8"  rx="5" ry="4"  fill={PALETTE.chipBorder} opacity="0.55" />
+        <ellipse cx="24" cy="16" rx="3" ry="2.5" fill={PALETTE.chipBorder} opacity="0.5" />
       </svg>
 
       {/* Pebbles — bottom-right cluster */}
@@ -61,9 +62,9 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, recov
         width="28"
         height="20"
       >
-        <ellipse cx="6"  cy="8"  rx="5" ry="4"   fill="#5C3D1E" opacity="0.55" />
-        <ellipse cx="18" cy="13" rx="6" ry="5"   fill="#5C3D1E" opacity="0.75" />
-        <ellipse cx="24" cy="6"  rx="3" ry="2.5" fill="#5C3D1E" opacity="0.5" />
+        <ellipse cx="6"  cy="8"  rx="5" ry="4"   fill={PALETTE.chipBorder} opacity="0.55" />
+        <ellipse cx="18" cy="13" rx="6" ry="5"   fill={PALETTE.chipBorder} opacity="0.75" />
+        <ellipse cx="24" cy="6"  rx="3" ry="2.5" fill={PALETTE.chipBorder} opacity="0.5" />
       </svg>
 
       {/* Grass tufts — mid-left edge */}

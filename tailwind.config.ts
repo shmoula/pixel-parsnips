@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import { PALETTE } from './src/theme/palette';
 
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
@@ -6,14 +7,20 @@ export default {
     extend: {
       colors: {
         farm: {
-          soil:      '#4A2F1A',
-          grass:     '#357028',
-          sky:       '#6BBFFF',
-          gold:      '#F5C842',
-          red:       '#C0392B',
-          stone:     '#8C7B6B',
-          parchment: '#F5ECD7',
-          ink:       '#1A1A1A',
+          soil: PALETTE.soil,
+          grass: PALETTE.grass,
+          sky: PALETTE.sky,
+          gold: PALETTE.gold,
+          red: PALETTE.red,
+          stone: PALETTE.stone,
+          parchment: PALETTE.parchment,
+          ink: PALETTE.ink,
+          bar: PALETTE.bar,
+          chip: PALETTE.chip,
+          chipBorder: PALETTE.chipBorder,
+          chipHover: PALETTE.chipHover,
+          page: PALETTE.page,
+          danger: PALETTE.danger,
         },
       },
       fontFamily: {

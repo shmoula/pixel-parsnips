@@ -7,7 +7,7 @@ const REPO_URL = 'https://github.com/shmoula/pixel-parsnips';
 function Section({ heading, children }: { heading: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-1">
-      <h3 className="font-pixel text-caption text-farm-stone uppercase tracking-widest">{heading}</h3>
+      <h3 className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">{heading}</h3>
       <p className="font-pixel text-caption text-farm-parchment leading-relaxed">{children}</p>
     </section>
   );
@@ -77,7 +77,7 @@ export function CreditsModal({ onClose }: { onClose: () => void }) {
           Synthesised in-browser; no sampled audio.
         </Section>
 
-        <p className="font-pixel text-caption text-farm-stone leading-relaxed">
+        <p className="font-pixel text-caption text-farm-parchment/70 leading-relaxed">
           Game code © 2026 Vaclav Balak, MIT licensed.{' '}
           <a
             href={REPO_URL}

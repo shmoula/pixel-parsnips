@@ -97,8 +97,8 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
         onClick={() => setOpen(v => !v)}
         className="
           font-pixel text-caption px-2 py-1.5 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 rounded
-          bg-[#261808] text-farm-stone/60 border border-[#5C3D1E]/50
-          hover:bg-[#3A2510] hover:text-farm-parchment/80 hover:border-[#5C3D1E]
+          bg-farm-chip text-farm-stone/60 border border-farm-chipBorder/50
+          hover:bg-farm-chipHover hover:text-farm-parchment/80 hover:border-farm-chipBorder
           active:scale-95 transition-all
         "
       >

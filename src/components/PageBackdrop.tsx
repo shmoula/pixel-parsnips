@@ -19,18 +19,37 @@ interface PropSpec {
 }
 
 /**
- * Asymmetric composition: hero tools anchored to the page edges (visible in
- * the side margins opened up by the board's max-width), small vegetation
- * scattered along edges and the area below the fold. Tuned visually — adjust
- * freely in the browser preview.
+ * Full-screen scatter: 12 grass/flower patches and 8 stones spread across the
+ * whole viewport — every quadrant, including behind the board (they sit on a
+ * -z-10 layer, so content simply occludes the ones it covers). Positions and
+ * sizes are hand-tuned to read as a random scatter while staying stable across
+ * reloads; each item is a distinct, larger size (~1.5–2× the previous pass).
+ * Tuned visually — adjust freely in the browser preview.
  */
 const PROPS: PropSpec[] = [
-  { name: 'grass_2',   height: 96,  style: { top: '40%', right: 28 },      desktopOnly: true },
-  { name: 'flower_1',  height: 96,  style: { bottom: '12%', left: 48 },    desktopOnly: true },
-  { name: 'stones',    height: 64,  style: { top: '32%', left: 52 },       desktopOnly: true },
-  { name: 'grass_1',   height: 96,  style: { top: '70%', left: 8 } },
-  { name: 'grass_1',   height: 64,  style: { bottom: 8, right: '30%' } },
-  { name: 'stones',    height: 48,  style: { bottom: 28, left: '42%' } },
+  // Grass & flowers (12), each a distinct size, scattered across the screen.
+  { name: 'grass_2',   height: 152, style: { top: '5%',  left: '3%' } },
+  { name: 'flower_1',  height: 116, style: { top: '9%',  left: '38%' } },
+  { name: 'grass_1',   height: 168, style: { top: '7%',  right: '12%' } },
+  { name: 'grass_2',   height: 128, style: { top: '21%', left: '12%' } },
+  { name: 'flower_1',  height: 144, style: { top: '26%', right: '6%' } },
+  { name: 'grass_1',   height: 112, style: { top: '33%', left: '30%' } },
+  { name: 'grass_2',   height: 160, style: { top: '44%', right: '20%' } },
+  { name: 'flower_1',  height: 124, style: { top: '51%', left: '7%' } },
+  { name: 'grass_1',   height: 140, style: { top: '62%', right: '9%' } },
+  { name: 'grass_2',   height: 120, style: { top: '68%', left: '22%' } },
+  { name: 'flower_1',  height: 156, style: { bottom: '8%',  left: '44%' } },
+  { name: 'grass_1',   height: 132, style: { bottom: '12%', right: '34%' } },
+
+  // Stones (8), texture accents woven through the scatter.
+  { name: 'stones',    height: 100, style: { top: '15%', left: '55%' } },
+  { name: 'stones',    height: 84,  style: { top: '30%', right: '34%' } },
+  { name: 'stones',    height: 120, style: { top: '40%', left: '18%' } },
+  { name: 'stones',    height: 92,  style: { top: '57%', right: '40%' } },
+  { name: 'stones',    height: 108, style: { top: '73%', left: '40%' } },
+  { name: 'stones',    height: 80,  style: { top: '85%', right: '22%' } },
+  { name: 'stones',    height: 116, style: { top: '12%', left: '82%' } },
+  { name: 'stones',    height: 96,  style: { bottom: '16%', left: '12%' } },
 ];
 
 export function PageBackdrop() {
@@ -39,7 +58,7 @@ export function PageBackdrop() {
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-[#140E06]"
+      className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-farm-page"
       style={
         soilUrl
           ? {
