@@ -508,3 +508,49 @@ describe('OnboardingOverlay — buy progress (017 FR-005)', () => {
     expect(screen.queryByText(/bought/)).not.toBeInTheDocument();
   });
 });
+
+describe('OnboardingOverlay — 025 failure framing', () => {
+  it('tells the player up front that going broke is the expected first outcome', () => {
+    render(
+      <OnboardingOverlay
+        step="welcome"
+        harvestIncome={0}
+        netIncome={0}
+        onStart={() => {}}
+        onSkip={() => {}}
+        onDismissPayoff={() => {}}
+      />,
+    );
+    expect(screen.getByText(/most people go broke the first time\. that's the game\./i)).toBeInTheDocument();
+  });
+
+  it('keeps the pitch but drops the cheery exclamation', () => {
+    render(
+      <OnboardingOverlay
+        step="welcome"
+        harvestIncome={0}
+        netIncome={0}
+        onStart={() => {}}
+        onSkip={() => {}}
+        onDismissPayoff={() => {}}
+      />,
+    );
+    expect(screen.getByText(/grow crops\. sell 'em\. don't go broke\./i)).toBeInTheDocument();
+    expect(screen.getByText(/let's fill your farm with radishes\./i)).toBeInTheDocument();
+  });
+
+  it('carries no exclamation mark anywhere on the welcome card', () => {
+    const { container } = render(
+      <OnboardingOverlay
+        step="welcome"
+        harvestIncome={0}
+        netIncome={0}
+        onStart={() => {}}
+        onSkip={() => {}}
+        onDismissPayoff={() => {}}
+      />,
+    );
+    // cosy language attracts the wrong players and repels the beachhead.
+    expect(container.textContent).not.toContain('!');
+  });
+});
