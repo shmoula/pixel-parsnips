@@ -19,18 +19,31 @@ interface PropSpec {
 }
 
 /**
- * Asymmetric composition: hero tools anchored to the page edges (visible in
- * the side margins opened up by the board's max-width), small vegetation
- * scattered along edges and the area below the fold. Tuned visually — adjust
- * freely in the browser preview.
+ * Asymmetric composition: small vegetation scattered across the side margins
+ * (opened up by the board's max-width) and the area below the fold, with a
+ * couple of stones for texture. Positions are hand-tuned to read as a random
+ * scatter while staying stable across reloads and clear of the central
+ * content column. Margin/upper props are desktopOnly so the mobile layout —
+ * where content fills the width — stays clean; only the bottom-edge props
+ * show on every size. Tuned visually — adjust freely in the browser preview.
  */
 const PROPS: PropSpec[] = [
-  { name: 'grass_2',   height: 96,  style: { top: '40%', right: 28 },      desktopOnly: true },
-  { name: 'flower_1',  height: 96,  style: { bottom: '12%', left: 48 },    desktopOnly: true },
-  { name: 'stones',    height: 64,  style: { top: '32%', left: 52 },       desktopOnly: true },
-  { name: 'grass_1',   height: 96,  style: { top: '70%', left: 8 } },
-  { name: 'grass_1',   height: 64,  style: { bottom: 8, right: '30%' } },
-  { name: 'stones',    height: 48,  style: { bottom: 28, left: '42%' } },
+  // Stones — texture accents in the exposed soil band.
+  { name: 'stones',    height: 56,  style: { top: '67%', left: '36%' },    desktopOnly: true },
+  { name: 'stones',    height: 48,  style: { bottom: 22, left: '60%' } },
+
+  // Grass & flowers — ~10 patches scattered across the exposed soil below the
+  // board, kept left of the desktop shop sidebar so they actually read.
+  { name: 'grass_2',   height: 72,  style: { top: '63%', left: 6 } },
+  { name: 'flower_1',  height: 64,  style: { top: '69%', left: '17%' } },
+  { name: 'grass_1',   height: 72,  style: { top: '73%', left: '30%' },    desktopOnly: true },
+  { name: 'grass_2',   height: 80,  style: { top: '64%', left: '45%' },    desktopOnly: true },
+  { name: 'flower_1',  height: 64,  style: { top: '71%', left: '58%' },    desktopOnly: true },
+  { name: 'grass_1',   height: 88,  style: { bottom: '22%', left: 22 } },
+  { name: 'grass_2',   height: 64,  style: { bottom: 10, left: '24%' } },
+  { name: 'flower_1',  height: 80,  style: { bottom: 18, left: '40%' } },
+  { name: 'grass_1',   height: 64,  style: { bottom: 8,  left: '53%' },    desktopOnly: true },
+  { name: 'grass_2',   height: 72,  style: { bottom: 26, left: 40 } },
 ];
 
 export function PageBackdrop() {
