@@ -111,6 +111,8 @@ export interface EventPropsMap {
   first_plant_placed: { day: number; crop_id: CropId };
   /** 023 — activation funnel: the run's first harvest payout. */
   first_harvest_collected: { day: number; coin_balance_after: number; harvest_count: number };
+  /** 024 — the asset-attribution modal was opened from the game menu. */
+  credits_viewed: Record<string, never>;
 }
 
 export type AnalyticsEventName = keyof EventPropsMap;
@@ -138,6 +140,7 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   run_abandoned: 1,
   first_plant_placed: 1,
   first_harvest_collected: 1,
+  credits_viewed: 1,
 };
 
 export function buildDayCompletedProps(

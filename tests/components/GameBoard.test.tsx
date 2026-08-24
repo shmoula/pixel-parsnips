@@ -84,6 +84,7 @@ function makeGameBoardProps(overrides: { lastDailyLog?: DailyLogEntry | null; on
     buildingCards: [],
     onBuyBuilding: vi.fn().mockReturnValue(false),
     onRestart: overrides.onRestart ?? vi.fn(),
+    onReplayTutorial: vi.fn(),
     pendingFarmEvent: null,
     onResolveFarmEvent: vi.fn().mockReturnValue(false),
   };
@@ -404,6 +405,22 @@ describe('GameBoard — unwinnable-run notice (017 FR-017)', () => {
     expect(onRestart).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /tap again to confirm/i }));
     expect(onRestart).toHaveBeenCalledOnce();
+  });
+
+  it('announces to assistive tech that a second tap confirms the restart', () => {
+    render(
+      <GameBoard
+        {...makeGameBoardProps()}
+        state={{ ...initialGameState(), coinBalance: 3 }}
+      />
+    );
+    // Nothing is announced before the button is armed.
+    expect(screen.queryByText(/activate again to confirm/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /start new run/i }));
+
+    // The silent label swap is mirrored into a live region so it is read aloud.
+    expect(screen.getByText(/start new run armed\. activate again to confirm/i)).toBeInTheDocument();
   });
 });
 

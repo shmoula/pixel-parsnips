@@ -150,3 +150,13 @@ describe('BankruptcyScreen — farm-events unlock tease (022)', () => {
     expect(screen.queryByText(/word of your farm is spreading/i)).toBeNull();
   });
 });
+
+describe('BankruptcyScreen — 024 carries no chrome', () => {
+  it('renders neither the game menu nor an analytics control', () => {
+    renderScreen();
+    expect(screen.queryByRole('button', { name: /game menu/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^analytics:/i })).toBeNull();
+    // Restart is the one action this screen keeps.
+    expect(screen.getByRole('button', { name: /restart game/i })).toBeInTheDocument();
+  });
+});

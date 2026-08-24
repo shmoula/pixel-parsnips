@@ -6,7 +6,8 @@ import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { Coin } from './Coin';
 import { EmojiIcon } from './EmojiIcon';
-import { MuteToggle } from './MuteToggle';
+import { ExpandableChip } from './ExpandableChip';
+import { GameMenu } from './GameMenu';
 import { nextDayLabel, nextDayText } from './nextDayCopy';
 
 /** Returns the next-season lease cost, or null if there is no next season to preview. */
@@ -101,6 +102,10 @@ interface HUDProps {
   tickBalance?: boolean;
   /** 022 — live delivery-contract progress, or null (chip hidden). */
   contract: ContractChipData;
+  /** 024 — abandons the live run from the game menu. */
+  onRestart: () => void;
+  /** 024 — flags the tutorial for replay and restarts, from the game menu. */
+  onReplayTutorial: () => void;
 }
 
 export function HUD({
@@ -116,6 +121,8 @@ export function HUD({
   heldBalance,
   tickBalance,
   contract,
+  onRestart,
+  onReplayTutorial,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
   const reputation = getReputationTier(currentDay);
@@ -144,6 +151,7 @@ export function HUD({
     <header
       aria-label="Game status"
       className="
+        relative z-20
         flex flex-wrap items-stretch gap-2 px-4 py-2
         bg-[#0E0A04]/95 backdrop-blur-sm
         border-b border-[#5C3D1E]/50
@@ -155,13 +163,9 @@ export function HUD({
           here would shrink and wrap internally, stranding a chip on its own line
           while the group beside it wrapped down to a third. */}
       <div className="contents">
-        <button
-          type="button"
-          // No aria-label: the visible compact text ("Spring", "D1/20") is the
-          // accessible name. A prose label here would not contain the visible
-          // abbreviations and trips axe's label-content-name-mismatch (WCAG 2.5.3).
-          aria-expanded={seasonExpanded}
-          onClick={() => setSeasonExpanded(v => !v)}
+        <ExpandableChip
+          expanded={seasonExpanded}
+          onToggle={() => setSeasonExpanded(v => !v)}
           className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"
         >
           <span className="font-pixel text-title text-farm-gold">
@@ -172,7 +176,7 @@ export function HUD({
             <span className="sm:hidden">{seasonMobileLabel}</span>
             <span className="hidden sm:inline">Season {season.number} · {season.name}</span>
           </span>
-        </button>
+        </ExpandableChip>
         <div data-onboarding="balance-chip" data-coin-target className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
           <div className="flex flex-col justify-center leading-tight">
@@ -204,19 +208,19 @@ export function HUD({
           </div>
         )}
         <ContractChip contract={contract} />
-        <button
-          type="button"
-          aria-label={`Reputation: ${reputation.title}`}
-          aria-expanded={repExpanded}
+        <ExpandableChip
+          expanded={repExpanded}
+          onToggle={() => setRepExpanded(v => !v)}
+          ariaLabel={`Reputation: ${reputation.title}`}
           title={`Reputation: ${reputation.title}. Your standing grows as you survive more days this run.`}
-          onClick={() => setRepExpanded(v => !v)}
           className="flex min-h-[44px] md:min-h-0 items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
         >
+          <span className="sr-only">Reputation: </span>
           <span className="text-base leading-none -translate-y-[0.13em]" aria-hidden="true">🎖️</span>
           <span className={repTitleClass}>
             {reputation.title}
           </span>
-        </button>
+        </ExpandableChip>
       </div>
 
       {/* Right: Lease/Tax (hidden on small screens) and the action buttons, kept in one
@@ -237,7 +241,6 @@ export function HUD({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <MuteToggle />
           <button
             type="button"
             aria-label="View last turn summary"
@@ -271,6 +274,7 @@ export function HUD({
                 (measured) onto the letters' optical centre. */}
             {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
           </button>
+          <GameMenu onRestart={onRestart} onReplayTutorial={onReplayTutorial} />
         </div>
       </div>
     </header>

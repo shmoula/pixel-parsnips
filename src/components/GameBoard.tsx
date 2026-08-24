@@ -224,6 +224,13 @@ function UnwinnableBanner({ isUnwinnable, onRestart }: { isUnwinnable: boolean; 
       >
         {armed ? 'Tap again to confirm' : 'Start new run'}
       </button>
+      {/* The button's label swaps silently on an already-focused control, so
+          assistive tech hears nothing when it arms. Mirror the change into a
+          dedicated live region (separate from this alert, which already fired
+          on mount) so the confirm step is announced. */}
+      <span className="sr-only" aria-live="assertive">
+        {armed ? 'Start new run armed. Activate again to confirm.' : ''}
+      </span>
     </div>
   );
 }
@@ -325,6 +332,8 @@ interface GameBoardProps {
   onBuyBuilding: (id: BuildingId) => boolean;
   /** Reset to a fresh run (unwinnable-state escape hatch, 017 FR-017). */
   onRestart: () => void;
+  /** 024 — threaded to the HUD's game menu; flags tutorial replay and restarts. */
+  onReplayTutorial: () => void;
   /** 022 — the pending farm event to present, or null. Next Day is blocked while set. */
   pendingFarmEvent: PendingFarmEventView | null;
   /** 022 — apply a farm-event choice; returns false when it could not be applied. */
@@ -349,6 +358,7 @@ export function GameBoard({
   buildingCards,
   onBuyBuilding,
   onRestart,
+  onReplayTutorial,
   pendingFarmEvent,
   onResolveFarmEvent,
 }: GameBoardProps) {
@@ -500,6 +510,8 @@ export function GameBoard({
         heldBalance={celebrationHud.heldBalance}
         tickBalance={celebrationHud.tickBalance}
         contract={contractChip}
+        onRestart={onRestart}
+        onReplayTutorial={onReplayTutorial}
       />
 
       {/* T006 — flex-col on mobile, flex-row on desktop; no flex-1 so board grows with content */}

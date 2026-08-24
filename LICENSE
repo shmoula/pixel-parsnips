@@ -19,3 +19,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Assets
+
+The MIT licence above covers the source code only.
+
+Crop sprites in `src/assets/crops/` derive from "[LPC] Crops" by bluecarrot16,
+Daniel Eddeland, Joshua Taylor and Richard Kettering, commissioned by castelonia,
+and remain licensed CC-BY-SA 3.0+ / GPL-3.0+. Full attribution and the upstream
+item list are in `src/assets/crops/CREDITS-crops.txt`.
+Source: https://opengameart.org/content/lpc-crops
+
+All other art in `src/assets/` is original work by the author, MIT licensed with
+the code.
+
+The Press Start 2P font ships via @fontsource under the SIL Open Font License 1.1.

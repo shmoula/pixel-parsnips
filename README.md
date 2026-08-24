@@ -82,4 +82,9 @@ Add images to the `public` folder and update the paths below.
 
 ## License
 
-MIT License. See `LICENSE`.
+MIT License for the source code. See `LICENSE`.
+
+**Assets are licensed separately.** Crop sprites derive from
+[[LPC] Crops](https://opengameart.org/content/lpc-crops) (CC-BY-SA 3.0+ / GPL-3.0+);
+all other art is original work. In-game attribution lives under the ⚙️ menu →
+Credits. Full detail in `LICENSE` and `src/assets/crops/CREDITS-crops.txt`.
