@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript ~5.6, React 18.3, Tailwind CSS 3.4, Vite 5.4, Vitest + Testing Library (jsdom) + vitest-axe.
 
-**Spec:** [spec.md](spec.md) · **Companion plan:** [plan-postmortem.md](plan-postmortem.md) covers Phase C (schema 11, run history, evidence line, death titles) and is independent of this one.
+**Spec:** [spec.md](spec.md) · **Companion plan:** Phase C (schema 11, run history, evidence line, death titles — see [spec.md §"Phase C"](spec.md)) is engine work on a separate branch and independent of this one; its implementation plan lives with that branch, not in this PR.
 
 ---
 
@@ -211,8 +211,8 @@ git commit -m "feat(onboarding): say up front that going broke is the expected f
 made a prediction, and this is the game collecting on it. It sits directly above Restart, which
 already provides the one-tap retry the deep-dive asks for.
 
-This task is deliberately independent of the death titles in
-[plan-postmortem.md](plan-postmortem.md); the echo works with or without them.
+This task is deliberately independent of the Phase C death titles (separate branch); the echo works
+with or without them.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1009,7 +1009,7 @@ git diff --stat master -- src/engine
 ```
 
 Expected: **no output.** Phases D, B and A touch no engine file, no `GameState` field and no
-`SCHEMA_VERSION`. Anything here means work from [plan-postmortem.md](plan-postmortem.md) has leaked
+`SCHEMA_VERSION`. Anything here means Phase C engine work (a separate branch) has leaked
 into this branch.
 
 - [ ] **Manual smoke check**
