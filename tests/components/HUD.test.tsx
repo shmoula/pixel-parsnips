@@ -209,7 +209,7 @@ describe('HUD — 021 held/ticking balance', () => {
     render(<HUD {...baseProps} currentDay={3} coinBalance={10} heldBalance={500} />);
     const coins = screen.getByLabelText(/coins: 10/i);
     expect(coins).toHaveTextContent('500');
-    expect(coins.className).toContain('text-[#EB6A5C]'); // critical text color
+    expect(coins.className).toContain('text-farm-danger'); // critical text color
   });
 
   it('shows the committed balance when heldBalance is null', () => {
@@ -262,6 +262,30 @@ describe('HUD — 024 chips are inert at desktop widths', () => {
   });
 });
 
+describe('HUD — lease readout', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubDesktop() {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(min-width: 640px)',
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }));
+  }
+
+  it('shows the lease, including the end-of-season preview', () => {
+    stubDesktop();
+    render(<HUD {...baseProps} currentDay={20} coinBalance={300} />);
+    expect(screen.getByText(/lease/i)).toBeInTheDocument();
+    expect(screen.getByText(/rises to \d+ next season/i)).toBeInTheDocument();
+  });
+});
+
 describe('HUD — 024 game menu', () => {
   it('renders the gear trigger', () => {
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} />);
@@ -276,5 +300,15 @@ describe('HUD — 024 game menu', () => {
   it('keeps Last Turn on the HUD rather than in the menu', () => {
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} hasLastTurn />);
     expect(screen.getByRole('button', { name: /view last turn summary/i })).toBeInTheDocument();
+  });
+});
+
+describe('HUD — late-season warning', () => {
+  // The default jsdom matchMedia stub reports every query as false, i.e. narrow.
+  it('appends the days-left warning after the goal caption', () => {
+    render(<HUD {...baseProps} currentDay={18} coinBalance={50} />);
+    const caption = screen.getByText(/goal 105.D20/i).parentElement!;
+    const text = caption.textContent ?? '';
+    expect(text.indexOf('days left')).toBeGreaterThan(text.indexOf('Goal'));
   });
 });

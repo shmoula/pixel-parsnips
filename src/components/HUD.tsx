@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { TAX_RATE } from '../engine/constants';
 import type { CropId } from '../engine/types';
 import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
@@ -29,7 +28,7 @@ function getDangerLevel(coinBalance: number, leasePerDay: number): DangerLevel {
 function getBalanceBorderClass(danger: DangerLevel): string {
   if (danger === 'critical') return 'border-farm-red/80 animate-pulse';
   if (danger === 'low') return 'border-yellow-600/70';
-  return 'border-[#5C3D1E]/60';
+  return 'border-farm-chipBorder/60';
 }
 
 function getSeasonMobileLabel(expanded: boolean, number: number, name: string, short: string): string {
@@ -50,7 +49,7 @@ function ContractChip({ contract }: { contract: ContractChipData }) {
     <div
       aria-label={`Contract: ${contract.done} of ${contract.total} ${contract.cropId} delivered, ${contract.daysLeft} days left`}
       title={`Deliver ${contract.total} ${contract.cropId} harvests before the deadline for the reward.`}
-      className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
+      className="flex items-center gap-1 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60 cursor-help"
     >
       <EmojiIcon className="text-base leading-none">📜</EmojiIcon>
       <span className="font-pixel text-caption text-farm-gold">
@@ -71,8 +70,8 @@ function getDisplayBalanceTarget(coinBalance: number, heldBalance: number | null
 
 function getBalanceTextClass(danger: DangerLevel): string {
   // Lighter than farm-red so the "critical" balance keeps a ≥4.5:1 contrast
-  // ratio against the dark #261808 chip (WCAG AA / Lighthouse a11y).
-  if (danger === 'critical') return 'text-[#EB6A5C]';
+  // ratio against the dark farm-chip background (WCAG AA / Lighthouse a11y).
+  if (danger === 'critical') return 'text-farm-danger';
   if (danger === 'low') return 'text-yellow-300';
   return 'text-farm-gold';
 }
@@ -153,8 +152,8 @@ export function HUD({
       className="
         relative z-20
         flex flex-wrap items-stretch gap-2 px-4 py-2
-        bg-[#0E0A04]/95 backdrop-blur-sm
-        border-b border-[#5C3D1E]/50
+        bg-farm-bar/95 backdrop-blur-sm
+        border-b border-farm-chipBorder/50
       "
     >
       {/* Left: Season chip + Day chip + Balance/target chip.
@@ -166,7 +165,7 @@ export function HUD({
         <ExpandableChip
           expanded={seasonExpanded}
           onToggle={() => setSeasonExpanded(v => !v)}
-          className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-[#261808] border border-[#5C3D1E]/60 rounded text-left"
+          className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-farm-chip border border-farm-chipBorder/60 rounded text-left"
         >
           <span className="font-pixel text-title text-farm-gold">
             <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
@@ -177,7 +176,7 @@ export function HUD({
             <span className="hidden sm:inline">Season {season.number} · {season.name}</span>
           </span>
         </ExpandableChip>
-        <div data-onboarding="balance-chip" data-coin-target className={`flex items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border ${balanceBorderClass}`}>
+        <div data-onboarding="balance-chip" data-coin-target className={`flex items-center gap-1.5 bg-farm-chip px-2.5 py-1 rounded border ${balanceBorderClass}`}>
           <span className="text-lg leading-none" aria-hidden="true">🪙</span>
           <div className="flex flex-col justify-center leading-tight">
             <span
@@ -201,7 +200,7 @@ export function HUD({
           <div
             aria-label={`Harvest streak: ${harvestStreak} days`}
             title={`Harvest streak: ${harvestStreak} day${harvestStreak === 1 ? '' : 's'} in a row. Next harvest earns +${Math.min(harvestStreak, 4) * 5}🪙 bonus (capped at +20).`}
-            className="flex items-center gap-1 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60 cursor-help"
+            className="flex items-center gap-1 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60 cursor-help"
           >
             <EmojiIcon className="text-base leading-none">🔥</EmojiIcon>
             <span className="font-pixel text-caption text-farm-gold">×{harvestStreak}</span>
@@ -213,7 +212,7 @@ export function HUD({
           onToggle={() => setRepExpanded(v => !v)}
           ariaLabel={`Reputation: ${reputation.title}`}
           title={`Reputation: ${reputation.title}. Your standing grows as you survive more days this run.`}
-          className="flex min-h-[44px] md:min-h-0 items-center gap-1.5 bg-[#261808] px-2.5 py-1 rounded border border-[#5C3D1E]/60"
+          className="flex min-h-[44px] md:min-h-0 items-center gap-1.5 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60"
         >
           <span className="sr-only">Reputation: </span>
           <span className="text-base leading-none -translate-y-[0.13em]" aria-hidden="true">🎖️</span>
@@ -223,21 +222,18 @@ export function HUD({
         </ExpandableChip>
       </div>
 
-      {/* Right: Lease/Tax (hidden on small screens) and the action buttons, kept in one
-          flex item so a single `ml-auto` right-aligns them as a unit — sharing the
+      {/* Right: Lease readout (hidden on small screens) and the action buttons, kept in
+          one flex item so a single `ml-auto` right-aligns them as a unit — sharing the
           header's first line, or on a line of their own once the chips push them down. */}
       <div className="flex items-center justify-end gap-2 sm:gap-3 ml-auto">
         <div className="hidden sm:flex items-center gap-3">
-          <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
+          <span className="font-pixel text-caption text-farm-stone uppercase tracking-widest">
             Lease {season.leasePerDay}<Coin />/day
             {showLeasePreview && nextSeasonLease !== null && (
               <span className="ml-1 text-farm-gold/70">
                 (rises to {nextSeasonLease} next season)
               </span>
             )}
-          </span>
-          <span className="font-pixel text-caption text-farm-stone/50 uppercase tracking-widest">
-            Tax {TAX_RATE * 100}%
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -248,8 +244,8 @@ export function HUD({
             disabled={!hasLastTurn}
             className="
               font-pixel text-caption px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
-              bg-[#261808] text-farm-stone/60 border border-[#5C3D1E]/50
-              hover:enabled:bg-[#3A2510] hover:enabled:text-farm-parchment/80 hover:enabled:border-[#5C3D1E]
+              bg-farm-chip text-farm-stone/60 border border-farm-chipBorder/50
+              hover:enabled:bg-farm-chipHover hover:enabled:text-farm-parchment/80 hover:enabled:border-farm-chipBorder
               active:enabled:scale-95 transition-all
               disabled:opacity-30
             "
