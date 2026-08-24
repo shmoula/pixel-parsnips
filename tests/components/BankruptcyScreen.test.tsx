@@ -160,3 +160,15 @@ describe('BankruptcyScreen — 024 carries no chrome', () => {
     expect(screen.getByRole('button', { name: /restart game/i })).toBeInTheDocument();
   });
 });
+
+describe('BankruptcyScreen — 025 failure echo', () => {
+  it('confirms the loss was expected, immediately above Restart', () => {
+    renderScreen();
+    const echo = screen.getByText(/told you\. again\?/i);
+    expect(echo).toBeInTheDocument();
+
+    const restart = screen.getByRole('button', { name: /restart game/i });
+    // The echo is the setup and Restart is the punchline; they must read together.
+    expect(echo.compareDocumentPosition(restart) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
