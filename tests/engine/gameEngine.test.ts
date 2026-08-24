@@ -11,7 +11,7 @@ import {
   buyPlot,
   getNextPlotPrice,
 } from '../../src/engine/gameEngine';
-import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST, STREAK_BONUS_PER_LEVEL, NO_BUILDINGS } from '../../src/engine/constants';
+import { EXHAUSTION_THRESHOLD, EXHAUSTION_RECOVERY_DAYS, FERTILIZER_COST, STREAK_BONUS_PER_LEVEL, NO_BUILDINGS, SCHEMA_VERSION } from '../../src/engine/constants';
 import { DEFAULT_ECONOMY } from '../../src/engine/economy';
 import type { GameState } from '../../src/engine/types';
 
@@ -36,8 +36,8 @@ describe('initialGameState — schema 5 fields', () => {
     expect(s.endlessMode).toBe(false);
   });
 
-  it('has schemaVersion 10', () => {
-    expect(initialGameState().schemaVersion).toBe(10);
+  it('has the current SCHEMA_VERSION', () => {
+    expect(initialGameState().schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it('starts with disastersSurvived: 0', () => {

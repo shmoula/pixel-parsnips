@@ -220,6 +220,27 @@ export interface DailyLogEntry {
   contractExpired?: FarmEventId | null;
 }
 
+/**
+ * 025 — one record per completed day, kept for the end-of-run post-mortem.
+ *
+ * Six numbers rather than three: `harvestIncome` is the denominator the
+ * "Fed the Taxman" title compares cumulative tax against, and the two running
+ * counts let "Bought the Farm" spot a recent purchase — neither a plot buy nor a
+ * building buy is timestamped anywhere else in GameState.
+ */
+export interface RunDayRecord {
+  day: number;
+  /** Balance carried overnight — what the tax was charged against. */
+  closingBalance: number;
+  taxDeducted: number;
+  /** Gross crop sales this day, before lease and tax. */
+  harvestIncome: number;
+  /** Plots unlocked at end of day; an increase marks a plot purchase. */
+  unlockedPlots: number;
+  /** Buildings owned at end of day; an increase marks a building purchase. */
+  buildingCount: number;
+}
+
 export interface GameState {
   schemaVersion: number;
   currentDay: number;
@@ -250,6 +271,8 @@ export interface GameState {
   buildings: Record<BuildingId, boolean>;
   /** In-run narrative events state (022). */
   farmEvents: FarmEventsState;
+  /** 025 — per-day record of this run, for the bankruptcy post-mortem. Cleared on restart. */
+  runHistory: RunDayRecord[];
 }
 
 // ── Engine result types ───────────────────────────────────────────────────────

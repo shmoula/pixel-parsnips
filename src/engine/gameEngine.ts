@@ -81,6 +81,7 @@ export function initialGameState(
     market: EMPTY_MARKET,
     buildings: { ...NO_BUILDINGS },
     farmEvents: { ...EMPTY_FARM_EVENTS, enabled: opts.farmEventsEnabled ?? true },
+    runHistory: [],
   };
 }
 
