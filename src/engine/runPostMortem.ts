@@ -1,4 +1,5 @@
-import type { DailyLogEntry, RunDayRecord } from './types';
+import type { DailyLogEntry, GameState, RunDayRecord, WeatherId } from './types';
+import { DISASTER_WEATHER_IDS } from './seasons';
 
 /** Below this many recorded days a run has no pattern worth naming, and the
  *  post-mortem falls back to generic advice. A player who died on day 2 was not
@@ -87,4 +88,93 @@ export function deriveInsight(
   if (peakBalance < 40)
     return 'Your balance stayed dangerously low. Aim for a buffer of 3× your lease cost.';
   return 'Keep a reserve above your daily lease cost to survive bad-weather turns.';
+}
+
+export type DeathCauseId =
+  | 'fed_the_taxman'
+  | 'weathered_out'
+  | 'overextended'
+  | 'idle_hands'
+  | 'out_of_seed_money';
+
+/** Punchlines, not scores. The medal says how far the run got; this says how it died. */
+export const DEATH_TITLES: Record<DeathCauseId, string> = {
+  fed_the_taxman: 'Fed the Taxman',
+  weathered_out: 'Weathered Out',
+  overextended: 'Bought the Farm',
+  idle_hands: 'Idle Hands',
+  out_of_seed_money: 'Out of Seed Money',
+};
+
+/** Share of gross harvest income lost to tax that counts as "the taxman got you". */
+const TAXMAN_SHARE = 0.25;
+/** How recent a purchase has to be to have plausibly caused the collapse. */
+const OVEREXTENSION_WINDOW_DAYS = 3;
+
+export interface DeathCauseInput {
+  history: readonly RunDayRecord[];
+  /** Weather on the fatal day, from `lastDailyLog`; null when unknown. */
+  finalWeatherId: WeatherId | null;
+  /** Unlocked plots with nothing growing on the final day. */
+  emptyPlots: number;
+  unlockedPlots: number;
+}
+
+function boughtRecently(history: readonly RunDayRecord[]): boolean {
+  const window = history.slice(-(OVEREXTENSION_WINDOW_DAYS + 1));
+  for (let i = 1; i < window.length; i++) {
+    if (
+      window[i].unlockedPlots > window[i - 1].unlockedPlots ||
+      window[i].buildingCount > window[i - 1].buildingCount
+    ) {
+      return true;
+    }
+  }
+  // A purchase on the very first recorded day has no predecessor to compare against;
+  // treat a non-zero building count in a one-day history as a recent buy. The plot
+  // case is deliberately NOT covered here — a day-1 plot purchase has no baseline in
+  // the window since `startingPlots` isn't in `DeathCauseInput`; the worst outcome is
+  // a mislabelled cause, never a crash.
+  return window.length === 1 && window[0].buildingCount > 0;
+}
+
+/**
+ * 025 — how this run died, evaluated most-interesting-cause-first.
+ *
+ * The ORDER is the design, not the thresholds. A run that both hoarded and ended on
+ * a disaster is a taxman story: the tax is the game's thesis and the weather is
+ * noise. Thresholds are first-pass and expected to move once real runs exist.
+ */
+export function deriveDeathCause({
+  history,
+  finalWeatherId,
+  emptyPlots,
+  unlockedPlots,
+}: DeathCauseInput): DeathCauseId {
+  const totalTax = history.reduce((s, r) => s + r.taxDeducted, 0);
+  const totalIncome = history.reduce((s, r) => s + r.harvestIncome, 0);
+
+  if (totalIncome > 0 && totalTax >= totalIncome * TAXMAN_SHARE) return 'fed_the_taxman';
+  if (finalWeatherId !== null && DISASTER_WEATHER_IDS.includes(finalWeatherId)) return 'weathered_out';
+  if (boughtRecently(history)) return 'overextended';
+  if (unlockedPlots > 0 && emptyPlots > unlockedPlots / 2) return 'idle_hands';
+  return 'out_of_seed_money';
+}
+
+/**
+ * The state → inputs mapping, in one place.
+ *
+ * Two callers need it — App.tsx for the bankruptcy screen and the balance
+ * simulator for the distribution report — and the `slice(0, unlockedPlots)` below
+ * is the kind of detail that silently diverges when it is written twice. Plots at
+ * or beyond `unlockedPlots` are LOCKED, not idle; counting them would fire
+ * `idle_hands` on every run that never bought a plot.
+ */
+export function deathCauseForState(state: GameState): DeathCauseId {
+  return deriveDeathCause({
+    history: state.runHistory,
+    finalWeatherId: state.lastDailyLog?.weatherId ?? null,
+    emptyPlots: state.plots.slice(0, state.unlockedPlots).filter(p => p.cropId === null).length,
+    unlockedPlots: state.unlockedPlots,
+  });
 }
