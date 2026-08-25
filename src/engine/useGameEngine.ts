@@ -34,6 +34,7 @@ import type {
   FarmEventEffect,
   FarmEventChoiceId,
   FarmEventDefinition,
+  RunDayRecord,
 } from './types';
 import { recordRunEnd, loadRecords, type PersonalBests } from './records';
 import { EMPTY_FARM_EVENTS, merchantOfferValue } from './farmEvents';
@@ -187,6 +188,25 @@ function migrateLadderToBuildings(st: Record<string, unknown>): Record<string, u
   return { ...rest, buildings: { ...NO_BUILDINGS, toolshed: tier >= 1 } };
 }
 
+/** 025 — structurally validate the post-mortem history. A tampered or absent value
+ *  becomes an empty history, which the bankruptcy screen already handles by falling
+ *  back to generic advice. Individual malformed entries are dropped, not fatal. */
+function normalizeRunHistory(raw: unknown): RunDayRecord[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((e): e is RunDayRecord => {
+    if (!e || typeof e !== 'object') return false;
+    const r = e as Record<string, unknown>;
+    return (
+      isNumber(r.day) &&
+      isNumber(r.closingBalance) &&
+      isNumber(r.taxDeducted) &&
+      isNumber(r.harvestIncome) &&
+      isNumber(r.unlockedPlots) &&
+      isNumber(r.buildingCount)
+    );
+  });
+}
+
 /**
  * Hardens a current-schema save against tampering/corruption before use.
  * Downstream code (state.plots.every, plots.map, getNextPlotPrice, market
@@ -212,6 +232,7 @@ function hardenCurrentSchema(st: Record<string, unknown>): GameState {
     market,
     buildings,
     farmEvents,
+    runHistory: normalizeRunHistory(st.runHistory),
     schemaVersion: SCHEMA_VERSION,
   } as GameState;
 }
@@ -228,14 +249,24 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
     return null;
   }
 
-  // Schema 10 — current. Harden tampered/corrupt fields in place.
+  // Schema 11 — current. Harden tampered/corrupt fields in place.
   if (parsed.schemaVersion === SCHEMA_VERSION) {
     return hardenCurrentSchema(parsed.state as Record<string, unknown>);
   }
 
-  // Schema 9 → 10 — add farm events (022); enabled derives from completed-run records.
+  // Schema 10 → 11 — add the post-mortem run history (025). No data to carry
+  // forward: a v10 save recorded nothing, so the run finishes on generic advice.
+  if (parsed.schemaVersion === 10) {
+    console.info('[PixelParsnips] Migrating save from v10 to v11 (run post-mortem history).');
+    return hardenCurrentSchema({
+      ...(parsed.state as Record<string, unknown>),
+      schemaVersion: SCHEMA_VERSION,
+    });
+  }
+
+  // Schema 9 → 11 — add farm events (022); enabled derives from completed-run records.
   if (parsed.schemaVersion === 9) {
-    console.info('[PixelParsnips] Migrating save from v9 to v10 (Farm Events).');
+    console.info('[PixelParsnips] Migrating save from v9 to v11 (Farm Events).');
     return hardenCurrentSchema({
       ...(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
@@ -247,18 +278,18 @@ function migrateState(parsed: { schemaVersion: number; state: unknown }): GameSt
 
 /** Migrates pre-v9 save envelopes (v3–v8) forward to the current schema, or null if unsupported. */
 function migrateLegacy(parsed: { schemaVersion: number; state: unknown }): GameState | null {
-  // Schema 8 → 10 — collapse the tool ladder into the Toolshed building (019)
+  // Schema 8 → 11 — collapse the tool ladder into the Toolshed building (019)
   if (parsed.schemaVersion === 8) {
-    console.info('[PixelParsnips] Migrating save from v8 to v10 (Farm Buildings — tool tiers become the Toolshed; T1 owners gain a little, T3 owners lose the last 20%).');
+    console.info('[PixelParsnips] Migrating save from v8 to v11 (Farm Buildings — tool tiers become the Toolshed; T1 owners gain a little, T3 owners lose the last 20%).');
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
     });
   }
 
-  // Schema 7 → 10 — add market (existing runs continue with no event) + ladder collapse
+  // Schema 7 → 11 — add market (existing runs continue with no event) + ladder collapse
   if (parsed.schemaVersion === 7) {
-    console.info('[PixelParsnips] Migrating save from v7 to v10 (Market Events + Farm Buildings).');
+    console.info('[PixelParsnips] Migrating save from v7 to v11 (Market Events + Farm Buildings).');
     const st = parsed.state as Record<string, unknown>;
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(st),
@@ -267,9 +298,9 @@ function migrateLegacy(parsed: { schemaVersion: number; state: unknown }): GameS
     });
   }
 
-  // Schema 6 → 10 — add unlockedPlots (existing runs keep all plots unlocked) + market + ladder collapse
+  // Schema 6 → 11 — add unlockedPlots (existing runs keep all plots unlocked) + market + ladder collapse
   if (parsed.schemaVersion === 6) {
-    console.info('[PixelParsnips] Migrating save from v6 to v10 (Plot Progression + Market Events + Farm Buildings).');
+    console.info('[PixelParsnips] Migrating save from v6 to v11 (Plot Progression + Market Events + Farm Buildings).');
     const st = parsed.state as Record<string, unknown>;
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(st),
@@ -279,9 +310,9 @@ function migrateLegacy(parsed: { schemaVersion: number; state: unknown }): GameS
     });
   }
 
-  // Schema 5 → 10 — add harvestStreak, peakHarvestStreak, unlockedPlots, market, and ladder collapse
+  // Schema 5 → 11 — add harvestStreak, peakHarvestStreak, unlockedPlots, market, and ladder collapse
   if (parsed.schemaVersion === 5) {
-    console.info('[PixelParsnips] Migrating save from v5 to v10 (Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
+    console.info('[PixelParsnips] Migrating save from v5 to v11 (Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
@@ -292,9 +323,9 @@ function migrateLegacy(parsed: { schemaVersion: number; state: unknown }): GameS
     });
   }
 
-  // Schema 4 → 10 — chained: add disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
+  // Schema 4 → 11 — chained: add disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
   if (parsed.schemaVersion === 4) {
-    console.info('[PixelParsnips] Migrating save from v4 to v10.');
+    console.info('[PixelParsnips] Migrating save from v4 to v11.');
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
@@ -306,9 +337,9 @@ function migrateLegacy(parsed: { schemaVersion: number; state: unknown }): GameS
     });
   }
 
-  // Schema 3 → 10 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
+  // Schema 3 → 11 — chained: add endlessMode + disastersSurvived + streak fields + unlockedPlots + market + ladder collapse
   if (parsed.schemaVersion === 3) {
-    console.info('[PixelParsnips] Migrating save from v3 to v10 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
+    console.info('[PixelParsnips] Migrating save from v3 to v11 (Season System + Enriched Run Summary + Harvest Streak + Plot Progression + Market Events + Farm Buildings).');
     return hardenCurrentSchema({
       ...migrateLadderToBuildings(parsed.state as Record<string, unknown>),
       schemaVersion: SCHEMA_VERSION,
