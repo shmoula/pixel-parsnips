@@ -2,7 +2,7 @@ import { PRESETS } from './economyPresets';
 import { STRATEGIES, EVENT_POLICIES } from './strategies';
 import { monteCarlo } from './runner';
 import { aggregate } from './metrics';
-import { formatTable, type Row } from './report';
+import { formatTable, formatDeathCauses, type Row } from './report';
 
 function arg(flag: string, fallback: string): string {
   const i = process.argv.indexOf(flag);
@@ -56,4 +56,7 @@ for (const c of configNames) {
 
 console.log(`\nMonte Carlo — ${trials} trials/seed=${seed}/eventPolicy=${policyName}\n`);
 console.log(formatTable(rows));
+console.log('');
+console.log('\nDeath causes (% of bankrupt runs)\n');
+console.log(formatDeathCauses(rows));
 console.log('');

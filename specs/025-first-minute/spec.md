@@ -15,8 +15,8 @@ one piece of real player feedback the project has (a tester who went bankrupt an
 This spec brightens the palette, promotes the tax to a first-class HUD element, and authors the
 failure framing at both ends of the run — welcome modal and bankruptcy screen. The bankruptcy
 screen also gains the evidence to say *why* the run ended, which requires the run's first `GameState`
-addition since 022 — that piece (Phase C) is engine work, tracked and delivered separately from the
-presentation change this PR carries (see **Delivery status** below).
+addition since 022 — that piece (Phase C) is engine work, delivered separately on the
+`026-post-mortem` branch from the presentation change this PR carries (see **Delivery status** below).
 
 **Explicitly not a balance change.** Per [`01-STRATEGY.md`](../../../../game-ideas/01-STRATEGY.md):
 no economy tuning before 20 players' worth of data.
@@ -30,7 +30,7 @@ This spec authors all four phases as one design; they ship on different tracks:
 | A | Palette tokens + contrast pass | **Delivered** in the presentation PR |
 | D | Framing copy (welcome modal + bankruptcy echo) | **Delivered** in the presentation PR |
 | B | Tax indicator (desktop chip + mobile caption) | **Trialed and reverted.** The rate is constant and the concrete nightly charge already appears in the day-end summary, so a permanent HUD element added cognitive load and header space without new information. The Phase B sections below are kept as the record of what was tried and why it was pulled |
-| C | Bankruptcy evidence line + death titles + `runHistory` (schema 11) | **Future work, separate branch.** Engine change, not part of the presentation delivery. The Phase C sections below are design-of-record for that branch, not a description of this PR |
+| C | Bankruptcy evidence line + death titles + `runHistory` (schema 11) | **Delivered** on the `026-post-mortem` branch. Engine change, shipped separately from the presentation delivery. The Phase C sections below are the design-of-record for that branch |
 
 ## Problem
 
@@ -160,8 +160,8 @@ exists to make visible.
 
 ## Phase C — bankruptcy reframe
 
-> **Future work, separate branch.** See **Delivery status** above. This is engine/schema design of
-> record for a later branch, not part of the presentation delivery.
+> **Delivered on the `026-post-mortem` branch.** See **Delivery status** above. This is the
+> engine/schema design of record for that branch, shipped separately from the presentation delivery.
 
 ### C1 — run history (`SCHEMA_VERSION` 10 → 11)
 
@@ -223,7 +223,7 @@ medal badge, which stays.
 |---|---|---|
 | `fed_the_taxman` | Cumulative `taxDeducted` ≥ 25% of the run's gross harvest income | **Fed the Taxman** |
 | `weathered_out` | Final day carried a disaster (pest / blight / flash drought) | **Weathered Out** |
-| `overextended` | A plot or building was bought within the last 3 days | **Overextended** |
+| `overextended` | A plot or building was bought within the last 3 days | **Bought the Farm** |
 | `idle_hands` | Majority of unlocked plots empty on the final day | **Idle Hands** |
 | — | default | **Out of Seed Money** |
 
@@ -231,6 +231,27 @@ Thresholds are first-pass and tunable; the ordering matters more than the number
 is *most interesting cause first*. These are punchlines, not scores — they exist because
 [`10-ICP.md`](../../../../game-ideas/10-ICP.md) identifies the shareable unit as "a specific, funny,
 legible failure," not a high score.
+
+#### Observed baseline distribution (deferred tuning)
+
+Simulated with `npm run sim -- --strategies smartMixed --trials 500` (seed 42). Percentages are of
+bankrupt runs per config, not of all trials.
+
+| config | bankrupt | fed_the_taxman | weathered_out | overextended | idle_hands | out_of_seed_money |
+|---|---|---|---|---|---|---|
+| baseline | 2 | 0% | 0% | 0% | 100% | 0% |
+| proposed | 142 | 0% | 19% | 20% | 49% | 12% |
+| buildings019 | 195 | 0% | 17% | 15% | 62% | 6% |
+| events022 | 184 | 0% | 16% | 12% | 67% | 5% |
+
+This is the **baseline for the next tuning pass**, not a tuned result. It reflects only the
+`smartMixed` bot, which reinvests rather than hoards — so `fed_the_taxman` (cumulative tax ≥ 25% of
+gross harvest income) firing at 0% is expected for this strategy, not a broken threshold; the
+hoarding players that title targets are outside the bot's behaviour. `idle_hands` dominating (62–67%
+on the fuller-economy presets) reflects that a reinvesting bot's board goes empty on the day it can
+no longer afford seeds, which overlaps with `out_of_seed_money`. Thresholds are left first-pass per
+the design note above; tuning waits until real-run data exists. `baseline`'s 2 bankrupt runs are too
+few to read.
 
 ## Phase D — the framing copy
 
@@ -293,7 +314,7 @@ Sits directly above the existing Restart button, which already provides the one-
 | D | Framing copy | tests green — smallest, most valuable, ships first · **delivered** |
 | B | Tax chip + mobile caption | tests green · **trialed and reverted** (see Delivery status) |
 | A | Palette tokens + contrast pass | contrast assertions green, **screenshots reviewed by the author** · **delivered** |
-| C | Schema 11 + evidence line + death titles | tests green, migration test green · **future work, separate branch** |
+| C | Schema 11 + evidence line + death titles | tests green, migration test green · **delivered** (`026-post-mortem` branch) |
 
 D and A are the presentation phases that ship here; A is the one needing a human look before merge.
 B was reverted and C is a separate engine branch.

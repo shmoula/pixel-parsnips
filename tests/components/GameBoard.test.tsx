@@ -25,6 +25,8 @@ const sharedBankruptcyProps = {
   medal: 'none' as const,
   records: emptyRecords,
   newBests: new Set<keyof PersonalBests>(),
+  runHistory: [],
+  deathCause: 'out_of_seed_money' as const,
 };
 
 // ── T022: BankruptcyScreen smoke tests ────────────────────────────────────────

@@ -3,6 +3,7 @@ import { renderHook } from '@testing-library/react';
 import { useGameEngine } from '../../src/engine/useGameEngine';
 import { initialGameState } from '../../src/engine/gameEngine';
 import { EMPTY_FARM_EVENTS } from '../../src/engine/farmEvents';
+import { SCHEMA_VERSION } from '../../src/engine/constants';
 
 const STORAGE_KEY = 'pixel-parsnips-state';
 const RECORDS_KEY = 'pixel-parsnips-records';
@@ -20,14 +21,14 @@ function seedRecords(totalRunsCompleted: number): void {
   }));
 }
 
-describe('v9 → v10 migration', () => {
+describe('v9 → v11 migration', () => {
   beforeEach(() => localStorage.clear());
 
   it('adds the empty slice, enabled=false on a device with no completed runs', () => {
     localStorage.setItem(STORAGE_KEY, v9Save());
     const { result } = renderHook(() => useGameEngine());
     expect(result.current.state.farmEvents).toEqual({ ...EMPTY_FARM_EVENTS, enabled: false });
-    expect(result.current.state.schemaVersion).toBe(10);
+    expect(result.current.state.schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it('enables events for devices with completed runs', () => {

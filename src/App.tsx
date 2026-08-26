@@ -7,6 +7,7 @@ import {
   prefetchLateModals,
 } from './components/lazyModals';
 import { requestOnboardingReplay } from './engine/onboarding';
+import { deathCauseForState } from './engine/runPostMortem';
 import type { PersonalBests } from './engine/records';
 import { initAnalytics, track } from './analytics/track';
 import { useAnalyticsEvents } from './analytics/useAnalyticsEvents';
@@ -112,6 +113,8 @@ function App() {
             onRestart={restart}
             onReplayTutorial={handleReplayTutorial}
             showEventsUnlockTease={!state.farmEvents.enabled}
+            runHistory={state.runHistory}
+            deathCause={deathCauseForState(state)}
           />
         </Suspense>
       </>

@@ -40,6 +40,7 @@ import type {
   FarmEventEffectSpec,
   FarmEventId,
   FarmEventsState,
+  RunDayRecord,
 } from './types';
 
 // ── Factory ───────────────────────────────────────────────────────────────────
@@ -81,6 +82,7 @@ export function initialGameState(
     market: EMPTY_MARKET,
     buildings: { ...NO_BUILDINGS },
     farmEvents: { ...EMPTY_FARM_EVENTS, enabled: opts.farmEventsEnabled ?? true },
+    runHistory: [],
   };
 }
 
@@ -392,6 +394,24 @@ function fireScheduledEvent(
   return canFire ? maybeFireEvent(fe, nextDay, config, rng) : fe;
 }
 
+/** 025 — the per-day post-mortem record. The financial fields are taken straight
+ *  from the DailyLogEntry so the two can never disagree; `unlockedPlots` and
+ *  `buildingCount` come from the day's GameState. */
+function toRunDayRecord(
+  log: DailyLogEntry,
+  unlockedPlots: number,
+  buildings: GameState['buildings'],
+): RunDayRecord {
+  return {
+    day: log.day,
+    closingBalance: log.closingBalance,
+    taxDeducted: log.taxDeducted,
+    harvestIncome: log.totalHarvestIncome,
+    unlockedPlots,
+    buildingCount: Object.values(buildings).filter(Boolean).length,
+  };
+}
+
 /**
  * Executes the full end-of-turn sequence (FR-002).
  * Pass `weatherRoll` in tests for deterministic weather; omit in production.
@@ -593,6 +613,7 @@ export function processTurn(
       peakHarvestStreak,
       market: marketAfterActivate,
       farmEvents: feAfterTurn,
+      runHistory: [...s.runHistory, toRunDayRecord(log, s.unlockedPlots, s.buildings)],
     };
     return { state: bankruptState, log, isBankrupt: true };
   }
@@ -698,6 +719,7 @@ export function processTurn(
     lastDailyLog: log,
     phase: seasonPhase,
     disastersSurvived,
+    runHistory: [...s.runHistory, toRunDayRecord(log, s.unlockedPlots, s.buildings)],
     harvestStreak: harvestStreakAfterSeason,
     peakHarvestStreak,
     market: nextMarket,
