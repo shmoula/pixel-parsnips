@@ -4,6 +4,7 @@ import { render, screen, within, fireEvent } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
 import type { PersonalBests } from '../../src/engine/records';
+import type { RunDayRecord } from '../../src/engine/types';
 
 const emptyRecords: PersonalBests = {
   schemaVersion: 2,
@@ -29,6 +30,8 @@ function renderScreen(props: Partial<React.ComponentProps<typeof BankruptcyScree
       onRestart={vi.fn()}
       onReplayTutorial={vi.fn()}
       showEventsUnlockTease={false}
+      runHistory={[]}
+      deathCause="out_of_seed_money"
       {...props}
     />,
   );
@@ -123,6 +126,7 @@ describe('BankruptcyScreen — replay tutorial (014)', () => {
         records={{ schemaVersion: 2, bestDaysSurvived: 0, bestPeakBalance: 0, bestSeasonReached: 0, mostDisastersSurvived: 0, bestHarvestStreak: 0, totalRunsCompleted: 1 }}
         newBests={new Set()} lastDailyLog={null}
         onRestart={vi.fn()} onReplayTutorial={vi.fn()}
+        runHistory={[]} deathCause="out_of_seed_money"
         {...over}
       />,
     );
@@ -172,5 +176,45 @@ describe('BankruptcyScreen — 025 failure echo', () => {
     const restart = screen.getByRole('button', { name: /restart game/i });
     // The echo is the setup and Restart is the punchline; they must read together.
     expect(echo.compareDocumentPosition(restart) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+function hist(over: Partial<RunDayRecord>[] = []): RunDayRecord[] {
+  return over.map((o, i) => ({
+    day: i + 1, closingBalance: 100, taxDeducted: 6, harvestIncome: 30,
+    unlockedPlots: 4, buildingCount: 0, ...o,
+  }));
+}
+
+describe('BankruptcyScreen — 025 post-mortem', () => {
+  it('shows a cause-of-death title alongside the medal', () => {
+    renderScreen({
+      runHistory: hist([{ taxDeducted: 30 }, { taxDeducted: 30 }, { taxDeducted: 30 }]),
+      deathCause: 'fed_the_taxman',
+    });
+    expect(screen.getByText(/fed the taxman/i)).toBeInTheDocument();
+    // The medal answers "how far"; the title answers "how you died". Both stay.
+    expect(screen.getByLabelText(/medal/i)).toBeInTheDocument();
+  });
+
+  it('replaces generic advice with the evidence line when history allows', () => {
+    renderScreen({
+      runHistory: hist([
+        { closingBalance: 40, taxDeducted: 2 },
+        { closingBalance: 40, taxDeducted: 2 },
+        { closingBalance: 300, taxDeducted: 18 },
+        { closingBalance: 310, taxDeducted: 18 },
+        { closingBalance: 320, taxDeducted: 19 },
+      ]),
+      deathCause: 'out_of_seed_money',
+    });
+    expect(screen.getByText(/the taxman took \d+/i)).toBeInTheDocument();
+    expect(screen.queryByText(/keep a reserve above your daily lease cost/i)).toBeNull();
+  });
+
+  it('falls back to generic advice on an empty history (migrated v10 save)', () => {
+    renderScreen({ runHistory: [], deathCause: 'out_of_seed_money' });
+    expect(screen.getByText(/plant early and harvest often|keep a reserve|went bankrupt early/i)).toBeInTheDocument();
+    expect(screen.queryByText(/the taxman took/i)).toBeNull();
   });
 });

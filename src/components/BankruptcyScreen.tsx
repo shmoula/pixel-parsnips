@@ -3,7 +3,8 @@ import { getSeasonForDay } from '../engine/seasons';
 import { MedalBadge } from './MedalBadge';
 import { Coin } from './Coin';
 import { EmojiIcon } from './EmojiIcon';
-import type { DailyLogEntry } from '../engine/types';
+import type { DailyLogEntry, RunDayRecord } from '../engine/types';
+import { DEATH_TITLES, deriveEvidenceLine, deriveInsight, type DeathCauseId } from '../engine/runPostMortem';
 import type { Medal } from '../engine/medals';
 import type { PersonalBests } from '../engine/records';
 
@@ -20,25 +21,10 @@ interface BankruptcyScreenProps {
   onRestart: () => void;
   onReplayTutorial: () => void;
   showEventsUnlockTease?: boolean;
-}
-
-function deriveInsight(
-  log: DailyLogEntry | null | undefined,
-  daysPlayed: number,
-  peakBalance: number,
-): string {
-  if (!log) return 'Plant early and harvest often to build a coin reserve.';
-  if (log.pestDestroyedPlots.length > 0)
-    return 'Pests wiped your plots. Clear them quickly and replant to recover income.';
-  if (log.weatherId === 'blight')
-    return 'Blight destroyed your crops. Fast-growing radishes reduce blight exposure.';
-  if (log.weatherId === 'flash_drought')
-    return 'Flash Drought delayed your harvest. Keep a coin buffer to survive slow turns.';
-  if (daysPlayed < 5)
-    return 'You went bankrupt early. Start with radishes — they pay out in just 1 day.';
-  if (peakBalance < 40)
-    return 'Your balance stayed dangerously low. Aim for a buffer of 3× your lease cost.';
-  return 'Keep a reserve above your daily lease cost to survive bad-weather turns.';
+  /** 025 — per-day record of the finished run; empty for pre-schema-11 saves. */
+  runHistory: readonly RunDayRecord[];
+  /** 025 — how this run died, derived by the caller via `deathCauseForState`. */
+  deathCause: DeathCauseId;
 }
 
 function NewBestBadge() {
@@ -83,9 +69,12 @@ export function BankruptcyScreen({
   onRestart,
   onReplayTutorial,
   showEventsUnlockTease = false,
+  runHistory,
+  deathCause,
 }: BankruptcyScreenProps) {
   const season = getSeasonForDay(daysPlayed);
-  const insight = deriveInsight(lastDailyLog, daysPlayed, peakBalance);
+  const evidence = deriveEvidenceLine(runHistory);
+  const insight = evidence ?? deriveInsight(lastDailyLog, daysPlayed, peakBalance);
   const isFirstRun = records.totalRunsCompleted <= 1; // post-write: this run is run #1
 
   return (
@@ -103,6 +92,12 @@ export function BankruptcyScreen({
       <h1 className="font-pixel text-title text-farm-red text-center leading-relaxed">
         Bankrupt!
       </h1>
+
+      {/* 025 — how this run died. The medal below says how far it got; these answer
+          different questions, so both stay. */}
+      <p className="font-pixel text-body text-farm-gold uppercase tracking-widest">
+        {DEATH_TITLES[deathCause]}
+      </p>
 
       <MedalBadge medal={medal} />
 
