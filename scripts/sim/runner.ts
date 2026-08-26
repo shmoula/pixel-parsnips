@@ -3,6 +3,7 @@ import { getSeasonForDay } from '../../src/engine/seasons';
 import { makeRng } from './rng';
 import { EVENT_POLICIES, type Strategy, type EventPolicy } from './strategies';
 import type { EconomyConfig } from '../../src/engine/economy';
+import { deathCauseForState, type DeathCauseId } from '../../src/engine/runPostMortem';
 
 export type RunResult = 'won' | 'bankrupt' | 'targetMissed';
 
@@ -12,6 +13,8 @@ export interface Outcome {
   peakBalance: number;
   finalBalance: number;
   seasonReached: number;
+  /** 025 — which death title this run would show; null when the run did not go broke. */
+  deathCause: DeathCauseId | null;
 }
 
 const MAX_DAYS = 80; // finite arc; endless not simulated for difficulty measurement
@@ -80,6 +83,7 @@ export function playRun(
     peakBalance: state.peakBalance,
     finalBalance: state.coinBalance,
     seasonReached: getSeasonForDay(state.currentDay, config).number,
+    deathCause: result === 'bankrupt' ? deathCauseForState(state) : null,
   };
 }
 

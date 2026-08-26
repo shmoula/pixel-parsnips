@@ -232,6 +232,27 @@ is *most interesting cause first*. These are punchlines, not scores — they exi
 [`10-ICP.md`](../../../../game-ideas/10-ICP.md) identifies the shareable unit as "a specific, funny,
 legible failure," not a high score.
 
+#### Observed baseline distribution (deferred tuning)
+
+Simulated with `npm run sim -- --strategies smartMixed --trials 500` (seed 42). Percentages are of
+bankrupt runs per config, not of all trials.
+
+| config | bankrupt | fed_the_taxman | weathered_out | overextended | idle_hands | out_of_seed_money |
+|---|---|---|---|---|---|---|
+| baseline | 2 | 0% | 0% | 0% | 100% | 0% |
+| proposed | 142 | 0% | 19% | 20% | 49% | 12% |
+| buildings019 | 195 | 0% | 17% | 15% | 62% | 6% |
+| events022 | 184 | 0% | 16% | 12% | 67% | 5% |
+
+This is the **baseline for the next tuning pass**, not a tuned result. It reflects only the
+`smartMixed` bot, which reinvests rather than hoards — so `fed_the_taxman` (cumulative tax ≥ 25% of
+gross harvest income) firing at 0% is expected for this strategy, not a broken threshold; the
+hoarding players that title targets are outside the bot's behaviour. `idle_hands` dominating (62–67%
+on the fuller-economy presets) reflects that a reinvesting bot's board goes empty on the day it can
+no longer afford seeds, which overlaps with `out_of_seed_money`. Thresholds are left first-pass per
+the design note above; tuning waits until real-run data exists. `baseline`'s 2 bankrupt runs are too
+few to read.
+
 ## Phase D — the framing copy
 
 ### Welcome modal

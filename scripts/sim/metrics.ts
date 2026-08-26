@@ -1,4 +1,5 @@
 import type { Outcome } from './runner';
+import type { DeathCauseId } from '../../src/engine/runPostMortem';
 
 export interface Metrics {
   trials: number;
@@ -11,6 +12,8 @@ export interface Metrics {
   p90Peak: number;
   overshoot: number; // avgPeak / finalTarget
   clearedSeasonPct: number[]; // index 0..3 = seasons 1..4
+  /** 025 — count per cause across bankrupt runs only; sums to the bankrupt count. */
+  deathCauses: Record<DeathCauseId, number>;
 }
 
 function pct(part: number, total: number): number { return total === 0 ? 0 : (100 * part) / total; }
@@ -35,6 +38,16 @@ export function aggregate(outcomes: Outcome[], finalTarget: number): Metrics {
   const clearedSeasonPct = [1, 2, 3, 4].map(season =>
     pct(outcomes.filter(o => o.result === 'won' || o.seasonReached > season).length, n),
   );
+  const deathCauses: Record<DeathCauseId, number> = {
+    fed_the_taxman: 0,
+    weathered_out: 0,
+    overextended: 0,
+    idle_hands: 0,
+    out_of_seed_money: 0,
+  };
+  for (const o of outcomes) {
+    if (o.deathCause != null) deathCauses[o.deathCause] += 1;
+  }
   return {
     trials: n,
     winPct: pct(outcomes.filter(o => o.result === 'won').length, n),
@@ -46,5 +59,6 @@ export function aggregate(outcomes: Outcome[], finalTarget: number): Metrics {
     p90Peak: percentile(peaks, 90),
     overshoot: finalTarget === 0 ? 0 : avgPeak / finalTarget,
     clearedSeasonPct,
+    deathCauses,
   };
 }

@@ -1,4 +1,5 @@
 import type { Metrics } from './metrics';
+import { DEATH_TITLES, type DeathCauseId } from '../../src/engine/runPostMortem';
 
 export interface Row { config: string; strategy: string; metrics: Metrics; }
 
@@ -16,6 +17,31 @@ export function formatTable(rows: Row[]): string {
   ]);
   const widths = header.map((h, i) =>
     Math.max(h.length, ...lines.map(l => l[i].length)));
+  const fmt = (cols: string[]) => cols.map((c, i) => c.padEnd(widths[i])).join('  ');
+  return [fmt(header), widths.map(w => '-'.repeat(w)).join('  '), ...lines.map(fmt)].join('\n');
+}
+
+const CAUSE_ORDER = Object.keys(DEATH_TITLES) as DeathCauseId[];
+
+/**
+ * 025 — how bankrupt runs are distributed across the five death titles.
+ * Percentages are of BANKRUPT runs, not of all trials.
+ */
+export function formatDeathCauses(rows: Row[]): string {
+  const header = ['config', 'strategy', 'bankrupt', ...CAUSE_ORDER];
+  const lines = rows.map(r => {
+    const total = Object.values(r.metrics.deathCauses).reduce((a, b) => a + b, 0);
+    return [
+      r.config,
+      r.strategy,
+      String(total),
+      ...CAUSE_ORDER.map(c => {
+        const n = r.metrics.deathCauses[c];
+        return total === 0 ? '—' : `${((100 * n) / total).toFixed(0)}%`;
+      }),
+    ];
+  });
+  const widths = header.map((h, i) => Math.max(h.length, ...lines.map(l => l[i].length)));
   const fmt = (cols: string[]) => cols.map((c, i) => c.padEnd(widths[i])).join('  ');
   return [fmt(header), widths.map(w => '-'.repeat(w)).join('  '), ...lines.map(fmt)].join('\n');
 }
