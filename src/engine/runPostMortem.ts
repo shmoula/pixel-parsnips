@@ -17,7 +17,8 @@ function hoardThreshold(history: readonly RunDayRecord[]): number {
 interface HoardWindow { start: number; end: number; min: number; tax: number }
 
 /** Longest consecutive stretch of days at or above the threshold. */
-// Assumes one record per consecutive day: contiguity is detected by array adjacency, while the window span is read from r.day.
+// Contiguity is detected by r.day (not array adjacency): a tampered/corrupt save can carry
+// records with gaps in day, and those must not be reported as one continuous window.
 function longestHoardWindow(history: readonly RunDayRecord[], threshold: number): HoardWindow | null {
   let best: HoardWindow | null = null;
   let run: RunDayRecord[] = [];
@@ -35,9 +36,12 @@ function longestHoardWindow(history: readonly RunDayRecord[], threshold: number)
     run = [];
   };
 
+  let previousDay: number | null = null;
   for (const r of history) {
+    if (previousDay !== null && r.day !== previousDay + 1) flush();
     if (r.closingBalance >= threshold) run.push(r);
     else flush();
+    previousDay = r.day;
   }
   flush();
   return best;

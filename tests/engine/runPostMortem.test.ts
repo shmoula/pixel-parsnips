@@ -46,6 +46,17 @@ describe('deriveEvidenceLine', () => {
     const history = [rec(1, 5, 0), rec(2, 6, 0), rec(3, 7, 0), rec(4, 8, 0), rec(5, 9, 0)];
     expect(deriveEvidenceLine(history)).toBeNull();
   });
+
+  it('does not merge nonconsecutive days into one window', () => {
+    // A tampered/corrupt schema-11 save can carry records with gaps in `day`.
+    // These must not be reported as one continuous "days 1–9" stretch.
+    const history = [rec(1, 100, 6), rec(3, 100, 6), rec(5, 100, 6), rec(7, 100, 6), rec(9, 100, 6)];
+    const line = deriveEvidenceLine(history);
+    expect(line).not.toMatch(/days 1.9/);
+    // Every entry is its own single-day window, so the singular form is used.
+    expect(line).toMatch(/on day 1\b/);
+    expect(line).not.toMatch(/days/);
+  });
 });
 
 /** An unplanted plot; matches the real PlotState shape in src/engine/types.ts. */
