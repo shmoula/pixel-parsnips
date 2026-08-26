@@ -223,7 +223,7 @@ medal badge, which stays.
 |---|---|---|
 | `fed_the_taxman` | Cumulative `taxDeducted` ≥ 25% of the run's gross harvest income | **Fed the Taxman** |
 | `weathered_out` | Final day carried a disaster (pest / blight / flash drought) | **Weathered Out** |
-| `overextended` | A plot or building was bought within the last 3 days | **Overextended** |
+| `overextended` | A plot or building was bought within the last 3 days | **Bought the Farm** |
 | `idle_hands` | Majority of unlocked plots empty on the final day | **Idle Hands** |
 | — | default | **Out of Seed Money** |
 
