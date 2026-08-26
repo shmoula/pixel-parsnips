@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript ~5.6, React 18.3, Vitest + Testing Library (jsdom).
 
-**Spec:** [spec.md](spec.md) §"Phase C" · **Companion plan:** [plan.md](plan.md) covers Phases D, B and A (copy, tax indicator, palette) and is independent — run it first, on its own branch.
+**Spec:** [spec.md](spec.md) §"Phase C" · **Companion plan:** [025-first-minute/plan.md](../025-first-minute/plan.md) covers Phases D, B and A (copy, tax indicator, palette) and is independent — run it first, on its own branch.
 
 ---
 
@@ -1361,4 +1361,4 @@ bankruptcy early return in Task 2 Step 4 was missed.
 git diff --stat master -- src/theme src/index.css tailwind.config.ts
 ```
 
-Expected: **no output.** Palette work belongs to [plan.md](plan.md) on its own branch.
+Expected: **no output.** Palette work belongs to [025-first-minute/plan.md](../025-first-minute/plan.md) on its own branch.

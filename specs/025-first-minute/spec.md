@@ -15,8 +15,8 @@ one piece of real player feedback the project has (a tester who went bankrupt an
 This spec brightens the palette, promotes the tax to a first-class HUD element, and authors the
 failure framing at both ends of the run — welcome modal and bankruptcy screen. The bankruptcy
 screen also gains the evidence to say *why* the run ended, which requires the run's first `GameState`
-addition since 022 — that piece (Phase C) is engine work, tracked and delivered separately from the
-presentation change this PR carries (see **Delivery status** below).
+addition since 022 — that piece (Phase C) is engine work, delivered separately on the
+`026-post-mortem` branch from the presentation change this PR carries (see **Delivery status** below).
 
 **Explicitly not a balance change.** Per [`01-STRATEGY.md`](../../../../game-ideas/01-STRATEGY.md):
 no economy tuning before 20 players' worth of data.
@@ -30,7 +30,7 @@ This spec authors all four phases as one design; they ship on different tracks:
 | A | Palette tokens + contrast pass | **Delivered** in the presentation PR |
 | D | Framing copy (welcome modal + bankruptcy echo) | **Delivered** in the presentation PR |
 | B | Tax indicator (desktop chip + mobile caption) | **Trialed and reverted.** The rate is constant and the concrete nightly charge already appears in the day-end summary, so a permanent HUD element added cognitive load and header space without new information. The Phase B sections below are kept as the record of what was tried and why it was pulled |
-| C | Bankruptcy evidence line + death titles + `runHistory` (schema 11) | **Future work, separate branch.** Engine change, not part of the presentation delivery. The Phase C sections below are design-of-record for that branch, not a description of this PR |
+| C | Bankruptcy evidence line + death titles + `runHistory` (schema 11) | **Delivered** on the `026-post-mortem` branch. Engine change, shipped separately from the presentation delivery. The Phase C sections below are the design-of-record for that branch |
 
 ## Problem
 
@@ -160,8 +160,8 @@ exists to make visible.
 
 ## Phase C — bankruptcy reframe
 
-> **Future work, separate branch.** See **Delivery status** above. This is engine/schema design of
-> record for a later branch, not part of the presentation delivery.
+> **Delivered on the `026-post-mortem` branch.** See **Delivery status** above. This is the
+> engine/schema design of record for that branch, shipped separately from the presentation delivery.
 
 ### C1 — run history (`SCHEMA_VERSION` 10 → 11)
 
@@ -314,7 +314,7 @@ Sits directly above the existing Restart button, which already provides the one-
 | D | Framing copy | tests green — smallest, most valuable, ships first · **delivered** |
 | B | Tax chip + mobile caption | tests green · **trialed and reverted** (see Delivery status) |
 | A | Palette tokens + contrast pass | contrast assertions green, **screenshots reviewed by the author** · **delivered** |
-| C | Schema 11 + evidence line + death titles | tests green, migration test green · **future work, separate branch** |
+| C | Schema 11 + evidence line + death titles | tests green, migration test green · **delivered** (`026-post-mortem` branch) |
 
 D and A are the presentation phases that ship here; A is the one needing a human look before merge.
 B was reverted and C is a separate engine branch.
