@@ -168,6 +168,19 @@ keeps its coin glyphs. It is the binding constraint on section C and any future 
 `Goal 105·D20` caption. That chip is the real lever for mobile HUD density and is logged to
 the backlog as a separate item, not fixed here.
 
+### As-built measurement
+
+Measured in-browser against the shipped `DailyLedgerChip` at 375px (mobile preset), with the
+worst-case contract probe (`10/10 · 12d`) injected into the header. The streak-7 row mutates
+the real ledger chip in place to its widest form (`−15·+20`) so the row count is not inflated
+by an extra probe chip.
+
+| Metric | Budget | Measured |
+|---|---|---|
+| Ledger chip width, streak 0, 375px | ≤ 81px | 77px |
+| Ledger chip width, streak 7, 375px | ≤ 81px | 81px |
+| Header rows, worst-case contract, 375px | 2 | 2 |
+
 ---
 
 ## Verification
