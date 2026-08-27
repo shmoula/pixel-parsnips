@@ -101,9 +101,13 @@ on any harvest day (see `computeStreakUpdate` in `gameEngine.ts`), not per harve
 
 | State | Mobile (<sm) | sm+ |
 |---|---|---|
-| `harvestStreak === 0` | `−15/day` | `−15🪙/day` |
-| `harvestStreak > 0` | `−15·+15` | `−15🪙/day · +15🪙` |
-| season's last day | *(unchanged)* | append `(rises to 22)` |
+| `harvestStreak === 0` | `−15/day` | `Lease 15🪙/day` |
+| `harvestStreak > 0` | `−15·+15` | `Lease 15🪙/day · +15🪙` |
+| season's last day | *(no preview)* | append `(rises to 22 next season)` |
+
+The sm+ form keeps the word "Lease" and the coin glyph — the 81px budget binds the mobile
+form only, and desktop has room to spare. The end-of-season preview stays sm+-only, exactly
+as today; it has never rendered below 640px.
 
 The `/day` suffix degrades away on mobile when the streak half appears — a deliberate
 graceful-degradation step to stay inside the width budget below. The `title` and
