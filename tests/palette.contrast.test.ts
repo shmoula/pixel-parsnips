@@ -20,7 +20,9 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
   { name: 'gold value',         where: 'HUD.tsx chips',              fg: PALETTE.gold,      bg: PALETTE.chip },
   { name: 'caption',            where: 'HUD.tsx chip captions',      fg: PALETTE.parchment, bg: PALETTE.chip, alpha: 0.7 },
   { name: 'menu row label',     where: 'GameMenuPopover.tsx rows',   fg: PALETTE.parchment, bg: PALETTE.soil, alpha: 0.9 },
-  { name: 'lease readout',      where: 'HUD.tsx lease span',         fg: PALETTE.stone,     bg: PALETTE.bar },
+  { name: 'ledger cost',        where: 'HUD.tsx DailyLedgerChip',    fg: PALETTE.parchment, bg: PALETTE.chip, alpha: 0.7 },
+  { name: 'ledger bonus',       where: 'HUD.tsx DailyLedgerChip',    fg: PALETTE.gold,      bg: PALETTE.chip },
+  { name: 'ledger lease preview', where: 'HUD.tsx DailyLedgerChip',  fg: PALETTE.gold,      bg: PALETTE.chip, alpha: 0.7 },
   { name: 'modal body',         where: 'CreditsModal.tsx paragraphs',fg: PALETTE.parchment, bg: PALETTE.soil },
   { name: 'modal heading',      where: 'CreditsModal.tsx h2',        fg: PALETTE.gold,      bg: PALETTE.soil },
   { name: 'section label',      where: 'CreditsModal.tsx h3',        fg: PALETTE.parchment, bg: PALETTE.soil, alpha: 0.7 },
@@ -51,6 +53,10 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
  * whether to fix the foreground/treatment or accept them as exceptions. The
  * point of this comment is that the gate is honest about its boundary rather
  * than silently passing over surfaces that fail.
+ *
+ * 027 note for the 028 palette lift: the retired `lease readout` row (`stone` on `bar`)
+ * passed at only 4.529 — a 0.029 margin. Any future row on `bar` is similarly fragile,
+ * and lightening `bar` will move every one of them. Re-derive, do not eyeball.
  */
 
 describe('palette contrast (WCAG AA, normal text)', () => {
