@@ -19,12 +19,19 @@ export function deriveMedal(seasonReached: number, won: boolean): Medal {
   return 'none';
 }
 
+/**
+ * 027 — the medal is the game's single run-progression ladder. These titles were the
+ * reputation ladder's (src/engine/reputation.ts, deleted in 027): that ladder measured
+ * the same axis as the medal on a second surface, so its 7 tiers were collapsed onto
+ * the medal's 5. 'Hopeful Homesteader' and 'Master of the Harvest' did not survive the
+ * collapse — the remaining five read as one competence progression.
+ */
 export const MEDAL_LABELS: Record<Medal, string> = {
-  none: 'No Medal',
-  bronze: 'Bronze',
-  silver: 'Silver',
-  gold: 'Gold',
-  platinum: 'Platinum',
+  none: 'Struggling Smallholder',
+  bronze: 'Apprentice Farmer',
+  silver: 'Seasoned Grower',
+  gold: 'Respected Agronomist',
+  platinum: 'Legendary Cultivator',
 };
 
 export const MEDAL_TAGLINES: Record<Medal, string> = {

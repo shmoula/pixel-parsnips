@@ -24,9 +24,10 @@ const ICON: Record<Medal, string> = {
 export function MedalBadge({ medal }: MedalBadgeProps) {
   const label = MEDAL_LABELS[medal];
   const tagline = MEDAL_TAGLINES[medal];
-  const ariaLabel = medal === 'none'
-    ? 'No medal — keep going'
-    : `${label} medal — ${tagline}`;
+  // 027 — one template for every tier. `none` is 'Struggling Smallholder' now, a real
+  // rung on the ladder, so it no longer needs a special "No medal" string. The word
+  // "medal" is dropped because the labels are farmer titles, not metals.
+  const ariaLabel = `${label} — ${tagline}`;
 
   return (
     <div className="flex flex-col items-center gap-2">
