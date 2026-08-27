@@ -83,25 +83,6 @@ describe('HUD — Day 18+ warning and Day 20 preview (US6)', () => {
   });
 });
 
-describe('HUD — harvest streak chip', () => {
-  it('hides the streak chip when harvestStreak === 0', () => {
-    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={0} />);
-    expect(screen.queryByLabelText(/harvest streak/i)).toBeNull();
-  });
-
-  it('shows the streak chip with ×N when harvestStreak > 0', () => {
-    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={7} />);
-    const chip = screen.getByLabelText(/harvest streak/i);
-    expect(chip).toBeInTheDocument();
-    expect(chip).toHaveTextContent('×7');
-    // Tooltip reflects the capped next-bonus (streak 7 → bonus capped at +20).
-    expect(chip).toHaveAttribute(
-      'title',
-      'Harvest streak: 7 days in a row. Next harvest earns +20🪙 bonus (capped at +20).',
-    );
-  });
-});
-
 // 027 — the reputation title restated the day counter that already dominates the HUD,
 // so the chip is gone and the ladder now lives on the medal (src/engine/medals.ts).
 describe('HUD — 027 reputation chip removed', () => {
@@ -115,6 +96,75 @@ describe('HUD — 027 reputation chip removed', () => {
       const { unmount } = render(<HUD {...baseProps} currentDay={day} coinBalance={100} />);
       expect(screen.queryByText(/Smallholder|Homesteader|Apprentice|Grower|Agronomist|Master of the Harvest|Cultivator/i)).toBeNull();
       unmount();
+    }
+  });
+});
+
+// 027 — lease and the streak bonus are both coins-per-day, so they share one chip. In
+// jsdom there is no Tailwind CSS, so `sm:hidden` and `hidden sm:inline` spans are all
+// present in the DOM; tests that care about one width query that width's spans directly.
+describe('HUD — 027 daily ledger chip', () => {
+  /** Concatenated text of the chip's mobile-only spans. */
+  function mobileText(chip: HTMLElement): string {
+    return [...chip.querySelectorAll('.sm\\:hidden')].map(e => e.textContent).join('');
+  }
+
+  it('shows the lease at streak 0, with no bonus half', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={0} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(mobileText(chip)).toBe('−15/day');
+    expect(chip).toHaveTextContent(/Lease 15/);
+  });
+
+  it('adds the bonus half when a streak is live', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    const chip = screen.getByLabelText(/harvest streak: 3 days in a row/i);
+    expect(mobileText(chip)).toBe('−15·+15');
+  });
+
+  it('caps the displayed bonus at +20', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={7} />);
+    const chip = screen.getByLabelText(/harvest streak: 7 days in a row/i);
+    expect(mobileText(chip)).toBe('−15·+20');
+  });
+
+  it('uses the singular "day" for a 1-day streak', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={1} />);
+    expect(screen.getByLabelText(/harvest streak: 1 day in a row/i)).toBeInTheDocument();
+  });
+
+  it('keeps emoji out of the mobile form (81px width budget — see spec.md)', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    const chip = screen.getByLabelText(/harvest streak: 3 days in a row/i);
+    expect(mobileText(chip)).not.toMatch(/\p{Extended_Pictographic}/u);
+  });
+
+  it('shows the end-of-season lease preview in the sm+ form', () => {
+    render(<HUD {...baseProps} currentDay={20} coinBalance={300} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(chip).toHaveTextContent(/rises to 22 next season/);
+  });
+
+  it('omits the preview on any day but the last of the season', () => {
+    render(<HUD {...baseProps} currentDay={19} coinBalance={300} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(chip).not.toHaveTextContent(/rises to/);
+  });
+
+  it('no longer renders a standalone harvest-streak chip', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(screen.queryByLabelText(/^Harvest streak: \d+ days$/)).toBeNull();
+  });
+
+  it('shows the lease at mobile widths — the chip is never width-gated (F7)', () => {
+    const { container } = render(<HUD {...baseProps} currentDay={5} coinBalance={100} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    // The pre-027 readout lived in a `hidden sm:flex` wrapper. Nothing in the chip's
+    // ancestry may hide it below sm.
+    let node: HTMLElement | null = chip;
+    while (node && node !== container) {
+      expect(node.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+      node = node.parentElement;
     }
   });
 });
@@ -253,30 +303,6 @@ describe('HUD — 024 chips are inert at desktop widths', () => {
     stubDesktop();
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
     expect(screen.getByText(/Season 1 · Spring Thaw/)).toBeInTheDocument();
-  });
-});
-
-describe('HUD — lease readout', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  function stubDesktop() {
-    vi.stubGlobal('matchMedia', (query: string) => ({
-      matches: query === '(min-width: 640px)',
-      media: query,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    }));
-  }
-
-  it('shows the lease, including the end-of-season preview', () => {
-    stubDesktop();
-    render(<HUD {...baseProps} currentDay={20} coinBalance={300} />);
-    expect(screen.getByText(/lease/i)).toBeInTheDocument();
-    expect(screen.getByText(/rises to \d+ next season/i)).toBeInTheDocument();
   });
 });
 

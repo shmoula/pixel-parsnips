@@ -54,6 +54,66 @@ function ContractChip({ contract }: { contract: ContractChipData }) {
   );
 }
 
+/**
+ * 027 — the per-day coin ledger: the lease you owe, and the bonus your next harvest
+ * will pay. Both halves are coins-per-day (the streak bonus is applied once per day on
+ * any harvest day — see `computeStreakUpdate` in gameEngine.ts, not per harvest), which
+ * is what makes them one chip rather than two. Replaces the pre-027 standalone streak
+ * chip and the desktop-only lease readout, which was invisible below 640px (F7).
+ *
+ * WIDTH BUDGET: the mobile form must stay ≤81px at 375px or the HUD wraps to a third
+ * row. Measured: `−15·+15` is 81px, `−15🔥+15` is 83px and costs a row. That is why the
+ * `sm:hidden` spans carry no emoji and no `tracking-widest`. See specs/027-hud-legibility.
+ *
+ * COLOUR: `farm-stone` is unusable here — it measures 3.751 on `farm-chip` and fails
+ * WCAG AA. The cost uses `farm-parchment/70` (7.06) and the bonus `farm-gold` (9.61).
+ */
+function DailyLedgerChip({
+  leasePerDay,
+  harvestStreak,
+  nextSeasonLease,
+}: {
+  leasePerDay: number;
+  harvestStreak: number;
+  /** Next season's lease, previewed on the season's last day (sm+ only); null otherwise. */
+  nextSeasonLease: number | null;
+}) {
+  const streakBonus = Math.min(harvestStreak, 4) * 5;
+  const hasStreak = harvestStreak > 0;
+  const days = `${harvestStreak} day${harvestStreak === 1 ? '' : 's'}`;
+
+  const description = hasStreak
+    ? `Lease: ${leasePerDay} coins per day. Harvest streak: ${days} in a row — the next harvest earns +${streakBonus} coins (capped at +20).`
+    : `Lease: ${leasePerDay} coins per day, charged every night.`;
+
+  return (
+    <div
+      aria-label={description}
+      title={description}
+      className="flex items-center gap-1 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60 cursor-help"
+    >
+      <span className="font-pixel text-caption text-farm-parchment/70">
+        {/* U+2212 MINUS SIGN, not a hyphen. */}
+        <span className="sm:hidden">−{leasePerDay}{hasStreak ? '·' : '/day'}</span>
+        <span className="hidden sm:inline uppercase tracking-widest">
+          Lease {leasePerDay}<Coin />/day
+          {nextSeasonLease !== null && (
+            <span className="ml-1 text-farm-gold/70">
+              (rises to {nextSeasonLease} next season)
+            </span>
+          )}
+        </span>
+      </span>
+      {hasStreak && (
+        <span className="font-pixel text-caption text-farm-gold">
+          <span className="sm:hidden">+{streakBonus}</span>
+          <span className="hidden sm:inline">· +{streakBonus}<Coin /></span>
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** 021 — resolves the number the balance chip should animate toward: the held
     (pre-turn) value while a Day Summary is holding the reveal, or the
     committed `coinBalance` otherwise (including mid-tick, so the animation
@@ -84,7 +144,9 @@ interface HUDProps {
   hasLastTurn: boolean;
   /** Used by T012 to decide whether Day 80 shows a lease preview. */
   endlessMode: boolean;
-  /** Current uncapped consecutive-harvest-day count; chip is hidden at 0. */
+  /** Current uncapped consecutive-harvest-day count. Drives only the bonus half of
+      DailyLedgerChip (the lease half renders unconditionally); the bonus half is
+      hidden at 0. */
   harvestStreak: number;
   /** False when advancing only burns lease+tax (no seeds, nothing growing). Drives the warning label. */
   canAdvanceProductively: boolean;
@@ -188,33 +250,19 @@ export function HUD({
             </span>
           </div>
         </div>
-        {harvestStreak > 0 && (
-          <div
-            aria-label={`Harvest streak: ${harvestStreak} days`}
-            title={`Harvest streak: ${harvestStreak} day${harvestStreak === 1 ? '' : 's'} in a row. Next harvest earns +${Math.min(harvestStreak, 4) * 5}🪙 bonus (capped at +20).`}
-            className="flex items-center gap-1 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60 cursor-help"
-          >
-            <EmojiIcon className="text-base leading-none">🔥</EmojiIcon>
-            <span className="font-pixel text-caption text-farm-gold">×{harvestStreak}</span>
-          </div>
-        )}
+        <DailyLedgerChip
+          leasePerDay={season.leasePerDay}
+          harvestStreak={harvestStreak}
+          nextSeasonLease={nextSeasonLease}
+        />
         <ContractChip contract={contract} />
       </div>
 
-      {/* Right: Lease readout (hidden on small screens) and the action buttons, kept in
-          one flex item so a single `ml-auto` right-aligns them as a unit — sharing the
-          header's first line, or on a line of their own once the chips push them down. */}
+      {/* Right: the action buttons (Last Turn, Next Day, game menu), kept in one flex
+          item so a single `ml-auto` right-aligns them as a unit — sharing the header's
+          first line, or on a line of their own once the chips push them down. The lease
+          readout that used to live here moved into DailyLedgerChip, on the left. */}
       <div className="flex items-center justify-end gap-2 sm:gap-3 ml-auto">
-        <div className="hidden sm:flex items-center gap-3">
-          <span className="font-pixel text-caption text-farm-stone uppercase tracking-widest">
-            Lease {season.leasePerDay}<Coin />/day
-            {showLeasePreview && nextSeasonLease !== null && (
-              <span className="ml-1 text-farm-gold/70">
-                (rises to {nextSeasonLease} next season)
-              </span>
-            )}
-          </span>
-        </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
