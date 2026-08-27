@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { CropId } from '../engine/types';
-import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { Coin } from './Coin';
@@ -33,10 +32,6 @@ function getBalanceBorderClass(danger: DangerLevel): string {
 
 function getSeasonMobileLabel(expanded: boolean, number: number, name: string, short: string): string {
   return expanded ? `Season ${number} · ${name}` : short;
-}
-
-function getRepTitleClass(expanded: boolean): string {
-  return `font-pixel text-caption text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
 }
 
 /** 022 — live delivery-contract progress, or null (chip hidden). */
@@ -124,7 +119,6 @@ export function HUD({
   onReplayTutorial,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
-  const reputation = getReputationTier(currentDay);
   const dayIntoSeason = currentDay - season.startDay + 1;
   const targetMet = coinBalance >= season.target;
   const daysRemainingInSeason = season.endDay - currentDay + 1;
@@ -133,11 +127,9 @@ export function HUD({
   const nextSeasonLease = showLeasePreview ? getNextSeasonLease(season, endlessMode) : null;
 
   const [seasonExpanded, setSeasonExpanded] = useState(false);
-  const [repExpanded, setRepExpanded] = useState(false);
   const seasonLen = season.endDay - season.startDay + 1;
   const seasonShort = shortSeasonLabel(season.name);
   const seasonMobileLabel = getSeasonMobileLabel(seasonExpanded, season.number, season.name, seasonShort);
-  const repTitleClass = getRepTitleClass(repExpanded);
 
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);
@@ -207,19 +199,6 @@ export function HUD({
           </div>
         )}
         <ContractChip contract={contract} />
-        <ExpandableChip
-          expanded={repExpanded}
-          onToggle={() => setRepExpanded(v => !v)}
-          ariaLabel={`Reputation: ${reputation.title}`}
-          title={`Reputation: ${reputation.title}. Your standing grows as you survive more days this run.`}
-          className="flex min-h-[44px] md:min-h-0 items-center gap-1.5 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60"
-        >
-          <span className="sr-only">Reputation: </span>
-          <span className="text-base leading-none -translate-y-[0.13em]" aria-hidden="true">🎖️</span>
-          <span className={repTitleClass}>
-            {reputation.title}
-          </span>
-        </ExpandableChip>
       </div>
 
       {/* Right: Lease readout (hidden on small screens) and the action buttons, kept in

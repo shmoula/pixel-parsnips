@@ -102,17 +102,20 @@ describe('HUD — harvest streak chip', () => {
   });
 });
 
-describe('HUD — reputation chip', () => {
-  it('shows "Struggling Smallholder" on Day 1', () => {
-    render(<HUD {...baseProps} currentDay={1} coinBalance={100} />);
-    const chip = screen.getByLabelText(/reputation/i);
-    expect(chip).toBeInTheDocument();
-    expect(chip).toHaveTextContent(/Struggling Smallholder/i);
+// 027 — the reputation title restated the day counter that already dominates the HUD,
+// so the chip is gone and the ladder now lives on the medal (src/engine/medals.ts).
+describe('HUD — 027 reputation chip removed', () => {
+  it('renders no reputation chip', () => {
+    render(<HUD {...baseProps} currentDay={14} coinBalance={100} />);
+    expect(screen.queryByLabelText(/reputation/i)).toBeNull();
   });
 
-  it('shows "Seasoned Grower" on Day 14', () => {
-    render(<HUD {...baseProps} currentDay={14} coinBalance={100} />);
-    expect(screen.getByLabelText(/reputation/i)).toHaveTextContent(/Seasoned Grower/i);
+  it('renders no reputation title text at any day', () => {
+    for (const day of [1, 14, 21, 41, 81]) {
+      const { unmount } = render(<HUD {...baseProps} currentDay={day} coinBalance={100} />);
+      expect(screen.queryByText(/Smallholder|Homesteader|Apprentice|Grower|Agronomist|Master of the Harvest|Cultivator/i)).toBeNull();
+      unmount();
+    }
   });
 });
 
@@ -127,14 +130,6 @@ describe('HUD — mobile compaction', () => {
   it('toggles the season chip aria-expanded on click', () => {
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
     const chip = screen.getByRole('button', { name: /season 1 · spring thaw/i });
-    expect(chip).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.click(chip);
-    expect(chip).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('toggles the reputation chip aria-expanded on click', () => {
-    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
-    const chip = screen.getByRole('button', { name: /reputation/i });
     expect(chip).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(chip);
     expect(chip).toHaveAttribute('aria-expanded', 'true');
@@ -248,18 +243,16 @@ describe('HUD — 024 chips are inert at desktop widths', () => {
     }));
   }
 
-  it('renders neither the season nor the reputation chip as a button at sm+', () => {
+  it('does not render the season chip as a button at sm+', () => {
     stubDesktop();
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
     expect(screen.queryByRole('button', { name: /season 1 · spring thaw/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /reputation/i })).toBeNull();
   });
 
-  it('still shows both chips content at sm+', () => {
+  it('still shows the season chip content at sm+', () => {
     stubDesktop();
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
     expect(screen.getByText(/Season 1 · Spring Thaw/)).toBeInTheDocument();
-    expect(screen.getByText(/Struggling Smallholder/)).toBeInTheDocument();
   });
 });
 

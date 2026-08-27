@@ -27,11 +27,11 @@ describe('ExpandableChip', () => {
   it('renders a button that toggles below the sm breakpoint', async () => {
     const onToggle = vi.fn();
     render(
-      <ExpandableChip expanded={false} onToggle={onToggle} className="chip" ariaLabel="Reputation: Farmer">
-        <span>Farmer</span>
+      <ExpandableChip expanded={false} onToggle={onToggle} className="chip" ariaLabel="Season 1 · Spring Thaw">
+        <span>Spring</span>
       </ExpandableChip>,
     );
-    const chip = screen.getByRole('button', { name: /reputation: farmer/i });
+    const chip = screen.getByRole('button', { name: /season 1 · spring thaw/i });
     expect(chip).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(chip);
     expect(onToggle).toHaveBeenCalledTimes(1);
@@ -41,13 +41,13 @@ describe('ExpandableChip', () => {
     stubViewport(true);
     const onToggle = vi.fn();
     render(
-      <ExpandableChip expanded={false} onToggle={onToggle} className="chip" ariaLabel="Reputation: Farmer">
-        <span>Farmer</span>
+      <ExpandableChip expanded={false} onToggle={onToggle} className="chip" ariaLabel="Season 1 · Spring Thaw">
+        <span>Spring</span>
       </ExpandableChip>,
     );
     // No button means no Preflight `cursor: pointer` and no dead click target.
     expect(screen.queryByRole('button')).toBeNull();
-    expect(screen.getByText('Farmer')).toBeInTheDocument();
+    expect(screen.getByText('Spring')).toBeInTheDocument();
   });
 
   it('drops aria-expanded at sm and up', () => {
