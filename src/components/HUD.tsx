@@ -330,9 +330,11 @@ export function HUD({
               active:enabled:scale-95 disabled:opacity-50 transition-all
             "
           >
-            {/* Press Start 2P's → glyph is parked low in the em box; lift it 0.2em
-                (measured) onto the letters' optical centre. */}
-            {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
+            {/* The button is inline-flex, so the literal space before the arrow
+                collapses; `ml-1.5` gives the reliable gap instead. Press Start 2P's
+                → glyph is parked low in the em box, so lift it 0.2em (measured) onto
+                the letters' optical centre. */}
+            {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block ml-1.5 -translate-y-[0.2em]">→</span>
           </button>
           <GameMenu onRestart={onRestart} onReplayTutorial={onReplayTutorial} />
         </div>
