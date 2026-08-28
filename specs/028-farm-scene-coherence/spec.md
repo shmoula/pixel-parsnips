@@ -13,17 +13,23 @@
 [`src/theme/palette.ts`](../../src/theme/palette.ts) opens with *"025 — every colour the game
 paints, in one place."* Measured against the code, that is materially untrue:
 
+Counting **live code only** — comment mentions and the never-imported `App.css` excluded:
+
 | | Count |
 |---|---|
-| Hex literals hardcoded in components | 50 |
-| Distinct values outside `PALETTE` | 35 (33 live — two are in dead code) |
+| Hex literals in live component/CSS code | 46 |
+| Distinct values outside `PALETTE` | 30 |
 | Values in `PALETTE` | 14 |
+| `PALETTE` values re-typed as raw literals | 2 |
 
 ```
-19  PlotCard.tsx     11  Shop.tsx      8  SeedCard.tsx
- 7  FarmGrid.tsx      2  index.css     2  App.css (dead — never imported)
- 1  DaySummaryModal.tsx
+19  PlotCard.tsx     10  Shop.tsx      8  SeedCard.tsx
+ 7  FarmGrid.tsx      1  index.css     1  DaySummaryModal.tsx
 ```
+
+`App.css` is excluded because it is never imported (see A3). Two further occurrences —
+`Shop.tsx:173` and `index.css:34` — are colour values named inside explanatory comments,
+not code, and must not be "substituted".
 
 This is why "the fields are dark" and "the HUD is dark" are one problem with one blocker.
 The fields are dark because `PlotCard` paints `bg-[#160F07]` and `FarmGrid` paints
@@ -88,13 +94,24 @@ is documented, not accidental.
 Fold the live hardcoded literals into `PALETTE` as named, role-bearing tokens. Three
 classes of work:
 
-**A1 — Straight substitutions.** Three components hardcode values that already have tokens:
+**A1 — Straight substitution.** One literal re-types a token's value in a place where it
+genuinely means that token:
 
-| Value | Where | Replace with |
-|---|---|---|
-| `#5E3D22` | `Shop.tsx:173` | `PALETTE.soil` |
-| `#C0392B` | `SeedCard.tsx:19` | `PALETTE.red` |
-| `#F5C842` | `SeedCard.tsx:187` | `PALETTE.gold` |
+| Value | Where | Replace with | Why it is safe |
+|---|---|---|---|
+| `#F5C842` | `SeedCard.tsx:187` | `PALETTE.gold` | The selected-card border; gold *is* the selection colour |
+
+**Do not substitute these**, despite matching or near-matching a token:
+
+- `#C0392B` (`SeedCard.tsx:19`) is the **radish** card border. It equals `PALETTE.red`, but
+  aliasing it would couple a crop's identity colour to the danger red, so a future change to
+  one silently recolours the other. It becomes a crop-theme token instead (A2).
+- `#4A2F1A` (`Shop.tsx:175`) carries an explicit comment: *"Decorative fallback stripe —
+  intentionally NOT PALETTE.soil. Keeping it a raw literal decouples this awning from the
+  soil token."* Give it its own token; do not derive it from `soil`.
+- `#5E3D22` (`Shop.tsx:173`) and the value at `index.css:34` appear **inside comments**.
+  There is nothing to substitute. Leave the prose alone except where §B changes a value the
+  comment describes.
 
 **A2 — New tokens.** Everything else, named for its role rather than its hue. The field
 tokens are the ones §B lifts:
@@ -111,9 +128,10 @@ tokens are the ones §B lifts:
 | Tilled-row gradients | `#3a2010` `#2a1208` `#1a0a02` `#2A1A0E` `#221408` | `PlotCard.tsx:157–158,351` |
 | Page fallback | `#140e06` | `index.css:8` |
 | Disaster modal ground | `#2A0A0A` | `DaySummaryModal.tsx:45` |
-| Shop chrome | `#2A1808` `#3D2410` `#4A2F1A` `#5A3A1E` `#6B4A2A` `#7A4E24` | `Shop.tsx` |
+| Shop chrome | `#2A1808` `#3D2410` `#5A3A1E` `#6B4A2A` `#7A4E24` | `Shop.tsx` |
+| Shop awning fallback stripe | `#4A2F1A` | `Shop.tsx:175` — own token, **not** derived from `soil` |
 | Shop awning stripes | `#3F7D30` `#A8452A` `#E8D9A8` | `Shop.tsx:33` |
-| Seed-card per-crop | `#6E2A24` `#3A5220` `#4E8A2E` `#7C3E14` `#C87820` `#BFE6A8` | `SeedCard.tsx:19–21,141` |
+| Seed-card per-crop | `#6E2A24` `#C0392B` `#3A5220` `#4E8A2E` `#7C3E14` `#C87820` `#BFE6A8` | `SeedCard.tsx:19–21,141` — crop identity, kept independent of `red` |
 | Danger hover | `#d94040` | `PlotCard.tsx:130` |
 
 **A2b — Deleted, not tokenised.** `#4A7230` (`FarmGrid.tsx:78–93`) is the grass-tuft stroke
@@ -122,8 +140,10 @@ ceases to exist.
 
 **A3 — Delete dead code.** `src/App.css` is never imported: `main.tsx` imports only
 `index.css`, and `index.css:40` carries the comment *"App.css, which is never imported"*.
-Delete the file rather than tokenise its Vite-template colours (`#646cff`, `#61dafb`,
-`#888`).
+Delete the file rather than tokenise its Vite-template colours (`#646cffaa`, `#61dafbaa`,
+`#888`). They are absent from the counts above — the first two are 8-digit RGBA and the
+third 3-digit, so a 6-digit inventory never sees them. Another reason to delete rather than
+audit.
 
 Consolidation must be **visually neutral** — same rendered colours, different source. Any
 visible change belongs to §B, so the two can be reviewed separately.
