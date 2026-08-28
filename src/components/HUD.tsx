@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { CropId } from '../engine/types';
-import { getReputationTier } from '../engine/reputation';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Coin } from './Coin';
 import { EmojiIcon } from './EmojiIcon';
 import { ExpandableChip } from './ExpandableChip';
@@ -35,10 +35,6 @@ function getSeasonMobileLabel(expanded: boolean, number: number, name: string, s
   return expanded ? `Season ${number} · ${name}` : short;
 }
 
-function getRepTitleClass(expanded: boolean): string {
-  return `font-pixel text-caption text-farm-parchment/90 whitespace-nowrap ${expanded ? 'inline' : 'hidden'} sm:inline`;
-}
-
 /** 022 — live delivery-contract progress, or null (chip hidden). */
 export type ContractChipData = { done: number; total: number; cropId: CropId; daysLeft: number } | null;
 
@@ -54,6 +50,106 @@ function ContractChip({ contract }: { contract: ContractChipData }) {
       <EmojiIcon className="text-base leading-none">📜</EmojiIcon>
       <span className="font-pixel text-caption text-farm-gold">
         {contract.done}/{contract.total} · {contract.daysLeft}d
+      </span>
+    </div>
+  );
+}
+
+/** Coins the next harvest earns at this streak length; the engine caps the multiplier
+ *  at 4 (`computeStreakUpdate` in gameEngine.ts, STREAK_BONUS_* in constants.ts). */
+function getStreakBonus(harvestStreak: number): number {
+  return Math.min(harvestStreak, 4) * 5;
+}
+
+/**
+ * The harvest streak, as a lit flame on the day counter it accrues against.
+ *
+ * A streak is a state you either have or have lost, so it reads better as one glyph
+ * than as a figure to parse: the pulse carries "this is live, don't break it" without
+ * spending HUD width on digits that change daily. The count and the coins it earns are
+ * one hover away rather than always on screen — the ledger chip beside it stays a
+ * single per-day figure instead of two.
+ *
+ * The flame is the accessible element (`role="img"` + label), not the decorative emoji
+ * inside it, so the streak is announced rather than skipped.
+ */
+function StreakFlame({ harvestStreak }: { harvestStreak: number }) {
+  const reducedMotion = useReducedMotion();
+  if (harvestStreak <= 0) return null;
+
+  const days = `${harvestStreak} day${harvestStreak === 1 ? '' : 's'}`;
+  const description = `Harvest streak: ${days} in a row — the next harvest earns +${getStreakBonus(harvestStreak)} coins (capped at +20).`;
+
+  return (
+    <span
+      role="img"
+      aria-label={description}
+      title={description}
+      // The pulse is the whole point of the glyph, so it is gated on the motion
+      // preference rather than left running for players who asked for stillness.
+      // `streak-flame` (index.css) breathes in scale as well as opacity; the class is
+      // itself inside a prefers-reduced-motion query, so this gate is belt and braces.
+      className={`inline-flex cursor-help ${reducedMotion ? '' : 'streak-flame-anim'}`}
+    >
+      {/* EmojiIcon carries the optical-centre lift: an emoji laid out beside Press
+          Start 2P sits ~0.1875em low, because the pixel font paints entirely above
+          the baseline while the emoji straddles it. `items-center` on the row lines
+          the boxes up; only this lifts the ink to match. */}
+      <EmojiIcon className="text-base leading-none">🔥</EmojiIcon>
+    </span>
+  );
+}
+
+/**
+ * The per-day coin ledger: the lease you owe, every night.
+ *
+ * Introduced in 027 to surface the lease below 640px (F7) — it lived in a desktop-only
+ * `hidden sm:flex` wrapper before, so mobile players could not see the per-day cost
+ * before advancing. It briefly also carried the harvest-streak bonus; that moved to
+ * `StreakFlame` on the day chip, leaving this chip one figure to read.
+ *
+ * WIDTH BUDGET: at 375px the header has 343px for its first row, and `StreakFlame` on
+ * the day chip costs 19px of it (94px → 113px). That is paid for here: the mobile lease
+ * reads `−15/d` (61px), not `−15/day` (77px). Measured — shrinking the flame instead does
+ * not work (even a 10px glyph still wraps to a third row), so the suffix is the lever.
+ * Keep this span emoji-free and free of `tracking-widest`. See specs/027-hud-legibility.
+ *
+ * COLOUR: `farm-stone` is unusable here — it measures 3.751 on `farm-chip` and fails
+ * WCAG AA. The cost uses `farm-parchment/70` (7.06) and the preview `farm-gold/70` (5.47).
+ */
+function DailyLedgerChip({
+  leasePerDay,
+  nextSeasonLease,
+}: {
+  leasePerDay: number;
+  /** Next season's lease, previewed on the season's last day (sm+ only); null otherwise. */
+  nextSeasonLease: number | null;
+}) {
+  // The sm+ form previews next season's lease on the season's last day; the accessible
+  // description (aria-label + title) mirrors it so screen-reader and hover users get the
+  // same warning, degrading to the lease alone when there is no preview to show.
+  const description =
+    nextSeasonLease !== null
+      ? `Lease: ${leasePerDay} coins per day, charged every night. Rises to ${nextSeasonLease} next season.`
+      : `Lease: ${leasePerDay} coins per day, charged every night.`;
+
+  return (
+    <div
+      aria-label={description}
+      title={description}
+      className="flex items-center gap-1 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60 cursor-help"
+    >
+      <span className="font-pixel text-caption text-farm-parchment/70">
+        {/* U+2212 MINUS SIGN, not a hyphen. */}
+        <span className="sm:hidden">−{leasePerDay}/d</span>
+        <span className="hidden sm:inline uppercase tracking-widest">
+          Lease {leasePerDay}<Coin />/day
+          {nextSeasonLease !== null && (
+            <span className="ml-1 text-farm-gold/70">
+              (rises to {nextSeasonLease} next season)
+            </span>
+          )}
+        </span>
       </span>
     </div>
   );
@@ -89,7 +185,9 @@ interface HUDProps {
   hasLastTurn: boolean;
   /** Used by T012 to decide whether Day 80 shows a lease preview. */
   endlessMode: boolean;
-  /** Current uncapped consecutive-harvest-day count; chip is hidden at 0. */
+  /** Current uncapped consecutive-harvest-day count. Drives `StreakFlame` on the day
+      chip: its visibility (hidden at 0) and its accessible streak details (the day count
+      and the next-harvest bonus in the flame's aria-label/tooltip). */
   harvestStreak: number;
   /** False when advancing only burns lease+tax (no seeds, nothing growing). Drives the warning label. */
   canAdvanceProductively: boolean;
@@ -124,7 +222,6 @@ export function HUD({
   onReplayTutorial,
 }: HUDProps) {
   const season = getSeasonForDay(currentDay);
-  const reputation = getReputationTier(currentDay);
   const dayIntoSeason = currentDay - season.startDay + 1;
   const targetMet = coinBalance >= season.target;
   const daysRemainingInSeason = season.endDay - currentDay + 1;
@@ -133,11 +230,9 @@ export function HUD({
   const nextSeasonLease = showLeasePreview ? getNextSeasonLease(season, endlessMode) : null;
 
   const [seasonExpanded, setSeasonExpanded] = useState(false);
-  const [repExpanded, setRepExpanded] = useState(false);
   const seasonLen = season.endDay - season.startDay + 1;
   const seasonShort = shortSeasonLabel(season.name);
   const seasonMobileLabel = getSeasonMobileLabel(seasonExpanded, season.number, season.name, seasonShort);
-  const repTitleClass = getRepTitleClass(repExpanded);
 
   const dangerLevel = getDangerLevel(coinBalance, season.leasePerDay);
   const balanceBorderClass = getBalanceBorderClass(dangerLevel);
@@ -167,9 +262,12 @@ export function HUD({
           onToggle={() => setSeasonExpanded(v => !v)}
           className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-farm-chip border border-farm-chipBorder/60 rounded text-left"
         >
-          <span className="font-pixel text-title text-farm-gold">
-            <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
-            <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="font-pixel text-title text-farm-gold">
+              <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
+              <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
+            </span>
+            <StreakFlame harvestStreak={harvestStreak} />
           </span>
           <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
             <span className="sm:hidden">{seasonMobileLabel}</span>
@@ -196,46 +294,18 @@ export function HUD({
             </span>
           </div>
         </div>
-        {harvestStreak > 0 && (
-          <div
-            aria-label={`Harvest streak: ${harvestStreak} days`}
-            title={`Harvest streak: ${harvestStreak} day${harvestStreak === 1 ? '' : 's'} in a row. Next harvest earns +${Math.min(harvestStreak, 4) * 5}🪙 bonus (capped at +20).`}
-            className="flex items-center gap-1 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60 cursor-help"
-          >
-            <EmojiIcon className="text-base leading-none">🔥</EmojiIcon>
-            <span className="font-pixel text-caption text-farm-gold">×{harvestStreak}</span>
-          </div>
-        )}
+        <DailyLedgerChip
+          leasePerDay={season.leasePerDay}
+          nextSeasonLease={nextSeasonLease}
+        />
         <ContractChip contract={contract} />
-        <ExpandableChip
-          expanded={repExpanded}
-          onToggle={() => setRepExpanded(v => !v)}
-          ariaLabel={`Reputation: ${reputation.title}`}
-          title={`Reputation: ${reputation.title}. Your standing grows as you survive more days this run.`}
-          className="flex min-h-[44px] md:min-h-0 items-center gap-1.5 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60"
-        >
-          <span className="sr-only">Reputation: </span>
-          <span className="text-base leading-none -translate-y-[0.13em]" aria-hidden="true">🎖️</span>
-          <span className={repTitleClass}>
-            {reputation.title}
-          </span>
-        </ExpandableChip>
       </div>
 
-      {/* Right: Lease readout (hidden on small screens) and the action buttons, kept in
-          one flex item so a single `ml-auto` right-aligns them as a unit — sharing the
-          header's first line, or on a line of their own once the chips push them down. */}
+      {/* Right: the action buttons (Last Turn, Next Day, game menu), kept in one flex
+          item so a single `ml-auto` right-aligns them as a unit — sharing the header's
+          first line, or on a line of their own once the chips push them down. The lease
+          readout that used to live here moved into DailyLedgerChip, on the left. */}
       <div className="flex items-center justify-end gap-2 sm:gap-3 ml-auto">
-        <div className="hidden sm:flex items-center gap-3">
-          <span className="font-pixel text-caption text-farm-stone uppercase tracking-widest">
-            Lease {season.leasePerDay}<Coin />/day
-            {showLeasePreview && nextSeasonLease !== null && (
-              <span className="ml-1 text-farm-gold/70">
-                (rises to {nextSeasonLease} next season)
-              </span>
-            )}
-          </span>
-        </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -266,9 +336,11 @@ export function HUD({
               active:enabled:scale-95 disabled:opacity-50 transition-all
             "
           >
-            {/* Press Start 2P's → glyph is parked low in the em box; lift it 0.2em
-                (measured) onto the letters' optical centre. */}
-            {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block -translate-y-[0.2em]">→</span>
+            {/* The button is inline-flex, so the literal space before the arrow
+                collapses; `ml-1.5` gives the reliable gap instead. Press Start 2P's
+                → glyph is parked low in the em box, so lift it 0.2em (measured) onto
+                the letters' optical centre. */}
+            {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block ml-1.5 -translate-y-[0.2em]">→</span>
           </button>
           <GameMenu onRestart={onRestart} onReplayTutorial={onReplayTutorial} />
         </div>

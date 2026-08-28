@@ -1,6 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { track } from '../analytics/track';
-import { EmojiIcon } from './EmojiIcon';
 
 /** Any row, action or toggle — `menuitem` and `menuitemcheckbox` both match. */
 const ANY_ROW = '[role^="menuitem"]';
@@ -96,13 +95,22 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
         aria-haspopup="menu"
         onClick={() => setOpen(v => !v)}
         className="
-          font-pixel text-caption px-2 py-1.5 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 rounded
-          bg-farm-chip text-farm-stone/60 border border-farm-chipBorder/50
-          hover:bg-farm-chipHover hover:text-farm-parchment/80 hover:border-farm-chipBorder
+          inline-flex items-center justify-center
+          min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-7 md:w-7 rounded
+          bg-farm-chip border border-farm-chipBorder/50
+          hover:bg-farm-chipHover hover:border-farm-chipBorder
           active:scale-95 transition-all
         "
       >
-        <EmojiIcon>⚙️</EmojiIcon>
+        {/* A standalone icon centred in a fixed-size button. This is NOT the
+            EmojiIcon text-baseline lift (there is no adjacent text to align to);
+            it is a pure vertical-centring nudge. Measured with a button-centre
+            guide against a 7x-magnified copy of the real button: the glyph reads
+            low at 0, so `-translate-y-[0.05em]` lifts it onto (a hair above)
+            centre. `leading-none` stops text-[22px]'s tall line box
+            from re-inflating the button; ⚙️ is a colour emoji, so `text-*` never
+            tinted it and `brightness-125` is what lifts it out of the bar. */}
+        <span aria-hidden="true" className="text-[22px] leading-none brightness-125 -translate-y-[0.05em]">⚙️</span>
       </button>
 
       {open && (

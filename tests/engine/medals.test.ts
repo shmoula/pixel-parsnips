@@ -37,4 +37,28 @@ describe('MEDAL_LABELS / MEDAL_TAGLINES', () => {
       expect(MEDAL_TAGLINES[t]).toBeTruthy();
     }
   });
+
+  // 027 — the medal is the game's only progression ladder now. Its labels are the
+  // former reputation titles (src/engine/reputation.ts, deleted) rather than metal
+  // names, so the run-end screen names progression once instead of twice.
+  it('labels each tier with a farming-progression title', () => {
+    expect(MEDAL_LABELS).toEqual({
+      none: 'Struggling Smallholder',
+      bronze: 'Apprentice Farmer',
+      silver: 'Seasoned Grower',
+      gold: 'Respected Agronomist',
+      platinum: 'Legendary Cultivator',
+    });
+  });
+
+  it('uses no metal names as labels', () => {
+    for (const label of Object.values(MEDAL_LABELS)) {
+      expect(label).not.toMatch(/bronze|silver|gold|platinum|no medal/i);
+    }
+  });
+
+  it('keeps the taglines, which still name the season reached', () => {
+    expect(MEDAL_TAGLINES.bronze).toBe('Survived Spring Thaw');
+    expect(MEDAL_TAGLINES.platinum).toBe('Conquered Season 4');
+  });
 });

@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { BankruptcyScreen } from '../../src/components/BankruptcyScreen';
+import { MEDAL_LABELS } from '../../src/engine/medals';
 import type { PersonalBests } from '../../src/engine/records';
 import type { RunDayRecord } from '../../src/engine/types';
 
@@ -48,7 +49,9 @@ describe('BankruptcyScreen — enriched recap (007)', () => {
     'renders %s medal',
     (medal) => {
       renderScreen({ medal });
-      expect(screen.getByRole('img', { name: new RegExp(medal === 'none' ? 'No medal' : medal, 'i') })).toBeInTheDocument();
+      expect(
+        screen.getByRole('img', { name: new RegExp(MEDAL_LABELS[medal], 'i') }),
+      ).toBeInTheDocument();
     },
   );
 
@@ -194,7 +197,10 @@ describe('BankruptcyScreen — 025 post-mortem', () => {
     });
     expect(screen.getByText(/fed the taxman/i)).toBeInTheDocument();
     // The medal answers "how far"; the title answers "how you died". Both stay.
-    expect(screen.getByLabelText(/medal/i)).toBeInTheDocument();
+    // 027 — the badge's label is the farming title now, not the word "medal".
+    expect(
+      screen.getByRole('img', { name: new RegExp(MEDAL_LABELS.none, 'i') }),
+    ).toBeInTheDocument();
   });
 
   it('replaces generic advice with the evidence line when history allows', () => {

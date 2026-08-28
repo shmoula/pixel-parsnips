@@ -83,36 +83,195 @@ describe('HUD — Day 18+ warning and Day 20 preview (US6)', () => {
   });
 });
 
-describe('HUD — harvest streak chip', () => {
-  it('hides the streak chip when harvestStreak === 0', () => {
-    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={0} />);
-    expect(screen.queryByLabelText(/harvest streak/i)).toBeNull();
+// 027 — the reputation title restated the day counter that already dominates the HUD,
+// so the chip is gone and the ladder now lives on the medal (src/engine/medals.ts).
+describe('HUD — 027 reputation chip removed', () => {
+  it('renders no reputation chip', () => {
+    render(<HUD {...baseProps} currentDay={14} coinBalance={100} />);
+    expect(screen.queryByLabelText(/reputation/i)).toBeNull();
   });
 
-  it('shows the streak chip with ×N when harvestStreak > 0', () => {
-    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={7} />);
-    const chip = screen.getByLabelText(/harvest streak/i);
-    expect(chip).toBeInTheDocument();
-    expect(chip).toHaveTextContent('×7');
-    // Tooltip reflects the capped next-bonus (streak 7 → bonus capped at +20).
-    expect(chip).toHaveAttribute(
-      'title',
-      'Harvest streak: 7 days in a row. Next harvest earns +20🪙 bonus (capped at +20).',
-    );
+  it('renders no reputation title text at any day', () => {
+    for (const day of [1, 14, 21, 41, 81]) {
+      const { unmount } = render(<HUD {...baseProps} currentDay={day} coinBalance={100} />);
+      expect(screen.queryByText(/Smallholder|Homesteader|Apprentice|Grower|Agronomist|Master of the Harvest|Cultivator/i)).toBeNull();
+      unmount();
+    }
   });
 });
 
-describe('HUD — reputation chip', () => {
-  it('shows "Struggling Smallholder" on Day 1', () => {
-    render(<HUD {...baseProps} currentDay={1} coinBalance={100} />);
-    const chip = screen.getByLabelText(/reputation/i);
-    expect(chip).toBeInTheDocument();
-    expect(chip).toHaveTextContent(/Struggling Smallholder/i);
+// The ledger chip carries one figure again: the per-day lease. The harvest streak moved
+// out of it into a pulsing flame on the day chip (below) — a streak is an at-a-glance
+// state, not a number you read, so the coins it earns live in the flame's tooltip.
+// In jsdom there is no Tailwind CSS, so `sm:hidden` and `hidden sm:inline` spans are all
+// present in the DOM; tests that care about one width query that width's spans directly.
+describe('HUD — daily ledger chip', () => {
+  /** Concatenated text of the chip's mobile-only spans. */
+  function mobileText(chip: HTMLElement): string {
+    return [...chip.querySelectorAll('.sm\\:hidden')].map(e => e.textContent).join('');
+  }
+
+  it('shows the lease at streak 0', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={0} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(mobileText(chip)).toBe('−15/d');
+    expect(chip).toHaveTextContent(/Lease 15/);
   });
 
-  it('shows "Seasoned Grower" on Day 14', () => {
-    render(<HUD {...baseProps} currentDay={14} coinBalance={100} />);
-    expect(screen.getByLabelText(/reputation/i)).toHaveTextContent(/Seasoned Grower/i);
+  it('keeps the same lease form when a streak is live', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(mobileText(chip)).toBe('−15/d');
+  });
+
+  it('carries no streak bonus figure', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(chip).not.toHaveTextContent(/\+\d/);
+  });
+
+  it('keeps emoji out of the mobile form (width budget — see spec.md)', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(mobileText(chip)).not.toMatch(/\p{Extended_Pictographic}/u);
+  });
+
+  it('shows the end-of-season lease preview in the sm+ form', () => {
+    render(<HUD {...baseProps} currentDay={20} coinBalance={300} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(chip).toHaveTextContent(/rises to 22 next season/);
+  });
+
+  it('omits the preview on any day but the last of the season', () => {
+    render(<HUD {...baseProps} currentDay={19} coinBalance={300} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(chip).not.toHaveTextContent(/rises to/);
+  });
+
+  // The visible preview only shows on sm+, but the accessible description (aria-label +
+  // title) must carry it too so screen-reader and hover users get the season-end warning.
+  it('names the end-of-season lease preview in the accessible description', () => {
+    render(<HUD {...baseProps} currentDay={20} coinBalance={300} />);
+    const chip = screen.getByLabelText(/rises to 22 next season/i);
+    expect(chip).toHaveAttribute('title', expect.stringMatching(/rises to 22 next season/i));
+  });
+
+  it('leaves the preview out of the description on any day but the last', () => {
+    render(<HUD {...baseProps} currentDay={19} coinBalance={300} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(chip.getAttribute('aria-label')).not.toMatch(/rises to/i);
+  });
+
+  it('no longer renders a standalone harvest-streak chip', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(screen.queryByLabelText(/^Harvest streak: \d+ days$/)).toBeNull();
+  });
+
+  it('shows the lease at mobile widths — the chip is never width-gated (F7)', () => {
+    const { container } = render(<HUD {...baseProps} currentDay={5} coinBalance={100} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    // The pre-027 readout lived in a `hidden sm:flex` wrapper. Nothing in the chip's
+    // ancestry may hide it below sm.
+    let node: HTMLElement | null = chip;
+    while (node && node !== container) {
+      expect(node.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+      node = node.parentElement;
+    }
+  });
+});
+
+// The streak reads as a state, not a quantity: a flame that is either lit or not,
+// sitting on the day counter it accrues against. The count and the coins it earns are
+// in the tooltip, so the HUD spends no width on digits that change every day.
+describe('HUD — streak flame', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** Reports `matches` only for the queries listed, so one media feature can be set. */
+  function stubMedia(matching: string[]) {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: matching.some(m => query.includes(m)),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+      onchange: null,
+    }));
+  }
+
+  function flame() {
+    return screen.queryByRole('img', { name: /harvest streak/i });
+  }
+
+  it('stays unlit when there is no streak', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={0} />);
+    expect(flame()).toBeNull();
+  });
+
+  it('lights up when a streak is live', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()).toBeInTheDocument();
+    expect(flame()).toHaveTextContent('🔥');
+  });
+
+  it('names the streak length and what the next harvest earns', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(
+      screen.getByRole('img', { name: /harvest streak: 3 days in a row/i }),
+    ).toBeInTheDocument();
+    expect(flame()!.getAttribute('aria-label')).toMatch(/\+15 coins/);
+  });
+
+  it('caps the bonus it names at +20', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={7} />);
+    expect(flame()!.getAttribute('aria-label')).toMatch(/\+20 coins/);
+  });
+
+  it('uses the singular "day" for a 1-day streak', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={1} />);
+    expect(flame()!.getAttribute('aria-label')).toMatch(/1 day in a row/i);
+  });
+
+  it('shows the same detail on hover', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()!.getAttribute('title')).toBe(flame()!.getAttribute('aria-label'));
+  });
+
+  it('carries no visible digits — the flame alone signals the streak', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()!.textContent).toBe('🔥');
+  });
+
+  it('sits on the day counter, right after the day count', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    // Same line as the day count, and after it in document order.
+    const line = flame()!.parentElement!;
+    expect(line).toHaveTextContent(/D5\/20/);
+    expect(
+      line.firstElementChild!.compareDocumentPosition(flame()!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('pulses so a live streak is noticeable', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()!.className).toMatch(/streak-flame-anim/);
+  });
+
+  it('holds still when the player asked for reduced motion', () => {
+    stubMedia(['prefers-reduced-motion']);
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()!.className).not.toMatch(/streak-flame-anim/);
+  });
+
+  // The scale half of the pulse must ride on the wrapper: the glyph inside carries
+  // EmojiIcon's optical-lift transform, which a `transform` keyframe would clobber.
+  it('animates the wrapper, not the glyph that carries the optical lift', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    const glyph = flame()!.firstElementChild!;
+    expect(glyph.className).toMatch(/-translate-y-\[0\.1875em\]/);
+    expect(glyph.className).not.toMatch(/streak-flame-anim/);
   });
 });
 
@@ -127,14 +286,6 @@ describe('HUD — mobile compaction', () => {
   it('toggles the season chip aria-expanded on click', () => {
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
     const chip = screen.getByRole('button', { name: /season 1 · spring thaw/i });
-    expect(chip).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.click(chip);
-    expect(chip).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('toggles the reputation chip aria-expanded on click', () => {
-    render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
-    const chip = screen.getByRole('button', { name: /reputation/i });
     expect(chip).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(chip);
     expect(chip).toHaveAttribute('aria-expanded', 'true');
@@ -248,42 +399,16 @@ describe('HUD — 024 chips are inert at desktop widths', () => {
     }));
   }
 
-  it('renders neither the season nor the reputation chip as a button at sm+', () => {
+  it('does not render the season chip as a button at sm+', () => {
     stubDesktop();
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
     expect(screen.queryByRole('button', { name: /season 1 · spring thaw/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /reputation/i })).toBeNull();
   });
 
-  it('still shows both chips content at sm+', () => {
+  it('still shows the season chip content at sm+', () => {
     stubDesktop();
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} harvestStreak={0} />);
     expect(screen.getByText(/Season 1 · Spring Thaw/)).toBeInTheDocument();
-    expect(screen.getByText(/Struggling Smallholder/)).toBeInTheDocument();
-  });
-});
-
-describe('HUD — lease readout', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  function stubDesktop() {
-    vi.stubGlobal('matchMedia', (query: string) => ({
-      matches: query === '(min-width: 640px)',
-      media: query,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    }));
-  }
-
-  it('shows the lease, including the end-of-season preview', () => {
-    stubDesktop();
-    render(<HUD {...baseProps} currentDay={20} coinBalance={300} />);
-    expect(screen.getByText(/lease/i)).toBeInTheDocument();
-    expect(screen.getByText(/rises to \d+ next season/i)).toBeInTheDocument();
   });
 });
 

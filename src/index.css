@@ -69,6 +69,22 @@ body {
   }
 }
 
+/* Harvest-streak flame (027). Breathes in scale as well as opacity — a dimming-only
+   pulse reads as "fading", which is the opposite of the "this is live" signal the
+   flame exists to give. The scale sits on the flame's wrapper, leaving EmojiIcon's
+   optical-lift transform on the glyph itself untouched. */
+@keyframes streak-flame {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.22);
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .disaster-banner-anim {
     animation:
@@ -77,5 +93,8 @@ body {
   }
   .disaster-icon-anim {
     animation: disaster-icon-creep 2.2s ease-in-out infinite;
+  }
+  .streak-flame-anim {
+    animation: streak-flame 1.4s ease-in-out infinite;
   }
 }
