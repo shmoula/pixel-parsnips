@@ -102,7 +102,10 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
           active:scale-95 transition-all
         "
       >
-        <EmojiIcon>⚙️</EmojiIcon>
+        {/* ⚙️ is a colour emoji, so `text-*` never tinted it — `brightness-125`
+            is what actually lifts it out of the bar. `text-lg` matches the coin
+            glyph, up from the button's 10px `text-caption`. */}
+        <EmojiIcon className="text-lg brightness-125">⚙️</EmojiIcon>
       </button>
 
       {open && (
