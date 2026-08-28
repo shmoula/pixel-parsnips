@@ -104,13 +104,13 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
       >
         {/* A standalone icon centred in a fixed-size button. This is NOT the
             EmojiIcon text-baseline lift (there is no adjacent text to align to);
-            it is a pure vertical-centring nudge. ⚙️'s ink sits high in its line
-            box, so flex `items-center` alone leaves it visibly above centre —
-            `translate-y-[0.05em]` (measured against the button's centre line)
-            drops it onto centre. `leading-none` stops text-[22px]'s tall line box
+            it is a pure vertical-centring nudge. Measured with a button-centre
+            guide against a 7x-magnified copy of the real button: the glyph reads
+            low at 0, so `-translate-y-[0.05em]` lifts it onto (a hair above)
+            centre. `leading-none` stops text-[22px]'s tall line box
             from re-inflating the button; ⚙️ is a colour emoji, so `text-*` never
             tinted it and `brightness-125` is what lifts it out of the bar. */}
-        <span aria-hidden="true" className="text-[22px] leading-none brightness-125 translate-y-[0.05em]">⚙️</span>
+        <span aria-hidden="true" className="text-[22px] leading-none brightness-125 -translate-y-[0.05em]">⚙️</span>
       </button>
 
       {open && (
