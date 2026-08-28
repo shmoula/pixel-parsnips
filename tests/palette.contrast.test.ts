@@ -21,7 +21,6 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
   { name: 'caption',            where: 'HUD.tsx chip captions',      fg: PALETTE.parchment, bg: PALETTE.chip, alpha: 0.7 },
   { name: 'menu row label',     where: 'GameMenuPopover.tsx rows',   fg: PALETTE.parchment, bg: PALETTE.soil, alpha: 0.9 },
   { name: 'ledger cost',        where: 'HUD.tsx DailyLedgerChip',    fg: PALETTE.parchment, bg: PALETTE.chip, alpha: 0.7 },
-  { name: 'ledger bonus',       where: 'HUD.tsx DailyLedgerChip',    fg: PALETTE.gold,      bg: PALETTE.chip },
   { name: 'ledger lease preview', where: 'HUD.tsx DailyLedgerChip',  fg: PALETTE.gold,      bg: PALETTE.chip, alpha: 0.7 },
   { name: 'modal body',         where: 'CreditsModal.tsx paragraphs',fg: PALETTE.parchment, bg: PALETTE.soil },
   { name: 'modal heading',      where: 'CreditsModal.tsx h2',        fg: PALETTE.gold,      bg: PALETTE.soil },

@@ -100,42 +100,39 @@ describe('HUD — 027 reputation chip removed', () => {
   });
 });
 
-// 027 — lease and the streak bonus are both coins-per-day, so they share one chip. In
-// jsdom there is no Tailwind CSS, so `sm:hidden` and `hidden sm:inline` spans are all
+// The ledger chip carries one figure again: the per-day lease. The harvest streak moved
+// out of it into a pulsing flame on the day chip (below) — a streak is an at-a-glance
+// state, not a number you read, so the coins it earns live in the flame's tooltip.
+// In jsdom there is no Tailwind CSS, so `sm:hidden` and `hidden sm:inline` spans are all
 // present in the DOM; tests that care about one width query that width's spans directly.
-describe('HUD — 027 daily ledger chip', () => {
+describe('HUD — daily ledger chip', () => {
   /** Concatenated text of the chip's mobile-only spans. */
   function mobileText(chip: HTMLElement): string {
     return [...chip.querySelectorAll('.sm\\:hidden')].map(e => e.textContent).join('');
   }
 
-  it('shows the lease at streak 0, with no bonus half', () => {
+  it('shows the lease at streak 0', () => {
     render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={0} />);
     const chip = screen.getByLabelText(/lease: 15 coins per day/i);
-    expect(mobileText(chip)).toBe('−15/day');
+    expect(mobileText(chip)).toBe('−15/d');
     expect(chip).toHaveTextContent(/Lease 15/);
   });
 
-  it('adds the bonus half when a streak is live', () => {
+  it('keeps the same lease form when a streak is live', () => {
     render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
-    const chip = screen.getByLabelText(/harvest streak: 3 days in a row/i);
-    expect(mobileText(chip)).toBe('−15·+15');
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(mobileText(chip)).toBe('−15/d');
   });
 
-  it('caps the displayed bonus at +20', () => {
-    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={7} />);
-    const chip = screen.getByLabelText(/harvest streak: 7 days in a row/i);
-    expect(mobileText(chip)).toBe('−15·+20');
-  });
-
-  it('uses the singular "day" for a 1-day streak', () => {
-    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={1} />);
-    expect(screen.getByLabelText(/harvest streak: 1 day in a row/i)).toBeInTheDocument();
-  });
-
-  it('keeps emoji out of the mobile form (81px width budget — see spec.md)', () => {
+  it('carries no streak bonus figure', () => {
     render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
-    const chip = screen.getByLabelText(/harvest streak: 3 days in a row/i);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(chip).not.toHaveTextContent(/\+\d/);
+  });
+
+  it('keeps emoji out of the mobile form (width budget — see spec.md)', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
     expect(mobileText(chip)).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 
@@ -166,6 +163,92 @@ describe('HUD — 027 daily ledger chip', () => {
       expect(node.className).not.toMatch(/(^|\s)hidden(\s|$)/);
       node = node.parentElement;
     }
+  });
+});
+
+// The streak reads as a state, not a quantity: a flame that is either lit or not,
+// sitting on the day counter it accrues against. The count and the coins it earns are
+// in the tooltip, so the HUD spends no width on digits that change every day.
+describe('HUD — streak flame', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** Reports `matches` only for the queries listed, so one media feature can be set. */
+  function stubMedia(matching: string[]) {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: matching.some(m => query.includes(m)),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+      onchange: null,
+    }));
+  }
+
+  function flame() {
+    return screen.queryByRole('img', { name: /harvest streak/i });
+  }
+
+  it('stays unlit when there is no streak', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={0} />);
+    expect(flame()).toBeNull();
+  });
+
+  it('lights up when a streak is live', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()).toBeInTheDocument();
+    expect(flame()).toHaveTextContent('🔥');
+  });
+
+  it('names the streak length and what the next harvest earns', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(
+      screen.getByRole('img', { name: /harvest streak: 3 days in a row/i }),
+    ).toBeInTheDocument();
+    expect(flame()!.getAttribute('aria-label')).toMatch(/\+15 coins/);
+  });
+
+  it('caps the bonus it names at +20', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={7} />);
+    expect(flame()!.getAttribute('aria-label')).toMatch(/\+20 coins/);
+  });
+
+  it('uses the singular "day" for a 1-day streak', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={1} />);
+    expect(flame()!.getAttribute('aria-label')).toMatch(/1 day in a row/i);
+  });
+
+  it('shows the same detail on hover', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()!.getAttribute('title')).toBe(flame()!.getAttribute('aria-label'));
+  });
+
+  it('carries no visible digits — the flame alone signals the streak', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()!.textContent).toBe('🔥');
+  });
+
+  it('sits on the day counter, right after the day count', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    // Same line as the day count, and after it in document order.
+    const line = flame()!.parentElement!;
+    expect(line).toHaveTextContent(/D5\/20/);
+    expect(
+      line.firstElementChild!.compareDocumentPosition(flame()!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('pulses so a live streak is noticeable', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()!.className).toMatch(/animate-pulse/);
+  });
+
+  it('holds still when the player asked for reduced motion', () => {
+    stubMedia(['prefers-reduced-motion']);
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    expect(flame()!.className).not.toMatch(/animate-pulse/);
   });
 });
 

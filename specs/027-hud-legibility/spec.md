@@ -88,34 +88,44 @@ Test updates:
 - `tests/components/MedalBadge.test.tsx` — update expected labels.
 - `tests/engine/medals.test.ts` — update expected labels.
 
-## C. Daily ledger chip (F7 + streak merge)
+## C. Daily ledger chip (F7) + streak flame
+
+> **Revised after playtest — see "As-built measurement".** This section was authored around
+> a *merged* chip carrying lease and the streak bonus together. The merge shipped, was
+> rejected on look, and the streak moved to a pulsing 🔥 on the day counter (`StreakFlame`).
+> The lease half below is what stands; the streak-bonus half is superseded, and the mobile
+> lease reads `−15/d`, not `−15/day`. The reasoning is kept because it is why the flame
+> carries no digits: the merge failed on width, not on principle.
 
 Replace **both** the standalone streak chip and the `hidden sm:flex` lease wrapper with one
 chip in the header's `contents` group.
 
-The merge is coherent because both halves are the same unit — **coins per day**. Lease is a
-certain `−N/day`; the streak bonus is `min(harvestStreak, 4) × 5`, applied **once per day**
-on any harvest day (see `computeStreakUpdate` in `gameEngine.ts`), not per harvest.
+The merge was argued from unit: both halves are **coins per day**. Lease is a certain
+`−N/day`; the streak bonus is `min(harvestStreak, 4) × 5`, applied **once per day** on any
+harvest day (see `computeStreakUpdate` in `gameEngine.ts`), not per harvest. That argument
+held arithmetically and failed on reading: two numbers in one chip parse as one figure.
 
 **Content**
 
+As shipped (the streak no longer appears in this chip at all):
+
 | State | Mobile (<sm) | sm+ |
 |---|---|---|
-| `harvestStreak === 0` | `−15/day` | `Lease 15🪙/day` |
-| `harvestStreak > 0` | `−15·+15` | `Lease 15🪙/day · +15🪙` |
+| any streak | `−15/d` | `Lease 15🪙/day` |
 | season's last day | *(no preview)* | append `(rises to 22 next season)` |
 
 The sm+ form keeps the word "Lease" and the coin glyph — the 81px budget binds the mobile
 form only, and desktop has room to spare. The end-of-season preview stays sm+-only, exactly
 as today; it has never rendered below 640px.
 
-The `/day` suffix degrades away on mobile when the streak half appears — a deliberate
-graceful-degradation step to stay inside the width budget below. The `title` and
+The `/day` suffix degrades to `/d` on mobile — a deliberate graceful-degradation step that
+pays for the flame's 19px on the day chip (see "As-built measurement"). The `title` and
 `aria-label` carry the full meaning at all widths and never change form.
 
-**Colour** — cost half `parchment/70`, bonus half `gold`, both on `chip`. The `·` separator
-belongs to the cost span. Both combinations are already enforced rows in
-`palette.contrast.test.ts` — measured **7.06:1** (`caption`) and **9.61:1** (`gold value`).
+**Colour** — the cost text is `parchment/70` on `chip`, measured **7.06:1**, and the
+end-of-season preview is `gold/70` on `chip`, **5.47:1**. (The `gold` bonus half this
+section originally specified no longer renders, so its `ledger bonus` row was retired from
+`palette.contrast.test.ts`; plain `gold` on `chip` is still gated by the `gold value` row.)
 
 > **The lease may not use `farm-stone` inside a chip.** Measured: `stone` on `bar` = 4.529
 > (passes, by 0.029); `stone` on `chip` = **3.751 (fails AA)**. Moving the text into a chip
@@ -126,9 +136,10 @@ belongs to the cost span. Both combinations are already enforced rows in
 `bar` surface in the codebase, so the combination stops rendering. This satisfies the file's
 own rule: *"A row may only change in the same commit that changes the component it mirrors."*
 
-**Streak count is not shown.** `−15·×6+20` measures 97px and costs a HUD row. The chip shows
-the bonus, which is what pays; it therefore freezes at `+20` from streak day 4 on while the
-real count keeps climbing. `peakHarvestStreak` still surfaces at run end as "Longest streak".
+**Streak count is not shown** — `−15·×6+20` measures 97px and costs a HUD row. This
+constraint outlived the merge: `StreakFlame` shows no digits either, and puts the count and
+the bonus in its tooltip instead. `peakHarvestStreak` still surfaces at run end as
+"Longest streak".
 
 ---
 
@@ -170,16 +181,28 @@ the backlog as a separate item, not fixed here.
 
 ### As-built measurement
 
-Measured in-browser against the shipped `DailyLedgerChip` at 375px (mobile preset), with the
-worst-case contract probe (`10/10 · 12d`) injected into the header. The streak-7 row mutates
-the real ledger chip in place to its widest form (`−15·+20`) so the row count is not inflated
-by an extra probe chip.
+Measured in-browser at 375px (mobile preset) with the worst-case contract probe
+(`10/10 · 12d`) in the header, against a real save seeded to a live 3-day streak.
+
+**Revision — the streak left the ledger chip.** Playtesting rejected the merged form: a
+streak reads as a state you either hold or have lost, not a figure to parse, and the
+`+15` half made the chip two numbers wide. The streak is now a pulsing 🔥 on the day
+counter it accrues against (`StreakFlame`), and the ledger is a single figure again.
+
+That flame costs 19px of the day chip (94px → 113px), which the first row could not
+absorb. Measured: shrinking the flame does **not** pay for it — even a 10px glyph still
+wraps to a third row. The lever is the lease suffix, so the mobile form reads `−15/d`
+(61px) rather than `−15/day` (77px). The sm+ form is unchanged (`Lease 15🪙/day`).
 
 | Metric | Budget | Measured |
 |---|---|---|
-| Ledger chip width, streak 0, 375px | ≤ 81px | 77px |
-| Ledger chip width, streak 7, 375px | ≤ 81px | 81px |
-| Header rows, worst-case contract, 375px | 2 | 2 |
+| Day chip width, no streak, 375px | — | 94px |
+| Day chip width, live streak (flame), 375px | — | 113px |
+| Ledger chip width (`−15/d`), 375px | ≤ 81px | 61px |
+| Header rows, live streak + worst-case contract, 375px | 2 | 2 |
+
+Rejected variants, all still 3 rows at 375px: flame at `text-body`/`gap-1` (109px day
+chip) and at `text-caption`/`gap-0.5` (106px) while keeping `−15/day`.
 
 ---
 

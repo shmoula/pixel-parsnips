@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CropId } from '../engine/types';
 import { getSeasonForDay, shortSeasonLabel, type SeasonConfig } from '../engine/seasons';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Coin } from './Coin';
 import { EmojiIcon } from './EmojiIcon';
 import { ExpandableChip } from './ExpandableChip';
@@ -54,37 +55,71 @@ function ContractChip({ contract }: { contract: ContractChipData }) {
   );
 }
 
+/** Coins the next harvest earns at this streak length; the engine caps the multiplier
+ *  at 4 (`computeStreakUpdate` in gameEngine.ts, STREAK_BONUS_* in constants.ts). */
+function getStreakBonus(harvestStreak: number): number {
+  return Math.min(harvestStreak, 4) * 5;
+}
+
 /**
- * 027 — the per-day coin ledger: the lease you owe, and the bonus your next harvest
- * will pay. Both halves are coins-per-day (the streak bonus is applied once per day on
- * any harvest day — see `computeStreakUpdate` in gameEngine.ts, not per harvest), which
- * is what makes them one chip rather than two. Replaces the pre-027 standalone streak
- * chip and the desktop-only lease readout, which was invisible below 640px (F7).
+ * The harvest streak, as a lit flame on the day counter it accrues against.
  *
- * WIDTH BUDGET: the mobile form must stay ≤81px at 375px or the HUD wraps to a third
- * row. Measured: `−15·+15` is 81px, `−15🔥+15` is 83px and costs a row. That is why the
- * `sm:hidden` spans carry no emoji and no `tracking-widest`. See specs/027-hud-legibility.
+ * A streak is a state you either have or have lost, so it reads better as one glyph
+ * than as a figure to parse: the pulse carries "this is live, don't break it" without
+ * spending HUD width on digits that change daily. The count and the coins it earns are
+ * one hover away rather than always on screen — the ledger chip beside it stays a
+ * single per-day figure instead of two.
+ *
+ * The flame is the accessible element (`role="img"` + label), not the decorative emoji
+ * inside it, so the streak is announced rather than skipped.
+ */
+function StreakFlame({ harvestStreak }: { harvestStreak: number }) {
+  const reducedMotion = useReducedMotion();
+  if (harvestStreak <= 0) return null;
+
+  const days = `${harvestStreak} day${harvestStreak === 1 ? '' : 's'}`;
+  const description = `Harvest streak: ${days} in a row — the next harvest earns +${getStreakBonus(harvestStreak)} coins (capped at +20).`;
+
+  return (
+    <span
+      role="img"
+      aria-label={description}
+      title={description}
+      // The pulse is the whole point of the glyph, so it is gated on the motion
+      // preference rather than left running for players who asked for stillness.
+      className={`inline-block text-base leading-none cursor-help ${reducedMotion ? '' : 'animate-pulse'}`}
+    >
+      🔥
+    </span>
+  );
+}
+
+/**
+ * The per-day coin ledger: the lease you owe, every night.
+ *
+ * Introduced in 027 to surface the lease below 640px (F7) — it lived in a desktop-only
+ * `hidden sm:flex` wrapper before, so mobile players could not see the per-day cost
+ * before advancing. It briefly also carried the harvest-streak bonus; that moved to
+ * `StreakFlame` on the day chip, leaving this chip one figure to read.
+ *
+ * WIDTH BUDGET: at 375px the header has 343px for its first row, and `StreakFlame` on
+ * the day chip costs 19px of it (94px → 113px). That is paid for here: the mobile lease
+ * reads `−15/d` (61px), not `−15/day` (77px). Measured — shrinking the flame instead does
+ * not work (even a 10px glyph still wraps to a third row), so the suffix is the lever.
+ * Keep this span emoji-free and free of `tracking-widest`. See specs/027-hud-legibility.
  *
  * COLOUR: `farm-stone` is unusable here — it measures 3.751 on `farm-chip` and fails
- * WCAG AA. The cost uses `farm-parchment/70` (7.06) and the bonus `farm-gold` (9.61).
+ * WCAG AA. The cost uses `farm-parchment/70` (7.06) and the preview `farm-gold/70` (5.47).
  */
 function DailyLedgerChip({
   leasePerDay,
-  harvestStreak,
   nextSeasonLease,
 }: {
   leasePerDay: number;
-  harvestStreak: number;
   /** Next season's lease, previewed on the season's last day (sm+ only); null otherwise. */
   nextSeasonLease: number | null;
 }) {
-  const streakBonus = Math.min(harvestStreak, 4) * 5;
-  const hasStreak = harvestStreak > 0;
-  const days = `${harvestStreak} day${harvestStreak === 1 ? '' : 's'}`;
-
-  const description = hasStreak
-    ? `Lease: ${leasePerDay} coins per day. Harvest streak: ${days} in a row — the next harvest earns +${streakBonus} coins (capped at +20).`
-    : `Lease: ${leasePerDay} coins per day, charged every night.`;
+  const description = `Lease: ${leasePerDay} coins per day, charged every night.`;
 
   return (
     <div
@@ -94,7 +129,7 @@ function DailyLedgerChip({
     >
       <span className="font-pixel text-caption text-farm-parchment/70">
         {/* U+2212 MINUS SIGN, not a hyphen. */}
-        <span className="sm:hidden">−{leasePerDay}{hasStreak ? '·' : '/day'}</span>
+        <span className="sm:hidden">−{leasePerDay}/d</span>
         <span className="hidden sm:inline uppercase tracking-widest">
           Lease {leasePerDay}<Coin />/day
           {nextSeasonLease !== null && (
@@ -104,12 +139,6 @@ function DailyLedgerChip({
           )}
         </span>
       </span>
-      {hasStreak && (
-        <span className="font-pixel text-caption text-farm-gold">
-          <span className="sm:hidden">+{streakBonus}</span>
-          <span className="hidden sm:inline">· +{streakBonus}<Coin /></span>
-        </span>
-      )}
     </div>
   );
 }
@@ -221,9 +250,12 @@ export function HUD({
           onToggle={() => setSeasonExpanded(v => !v)}
           className="flex min-h-[44px] md:min-h-0 flex-col justify-center leading-tight px-2.5 py-1 bg-farm-chip border border-farm-chipBorder/60 rounded text-left"
         >
-          <span className="font-pixel text-title text-farm-gold">
-            <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
-            <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="font-pixel text-title text-farm-gold">
+              <span className="sm:hidden">D{dayIntoSeason}/{seasonLen}</span>
+              <span className="hidden sm:inline">Day {dayIntoSeason} / {seasonLen}</span>
+            </span>
+            <StreakFlame harvestStreak={harvestStreak} />
           </span>
           <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
             <span className="sm:hidden">{seasonMobileLabel}</span>
@@ -252,7 +284,6 @@ export function HUD({
         </div>
         <DailyLedgerChip
           leasePerDay={season.leasePerDay}
-          harvestStreak={harvestStreak}
           nextSeasonLease={nextSeasonLease}
         />
         <ContractChip contract={contract} />
