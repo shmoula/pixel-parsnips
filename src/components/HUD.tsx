@@ -125,7 +125,13 @@ function DailyLedgerChip({
   /** Next season's lease, previewed on the season's last day (sm+ only); null otherwise. */
   nextSeasonLease: number | null;
 }) {
-  const description = `Lease: ${leasePerDay} coins per day, charged every night.`;
+  // The sm+ form previews next season's lease on the season's last day; the accessible
+  // description (aria-label + title) mirrors it so screen-reader and hover users get the
+  // same warning, degrading to the lease alone when there is no preview to show.
+  const description =
+    nextSeasonLease !== null
+      ? `Lease: ${leasePerDay} coins per day, charged every night. Rises to ${nextSeasonLease} next season.`
+      : `Lease: ${leasePerDay} coins per day, charged every night.`;
 
   return (
     <div

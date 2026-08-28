@@ -148,6 +148,20 @@ describe('HUD — daily ledger chip', () => {
     expect(chip).not.toHaveTextContent(/rises to/);
   });
 
+  // The visible preview only shows on sm+, but the accessible description (aria-label +
+  // title) must carry it too so screen-reader and hover users get the season-end warning.
+  it('names the end-of-season lease preview in the accessible description', () => {
+    render(<HUD {...baseProps} currentDay={20} coinBalance={300} />);
+    const chip = screen.getByLabelText(/rises to 22 next season/i);
+    expect(chip).toHaveAttribute('title', expect.stringMatching(/rises to 22 next season/i));
+  });
+
+  it('leaves the preview out of the description on any day but the last', () => {
+    render(<HUD {...baseProps} currentDay={19} coinBalance={300} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(chip.getAttribute('aria-label')).not.toMatch(/rises to/i);
+  });
+
   it('no longer renders a standalone harvest-streak chip', () => {
     render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
     expect(screen.queryByLabelText(/^Harvest streak: \d+ days$/)).toBeNull();
