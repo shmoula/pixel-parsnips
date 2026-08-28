@@ -33,7 +33,7 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, recov
   const plantAnchorId = firstPlantablePlotId(plots, unlockedPlots ?? plots.length);
   return (
     // T017 — textured farm canvas: dark tilled soil + grain filter + fence border + decor
-    <div className="relative rounded-xl overflow-hidden p-3 bg-[#2A1A0E] [filter:url(#pp-grain)] shadow-inner">
+    <div className="relative rounded-xl overflow-hidden p-3 bg-farm-field [filter:url(#pp-grain)] shadow-inner">
 
       {/* Decorative fence border frame */}
       <div
