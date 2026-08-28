@@ -185,9 +185,9 @@ interface HUDProps {
   hasLastTurn: boolean;
   /** Used by T012 to decide whether Day 80 shows a lease preview. */
   endlessMode: boolean;
-  /** Current uncapped consecutive-harvest-day count. Drives only the bonus half of
-      DailyLedgerChip (the lease half renders unconditionally); the bonus half is
-      hidden at 0. */
+  /** Current uncapped consecutive-harvest-day count. Drives `StreakFlame` on the day
+      chip: its visibility (hidden at 0) and its accessible streak details (the day count
+      and the next-harvest bonus in the flame's aria-label/tooltip). */
   harvestStreak: number;
   /** False when advancing only burns lease+tax (no seeds, nothing growing). Drives the warning label. */
   canAdvanceProductively: boolean;
