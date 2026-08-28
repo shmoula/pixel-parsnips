@@ -87,9 +87,13 @@ function StreakFlame({ harvestStreak }: { harvestStreak: number }) {
       title={description}
       // The pulse is the whole point of the glyph, so it is gated on the motion
       // preference rather than left running for players who asked for stillness.
-      className={`inline-block text-base leading-none cursor-help ${reducedMotion ? '' : 'animate-pulse'}`}
+      className={`inline-flex cursor-help ${reducedMotion ? '' : 'animate-pulse'}`}
     >
-      🔥
+      {/* EmojiIcon carries the optical-centre lift: an emoji laid out beside Press
+          Start 2P sits ~0.1875em low, because the pixel font paints entirely above
+          the baseline while the emoji straddles it. `items-center` on the row lines
+          the boxes up; only this lifts the ink to match. */}
+      <EmojiIcon className="text-base leading-none">🔥</EmojiIcon>
     </span>
   );
 }
