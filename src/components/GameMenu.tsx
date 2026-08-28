@@ -1,6 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { track } from '../analytics/track';
-import { EmojiIcon } from './EmojiIcon';
 
 /** Any row, action or toggle — `menuitem` and `menuitemcheckbox` both match. */
 const ANY_ROW = '[role^="menuitem"]';
@@ -96,16 +95,20 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
         aria-haspopup="menu"
         onClick={() => setOpen(v => !v)}
         className="
-          font-pixel text-caption px-2 py-1.5 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 rounded
-          bg-farm-chip text-farm-stone/60 border border-farm-chipBorder/50
-          hover:bg-farm-chipHover hover:text-farm-parchment/80 hover:border-farm-chipBorder
+          inline-flex items-center justify-center
+          min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-7 md:w-7 rounded
+          bg-farm-chip border border-farm-chipBorder/50
+          hover:bg-farm-chipHover hover:border-farm-chipBorder
           active:scale-95 transition-all
         "
       >
-        {/* ⚙️ is a colour emoji, so `text-*` never tinted it — `brightness-125`
-            is what actually lifts it out of the bar. `text-lg` matches the coin
-            glyph, up from the button's 10px `text-caption`. */}
-        <EmojiIcon className="text-lg brightness-125">⚙️</EmojiIcon>
+        {/* A standalone icon centred in a fixed-size button, so it uses no
+            EmojiIcon optical lift — that lift aligns an emoji to adjacent pixel
+            text, of which there is none here, and it would nudge the glyph off
+            the button's centre. `leading-none` stops `text-lg`'s 28px line box
+            from re-inflating the button. ⚙️ is a colour emoji, so `text-*` never
+            tinted it; `brightness-125` is what lifts it out of the bar. */}
+        <span aria-hidden="true" className="text-[22px] leading-none brightness-125">⚙️</span>
       </button>
 
       {open && (
