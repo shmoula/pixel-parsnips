@@ -5,6 +5,7 @@ import { SeedCard } from './SeedCard';
 import { BuildingCard } from './BuildingCard';
 import { woodPlanksUrl } from './decorAssets';
 import type { BuildingCardData } from '../engine/useGameEngine';
+import { PALETTE } from '../theme/palette';
 
 const CROP_IDS: CropId[] = ['radish', 'parsnip', 'pumpkin'];
 
@@ -30,7 +31,7 @@ function Awning() {
         // 018 — market-stall cloth: green / cream / rust / brown (44px period,
         // still out of phase with the 13px scallop tile).
         background:
-          'repeating-linear-gradient(90deg, #3F7D30 0 11px, #E8D9A8 11px 22px, #A8452A 22px 33px, #6B4A2A 33px 44px)',
+          `repeating-linear-gradient(90deg, ${PALETTE.awningGreen} 0 11px, ${PALETTE.awningCream} 11px 22px, ${PALETTE.awningRust} 22px 33px, ${PALETTE.awningBrown} 33px 44px)`,
         WebkitMaskImage: scallop,
         WebkitMaskSize: '13px 100%',
         WebkitMaskRepeat: 'repeat-x',
@@ -49,7 +50,7 @@ function ShelfLedge() {
       aria-hidden="true"
       className="pointer-events-none h-1.5 mt-2 rounded-sm"
       style={{
-        background: 'linear-gradient(#7A4E24, #3D2410)',
+        background: `linear-gradient(${PALETTE.shopLedge}, ${PALETTE.shopSignBorder})`,
         boxShadow: '0 2px 3px rgba(0,0,0,0.45)',
       }}
     />
@@ -62,7 +63,7 @@ function SignHeader() {
     <div
       className="relative rounded-md border-2 py-2.5 text-center"
       style={{
-        backgroundColor: '#5A3A1E',
+        backgroundColor: PALETTE.shopSign,
         // 018 — wood texture under a darker wash than the panel, so the sign
         // still reads as a separate carved board.
         ...(woodPlanksUrl
@@ -76,7 +77,7 @@ function SignHeader() {
               imageRendering: 'pixelated' as const,
             }
           : {}),
-        borderColor: '#3D2410',
+        borderColor: PALETTE.shopSignBorder,
         boxShadow:
           'inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -4px 6px rgba(0,0,0,0.4)',
       }}
@@ -94,7 +95,7 @@ function SignHeader() {
             aria-hidden="true"
             className={`absolute ${pos} w-1.5 h-1.5 rounded-full`}
             style={{
-              background: '#2A1808',
+              background: PALETTE.shopStud,
               boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.2)',
             }}
           />
@@ -167,12 +168,12 @@ export function Shop({
           : {
               background: [
                 'repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 8px)',
-                // Decorative fallback stripe — intentionally NOT PALETTE.soil.
-                // Keeping it a raw literal decouples this awning from the soil
-                // token, so it doesn't recolour when `soil` changes; after the
-                // 025 palette lift (soil is now #5E3D22) this value deliberately
-                // no longer matches soil.
-                '#4A2F1A',
+                // Decorative fallback stripe — intentionally its own token, not PALETTE.soil.
+                // Keeping PALETTE.awningFallback as a separate token (rather than aliasing it
+                // to soil) decouples this awning from the soil token, so it doesn't recolour
+                // when `soil` changes; after the 025 palette lift (soil is now #5E3D22) this
+                // value deliberately no longer matches soil.
+                PALETTE.awningFallback,
               ].join(', '),
             }
       }

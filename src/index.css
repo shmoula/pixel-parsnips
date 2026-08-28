@@ -4,10 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  background-color: #140e06;
-}
-
 /* Pixel font is the app-wide default: the UI was built while this font silently
    failed to load, so many elements were never given `font-pixel` and would now
    render in a mismatched sans-serif. Defaulting here keeps the type consistent
@@ -30,9 +26,10 @@ body {
   margin: 0;
   min-height: 100dvh;
   /* 018 — the page background lives on PageBackdrop (a fixed -z-10 layer). The
-     body must stay transparent so that layer shows through; the html rule above
-     keeps #140e06 as the fallback painted beneath it. The old wood-grain
-     gradient here used to cover the backdrop entirely. */
+     body must stay transparent so that layer shows through; a Tailwind base
+     plugin (tailwind.config.ts, PALETTE.pageFallback = #140e06) paints that
+     fallback on `html` beneath it. The old wood-grain gradient here used to
+     cover the backdrop entirely. */
   background-color: transparent;
 }
 

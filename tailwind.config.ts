@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import plugin from 'tailwindcss/plugin';
 import { PALETTE } from './src/theme/palette';
 
 export default {
@@ -30,6 +31,7 @@ export default {
           plotLockedLabel: PALETTE.plotLockedLabel,
           redHover: PALETTE.redHover,
           disasterGround: PALETTE.disasterGround,
+          profitMint: PALETTE.profitMint,
         },
       },
       fontFamily: {
@@ -48,5 +50,12 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(({ addBase }) => {
+      // 028 — the flat colour painted beneath PageBackdrop's fixed layer. It
+      // lives here, not in index.css, so it derives from PALETTE like every
+      // other colour rather than being a literal the contrast gate cannot see.
+      addBase({ html: { backgroundColor: PALETTE.pageFallback } });
+    }),
+  ],
 } satisfies Config;

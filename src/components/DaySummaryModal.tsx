@@ -42,7 +42,7 @@ export function DaySummaryModal({ log, onClose, animateReveal = true, recoveryDa
         className={[
           'rounded-2xl p-4 max-w-sm w-full mx-4 shadow-xl max-h-[80vh] flex flex-col',
           'transition-colors duration-500',
-          showDisasterChrome ? 'bg-[#2A0A0A]' : 'bg-farm-soil',
+          showDisasterChrome ? 'bg-farm-disasterGround' : 'bg-farm-soil',
         ].join(' ')}
         onClick={e => e.stopPropagation()}
       >
