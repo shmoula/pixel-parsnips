@@ -242,13 +242,22 @@ describe('HUD — streak flame', () => {
 
   it('pulses so a live streak is noticeable', () => {
     render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
-    expect(flame()!.className).toMatch(/animate-pulse/);
+    expect(flame()!.className).toMatch(/streak-flame-anim/);
   });
 
   it('holds still when the player asked for reduced motion', () => {
     stubMedia(['prefers-reduced-motion']);
     render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
-    expect(flame()!.className).not.toMatch(/animate-pulse/);
+    expect(flame()!.className).not.toMatch(/streak-flame-anim/);
+  });
+
+  // The scale half of the pulse must ride on the wrapper: the glyph inside carries
+  // EmojiIcon's optical-lift transform, which a `transform` keyframe would clobber.
+  it('animates the wrapper, not the glyph that carries the optical lift', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
+    const glyph = flame()!.firstElementChild!;
+    expect(glyph.className).toMatch(/-translate-y-\[0\.1875em\]/);
+    expect(glyph.className).not.toMatch(/streak-flame-anim/);
   });
 });
 

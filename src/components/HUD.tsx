@@ -87,7 +87,9 @@ function StreakFlame({ harvestStreak }: { harvestStreak: number }) {
       title={description}
       // The pulse is the whole point of the glyph, so it is gated on the motion
       // preference rather than left running for players who asked for stillness.
-      className={`inline-flex cursor-help ${reducedMotion ? '' : 'animate-pulse'}`}
+      // `streak-flame` (index.css) breathes in scale as well as opacity; the class is
+      // itself inside a prefers-reduced-motion query, so this gate is belt and braces.
+      className={`inline-flex cursor-help ${reducedMotion ? '' : 'streak-flame-anim'}`}
     >
       {/* EmojiIcon carries the optical-centre lift: an emoji laid out beside Press
           Start 2P sits ~0.1875em low, because the pixel font paints entirely above
