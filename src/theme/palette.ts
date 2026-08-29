@@ -16,9 +16,9 @@ export const PALETTE = {
   ink: '#241C14',        // warm brown over the old flat neutral
 
   /** HUD header bar. */
-  bar: '#1C1208',
+  bar: '#2A1B0A',
   /** HUD chip and menu-row body. */
-  chip: '#33220E',
+  chip: '#4A3218',
   /** Chip and panel border. */
   chipBorder: '#7A5228',
   /** Chip and row hover. */
@@ -26,7 +26,7 @@ export const PALETTE = {
   /** Flat colour behind the tiled soil texture on PageBackdrop. */
   page: '#241806',
   /** Critical-balance red, kept readable on `chip` (see the contrast test). */
-  danger: '#EB6A5C',
+  danger: '#F59A90',
 
   // ── Play surface (028) ────────────────────────────────────────────────────
   // These were hardcoded in FarmGrid/PlotCard until 028 and were therefore

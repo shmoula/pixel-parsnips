@@ -45,12 +45,12 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
  * fall below the 4.5:1 AA threshold and are deliberately left out of PAIRS:
  *
  *  - `farm-red` late-season warning ("— N days left", HUD.tsx balance caption)
- *    on `farm-chip` ≈ 2.81:1
+ *    on `farm-chip` ≈ 2.19:1
  *  - idle/de-emphasized `farm-stone/60` button chrome (e.g. GameMenu gear,
- *    HUD undo) on `farm-chip` ≈ 2.21:1 — a deliberately de-emphasized-until-
+ *    HUD undo) on `farm-chip` ≈ 1.94:1 — a deliberately de-emphasized-until-
  *    hover pattern
  *  - Shop "New buildings unlock in Season N" `farm-stone` on `farm-chip/60`
- *    ≈ 3.75:1 (approximate — the /60 alpha over the panel shifts the real
+ *    ≈ 1.94:1 (approximate — the /60 alpha over the panel shifts the real
  *    rendered value)
  *
  * These are pre-existing and/or on foregrounds 025 deliberately did not
