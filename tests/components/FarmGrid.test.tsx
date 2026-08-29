@@ -76,3 +76,38 @@ describe('FarmGrid — 021 celebration anchors', () => {
     expect(container.querySelector('[data-plot-id="1"]')).not.toBeNull();
   });
 });
+
+// 028 — the grid's decor was four hand-rolled inline <svg> blocks (ellipse pebbles,
+// line grass) sitting beside the real pixel-art PNGs on the page backdrop. It now
+// draws from the same asset registry as everything else.
+describe('FarmGrid — 028 art coherence', () => {
+  it('renders no inline SVG decorations', () => {
+    const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
+    expect(container.querySelectorAll('svg')).toHaveLength(0);
+  });
+
+  it('draws its decor from the shared asset registry', () => {
+    const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
+    const decor = [...container.querySelectorAll('img')].map(i => i.getAttribute('src') ?? '');
+    expect(decor.some(s => s.includes('stones'))).toBe(true);
+    expect(decor.some(s => s.includes('grass'))).toBe(true);
+  });
+
+  it('marks every decor image decorative', () => {
+    const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
+    for (const img of container.querySelectorAll('img')) {
+      expect(img.getAttribute('alt')).toBe('');
+      expect(img.getAttribute('aria-hidden')).toBe('true');
+    }
+  });
+
+  it('does not apply the grain filter to the plot subtree', () => {
+    const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
+    const section = container.querySelector('section[aria-label="Farm plots"]');
+    let node: HTMLElement | null = section as HTMLElement;
+    while (node && node !== container) {
+      expect(node.className).not.toMatch(/pp-grain/);
+      node = node.parentElement;
+    }
+  });
+});
