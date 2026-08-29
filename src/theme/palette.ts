@@ -21,8 +21,8 @@ export const PALETTE = {
   chip: '#4A3218',
   /** Chip and panel border. */
   chipBorder: '#7A5228',
-  /** Chip and row hover. */
-  chipHover: '#4A3016',
+  /** Chip and row hover — a step lighter than `chip`, so it must move with it. */
+  chipHover: '#614020',
   /** Flat colour behind the tiled soil texture on PageBackdrop. */
   page: '#241806',
   /** Critical-balance red, kept readable on `chip` (see the contrast test). */
