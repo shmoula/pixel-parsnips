@@ -120,7 +120,7 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
       "
     >
       <span className="text-2xl">🐛</span>
-      <span className="text-body font-pixel text-farm-red/90 mt-1">Pest Damage</span>
+      <span className="text-body font-pixel text-farm-danger mt-1">Pest Damage</span>
       <button
         type="button"
         aria-label="Clear Plot — remove pest damage"
@@ -162,7 +162,7 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
       }}
     >
       <span className="text-2xl">🪨</span>
-      <span className="text-caption font-pixel text-farm-stone/80 mt-1 leading-snug">
+      <span className="text-caption font-pixel text-farm-parchment/80 mt-1 leading-snug">
         {daysUntilRecovery}d remaining
       </span>
       {hasFertilizer ? (

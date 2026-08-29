@@ -27,6 +27,13 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
   { name: 'section label',      where: 'CreditsModal.tsx h3',        fg: PALETTE.parchment, bg: PALETTE.soil, alpha: 0.7 },
   { name: 'stat-row label',     where: 'BankruptcyScreen.tsx StatRow',fg: PALETTE.parchment, bg: PALETTE.ink, alpha: 0.7 },
   { name: 'stat-row value',     where: 'BankruptcyScreen.tsx StatRow',fg: PALETTE.gold,     bg: PALETTE.ink },
+  { name: 'plot buy-price',     where: 'PlotCard.tsx purchasable tile', fg: PALETTE.gold,            bg: PALETTE.plot },
+  { name: 'plot locked label',  where: 'PlotCard.tsx locked tile',      fg: PALETTE.plotLockedLabel, bg: PALETTE.plot },
+  { name: 'plant label',        where: 'PlotCard.tsx empty tile',       fg: PALETTE.gold,            bg: PALETTE.tilledLight },
+  { name: 'growing tile text',  where: 'PlotCard.tsx growing tile',     fg: PALETTE.parchment,       bg: PALETTE.plotGrowing, alpha: 0.8 },
+  { name: 'ready tile text',    where: 'PlotCard.tsx ready tile',       fg: PALETTE.parchment,       bg: PALETTE.plotReady, alpha: 0.8 },
+  { name: 'pest label',         where: 'PlotCard.tsx pest tile',        fg: PALETTE.danger,          bg: PALETTE.plotPest },
+  { name: 'exhausted label',    where: 'PlotCard.tsx exhausted tile',   fg: PALETTE.parchment,       bg: PALETTE.exhaustedMid, alpha: 0.8 },
 ];
 
 /**
@@ -56,6 +63,11 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
  * 027 note for the 028 palette lift: the retired `lease readout` row (`stone` on `bar`)
  * passed at only 4.529 — a 0.029 margin. Any future row on `bar` is similarly fragile,
  * and lightening `bar` will move every one of them. Re-derive, do not eyeball.
+ *
+ * 028 — two play-surface labels that used to belong on this list are now fixed and
+ * enforced in PAIRS instead: the "Pest Damage" label (was farm-red/90 on the pest
+ * tile, 2.89:1) and the exhausted tile's "Nd remaining" (was farm-stone/80, 2.89:1).
+ * Both were invisible to this gate until 028 tokenised the play surface.
  */
 
 describe('palette contrast (WCAG AA, normal text)', () => {
