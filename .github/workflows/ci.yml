@@ -85,20 +85,6 @@ jobs:
           node-version: 22.x
           cache: npm
 
-      # Headless Chrome on ubuntu-latest ships no colour-emoji font, so every
-      # emoji the game paints (🪙 balance, 🔒 locked plots, ⚙️ menu, 🌱 onboarding…)
-      # falls back to a monochrome black glyph. Lighthouse's axe color-contrast
-      # rule rasterises each glyph: a *colour* emoji is recognised and skipped,
-      # but a black glyph on the dark play surface reads as failing body text —
-      # so the audit scored 0 in CI while passing on every real (colour-emoji)
-      # OS. Installing the font makes CI render emoji the way users actually see
-      # them and removes the false positive without weakening the rule.
-      - name: Install colour-emoji font
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends fonts-noto-color-emoji
-          sudo fc-cache -f
-
       - name: Install dependencies
         run: npm ci
 

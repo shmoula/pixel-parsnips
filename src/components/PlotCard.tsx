@@ -97,7 +97,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
   return (
     <div
       aria-label={`Locked plot ${plot.id + 1}`}
-      className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-plotBorder/80 bg-farm-plot opacity-80 select-none p-1"
+      className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-plotBorder/80 bg-farm-plot select-none p-1"
     >
       <span className="text-2xl opacity-60">🔒</span>
       <span className="font-pixel text-caption text-farm-plotLockedLabel">Locked</span>
