@@ -30,21 +30,24 @@ export const PALETTE = {
 
   // ── Play surface (028) ────────────────────────────────────────────────────
   // These were hardcoded in FarmGrid/PlotCard until 028 and were therefore
-  // invisible to tests/palette.contrast.test.ts. Values here are pre-lift; the
-  // lift is Task 5 of specs/028-farm-scene-coherence/plan.md.
+  // invisible to tests/palette.contrast.test.ts. Task 5 lifted the healthy-soil
+  // tokens (field, plot, plotGrowing, plotReady, plotBorder, tilledLight/Dark)
+  // out of near-black; the pest, exhausted, disaster and page-fallback tokens
+  // below are deliberately kept dark as "something is wrong here" / backdrop
+  // states. See specs/028-farm-scene-coherence/plan.md.
 
   /** Farm-grid bed behind the plot tiles. */
-  field: '#2A1A0E',
+  field: '#4A3218',
   /** Empty, locked, or purchasable plot tile. */
-  plot: '#160F07',
+  plot: '#3A2712',
   /** Plot with a crop still growing. */
-  plotGrowing: '#1A2C10',
+  plotGrowing: '#2E4A1C',
   /** Plot whose crop is ready to harvest. */
-  plotReady: '#162810',
+  plotReady: '#33551F',
   /** Plot destroyed by a Pest Infestation. */
   plotPest: '#2A1010',
   /** Plot tile border. */
-  plotBorder: '#3D2510',
+  plotBorder: '#6B4A2A',
   /** "Locked" label on an unpurchased tile. */
   plotLockedLabel: '#B8A894',
   /** Hover state for the red "Clear Plot" button. */
@@ -56,8 +59,8 @@ export const PALETTE = {
 
   // Gradient stops — inline `style` only, never Tailwind classes.
   /** Tilled-row stripes on an empty plot tile. */
-  tilledLight: '#2A1A0E',
-  tilledDark: '#221408',
+  tilledLight: '#4A3218',
+  tilledDark: '#3A2712',
   /** Exhausted-plot hatching, light → dark. */
   exhaustedMid: '#3a2010',
   exhaustedDark: '#2a1208',
