@@ -1,5 +1,4 @@
 import type { PlotState } from '../engine/types';
-import { getDecorUrl } from './decorAssets';
 import { PlotCard } from './PlotCard';
 
 interface FarmGridProps {
@@ -29,28 +28,6 @@ function firstPlantablePlotId(plots: PlotState[], unlockedPlots: number): number
   return plot ? plot.id : null;
 }
 
-/**
- * 028 — grid-edge decor, drawn from the same 018 asset registry as the page
- * backdrop. Replaces four hand-rolled inline <svg> blocks whose ellipses and
- * line-strokes read as a different art style from the pixel-art PNGs a few
- * pixels away. Every asset is optional: a missing file renders nothing, exactly
- * as PageBackdrop behaves.
- */
-function GridDecor({ name, className, height }: { name: string; className: string; height: number }) {
-  const url = getDecorUrl(name);
-  if (url === null) return null;
-  return (
-    <img
-      src={url}
-      alt=""
-      aria-hidden="true"
-      draggable={false}
-      style={{ height, imageRendering: 'pixelated' }}
-      className={`absolute pointer-events-none select-none ${className}`}
-    />
-  );
-}
-
 export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, recoveryDays, unlockedPlots, nextPlotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: FarmGridProps) {
   const plantAnchorId = firstPlantablePlotId(plots, unlockedPlots ?? plots.length);
   return (
@@ -68,11 +45,6 @@ export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, recov
         aria-hidden="true"
         className="absolute inset-0 rounded-xl border-4 border-farm-plotBorder pointer-events-none shadow-[inset_0_2px_10px_rgba(0,0,0,0.45)]"
       />
-
-      <GridDecor name="stones"  className="top-1 left-2"      height={20} />
-      <GridDecor name="stones"  className="bottom-1 right-2"  height={20} />
-      <GridDecor name="grass_1" className="top-1/3 left-0.5"  height={22} />
-      <GridDecor name="grass_2" className="top-0.5 right-1/4" height={12} />
 
       {/* Farm plots grid */}
       <section aria-label="Farm plots">

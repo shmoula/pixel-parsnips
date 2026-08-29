@@ -77,28 +77,20 @@ describe('FarmGrid — 021 celebration anchors', () => {
   });
 });
 
-// 028 — the grid's decor was four hand-rolled inline <svg> blocks (ellipse pebbles,
-// line grass) sitting beside the real pixel-art PNGs on the page backdrop. It now
-// draws from the same asset registry as everything else.
-describe('FarmGrid — 028 art coherence', () => {
+// 028 replaced four hand-rolled inline <svg> decorations on the grid bed with
+// PNG stones/grass sprites; those field sprites were then removed entirely by
+// request. The grid bed now carries no decorative sprites of its own — only the
+// plot tiles — and the grain filter sits on its own layer, off the plot subtree.
+describe('FarmGrid — grid bed has no decorative sprites', () => {
   it('renders no inline SVG decorations', () => {
     const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
     expect(container.querySelectorAll('svg')).toHaveLength(0);
   });
 
-  it('draws its decor from the shared asset registry', () => {
+  it('renders no decorative decor images on the grid bed', () => {
     const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
-    const decor = [...container.querySelectorAll('img')].map(i => i.getAttribute('src') ?? '');
-    expect(decor.some(s => s.includes('stones'))).toBe(true);
-    expect(decor.some(s => s.includes('grass'))).toBe(true);
-  });
-
-  it('marks every decor image decorative', () => {
-    const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
-    for (const img of container.querySelectorAll('img')) {
-      expect(img.getAttribute('alt')).toBe('');
-      expect(img.getAttribute('aria-hidden')).toBe('true');
-    }
+    // Empty plots draw no crop sprites, so any <img> here would be bed decor.
+    expect(container.querySelectorAll('img')).toHaveLength(0);
   });
 
   it('does not apply the grain filter to the plot subtree', () => {
