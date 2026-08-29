@@ -36,8 +36,16 @@ export const PALETTE = {
   // below are deliberately kept dark as "something is wrong here" / backdrop
   // states. See specs/028-farm-scene-coherence/plan.md.
 
-  /** Farm-grid bed behind the plot tiles. */
-  field: '#4A3218',
+  /**
+   * Farm-grid bed behind the plot tiles. A step lighter/warmer than `chip`
+   * (which is `#4A3218`) on purpose: §B3's separation principle requires the HUD
+   * chrome and the play surface to stay on distinguishable tones, and the 028
+   * prototype flattened the hierarchy when both sat at `#4A3218`. It stays
+   * lighter than the empty-plot tile (`plot`, `#3A2712`) so the tiles read as
+   * cells recessed into the bed. Not contrast-gated — no text is painted on the
+   * bed — so it is free to move for this visual reason.
+   */
+  field: '#573B1B',
   /** Empty, locked, or purchasable plot tile. */
   plot: '#3A2712',
   /** Plot with a crop still growing. */

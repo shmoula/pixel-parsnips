@@ -381,8 +381,10 @@ instead of a rule that no longer exists.
 - [ ] **Step 6: Verify no literals remain anywhere**
 
 Run: `grep -rn "#[0-9A-Fa-f]\{3,8\}" src/components/ src/index.css | grep -v "^\s*\*" | grep -v "//"`
-Expected: only the six `stroke="#4A7230"` lines in `FarmGrid.tsx` (deleted in Task 7) and
-any hex named inside a comment. No live values.
+Expected: the six `stroke="#4A7230"` lines in `FarmGrid.tsx` (deleted in Task 7), the
+`#000` mask-only literal in `Shop.tsx`'s awning scallop (a CSS mask stop, not a paint
+colour, so it is intentionally left as a literal), and any hex named inside a comment. No
+live paint values.
 
 - [ ] **Step 7: Verify visual neutrality, then run the suite**
 
@@ -613,11 +615,18 @@ every quoted number is now stale. Recompute all three and update the comment:
  *  - Shop "New buildings unlock in Season N" `farm-stone` on `farm-chip/60`
 ```
 
-Get the real numbers rather than estimating — add a temporary `console.log` of
-`contrastRatio(PALETTE.red, PALETTE.chip)`, `contrastRatio(PALETTE.stone, PALETTE.chip, 0.6)`
-and `contrastRatio(PALETTE.stone, PALETTE.chip, 0.6)` in a scratch test, read them, then
-delete the scratch file. A lighter `chip` moves these *further* from AA, not closer, so if
-any has become egregious, say so in the commit rather than quietly re-quoting it.
+Get the real numbers rather than estimating — add a temporary `console.log` in a scratch
+test, read them, then delete the scratch file. The three pairs are *different* surfaces, so
+measure each separately:
+
+- `farm-red` on `farm-chip`: `contrastRatio(PALETTE.red, PALETTE.chip)`
+- `farm-stone/60` on `farm-chip`: `contrastRatio(PALETTE.stone, PALETTE.chip, 0.6)`
+- `farm-stone` on `farm-chip/60`: the background is `chip` at 60% alpha over the page, so
+  composite it first — `contrastRatio(PALETTE.stone, '#' + composite(PALETTE.chip, 0.6,
+  PALETTE.page).map(...).join(''))` — rather than reusing the `stone/60 on chip` formula.
+
+A lighter `chip` moves these *further* from AA, not closer, so if any has become egregious,
+say so in the commit rather than quietly re-quoting it.
 
 - [ ] **Step 7: Run the suite and linter**
 
@@ -721,14 +730,13 @@ function GridDecor({ name, className, height }: { name: string; className: strin
 }
 ```
 
-Then render four instances where the SVGs were, keeping the same corners:
-
-```tsx
-      <GridDecor name="stones"  className="top-1 left-2"      height={20} />
-      <GridDecor name="stones"  className="bottom-1 right-2"  height={20} />
-      <GridDecor name="grass_1" className="top-1/3 left-0.5"  height={22} />
-      <GridDecor name="grass_2" className="top-0.5 right-1/4" height={12} />
-```
+**Final scope: no grid decorations.** The four inline `<svg>` blocks were initially replaced
+with four `GridDecor` PNG instances in the corners, but those field sprites were then removed
+entirely by request (commit "remove decorative sprites from the farm grid bed"). The grid bed
+now carries **no** decorative sprites of its own — only the plot tiles. Do **not** render the
+`GridDecor` instances, and do not reintroduce the `GridDecor` helper above: the final
+`FarmGrid.tsx` adds no `<img>` or inline `<svg>` decorations, and `FarmGrid.test.tsx` asserts
+zero of each on the grid bed.
 
 - [ ] **Step 4: Move the grain off the plot subtree and fix the frame**
 
@@ -847,5 +855,6 @@ and why F3 was deliberately left out of the farm-scene work."
 - [ ] Crop sprites are visibly crisper with the grain off their subtree.
 - [ ] Real-device check done.
 - [ ] No engine, schema, analytics or simulator file modified. Confirm with
-      `git diff --stat master...HEAD` — `src/` changes should be limited to `theme/palette.ts`
-      and the five components named in the file-structure table.
+      `git diff --stat master...HEAD` — `src/` changes should be limited to `theme/palette.ts`,
+      the five components named in the file-structure table, `src/index.css` (Task 3), and the
+      deleted `src/App.css` (Task 1).

@@ -22,7 +22,7 @@ Counting **live code only** — comment mentions and the never-imported `App.css
 | Values in `PALETTE` | 14 |
 | `PALETTE` values re-typed as raw literals | 2 |
 
-```
+```text
 19  PlotCard.tsx     10  Shop.tsx      8  SeedCard.tsx
  7  FarmGrid.tsx      1  index.css     1  DaySummaryModal.tsx
 ```
@@ -173,7 +173,7 @@ the review pass as optional licence to leave values unchosen.
 |---|---|---|---|
 | `bar` | `#1C1208` | `#2A1B0A` | Unconstrained **once 027 lands** — see §E |
 | `chip` | `#33220E` | `#4A3218` | gold 7.51 · parchment/70 5.86 · parchment 10.15 — all clear AA |
-| `danger` | `#EB6A5C` | `#F59A90` | 3.83 at the new chip → **fails**; re-picked gives 5.63 |
+| `danger` | `#EB6A5C` | `#F59A90` | **5.63** at the new chip — clears AA. The old `#EB6A5C` would fail here at 3.83, which is why it had to move. |
 
 `danger` is the unlock. It is the critical-balance red, and 025 chose `#EB6A5C` deliberately
 to clear AA against the *old* dark chip; on a lighter chip it must move or the chip cannot.

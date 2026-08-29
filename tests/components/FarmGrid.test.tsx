@@ -96,6 +96,9 @@ describe('FarmGrid — grid bed has no decorative sprites', () => {
   it('does not apply the grain filter to the plot subtree', () => {
     const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
     const section = container.querySelector('section[aria-label="Farm plots"]');
+    // Guard the traversal: without this the loop is skipped when the labelled
+    // section is missing, and the test would pass vacuously.
+    expect(section).not.toBeNull();
     let node: HTMLElement | null = section as HTMLElement;
     while (node && node !== container) {
       expect(node.className).not.toMatch(/pp-grain/);

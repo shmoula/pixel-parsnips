@@ -34,6 +34,22 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
   { name: 'ready tile text',    where: 'PlotCard.tsx ready tile',       fg: PALETTE.parchment,       bg: PALETTE.plotReady, alpha: 0.8 },
   { name: 'pest label',         where: 'PlotCard.tsx pest tile',        fg: PALETTE.danger,          bg: PALETTE.plotPest },
   { name: 'exhausted label',    where: 'PlotCard.tsx exhausted tile',   fg: PALETTE.parchment,       bg: PALETTE.exhaustedMid, alpha: 0.8 },
+
+  // Seed cards (028) — each crop's tinted card renders three text roles: the crop name
+  // (parchment/90), the grow/yield stats (parchment/75) and the est.-profit line (profitMint).
+  { name: 'radish card name',   where: 'SeedCard.tsx crop name',        fg: PALETTE.parchment,  bg: PALETTE.cropRadishBg,  alpha: 0.9 },
+  { name: 'radish card stats',  where: 'SeedCard.tsx CropStats',        fg: PALETTE.parchment,  bg: PALETTE.cropRadishBg,  alpha: 0.75 },
+  { name: 'radish card profit', where: 'SeedCard.tsx est. profit',      fg: PALETTE.profitMint, bg: PALETTE.cropRadishBg },
+  { name: 'parsnip card name',  where: 'SeedCard.tsx crop name',        fg: PALETTE.parchment,  bg: PALETTE.cropParsnipBg, alpha: 0.9 },
+  { name: 'parsnip card stats', where: 'SeedCard.tsx CropStats',        fg: PALETTE.parchment,  bg: PALETTE.cropParsnipBg, alpha: 0.75 },
+  { name: 'parsnip card profit',where: 'SeedCard.tsx est. profit',      fg: PALETTE.profitMint, bg: PALETTE.cropParsnipBg },
+  { name: 'pumpkin card name',  where: 'SeedCard.tsx crop name',        fg: PALETTE.parchment,  bg: PALETTE.cropPumpkinBg, alpha: 0.9 },
+  { name: 'pumpkin card stats', where: 'SeedCard.tsx CropStats',        fg: PALETTE.parchment,  bg: PALETTE.cropPumpkinBg, alpha: 0.75 },
+  { name: 'pumpkin card profit',where: 'SeedCard.tsx est. profit',      fg: PALETTE.profitMint, bg: PALETTE.cropPumpkinBg },
+
+  // Shop chrome (028) — the fertilizer card label on the chip panel, and the carved sign heading.
+  { name: 'fertilizer label',   where: 'Shop.tsx fertilizer card',      fg: PALETTE.parchment,  bg: PALETTE.chip, alpha: 0.9 },
+  { name: 'shop sign heading',  where: 'Shop.tsx SignHeader h2',        fg: PALETTE.gold,       bg: PALETTE.shopSign },
 ];
 
 /**
@@ -50,8 +66,11 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
  *    HUD undo) on `farm-chip` ≈ 1.94:1 — a deliberately de-emphasized-until-
  *    hover pattern
  *  - Shop "New buildings unlock in Season N" `farm-stone` on `farm-chip/60`
- *    ≈ 1.94:1 (approximate — the /60 alpha over the panel shifts the real
- *    rendered value)
+ *    ≈ 3.45:1 (the /60 alpha composites over the page, so the rendered value is
+ *    lighter than a flat stone-on-chip)
+ *  - Shop fertilizer sub-label ("Restores an exhausted plot instantly")
+ *    `farm-stone` on `farm-chip` ≈ 2.93:1 — a de-emphasized caption on the
+ *    `stone` foreground 028 deliberately does not change
  *
  * These are pre-existing and/or on foregrounds 025 deliberately did not
  * change (the plan protects `red`/`stone` as foregrounds, per the 025 lift).
