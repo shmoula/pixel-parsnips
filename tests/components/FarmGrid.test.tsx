@@ -76,3 +76,33 @@ describe('FarmGrid — 021 celebration anchors', () => {
     expect(container.querySelector('[data-plot-id="1"]')).not.toBeNull();
   });
 });
+
+// 028 replaced four hand-rolled inline <svg> decorations on the grid bed with
+// PNG stones/grass sprites; those field sprites were then removed entirely by
+// request. The grid bed now carries no decorative sprites of its own — only the
+// plot tiles — and the grain filter sits on its own layer, off the plot subtree.
+describe('FarmGrid — grid bed has no decorative sprites', () => {
+  it('renders no inline SVG decorations', () => {
+    const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
+    expect(container.querySelectorAll('svg')).toHaveLength(0);
+  });
+
+  it('renders no decorative decor images on the grid bed', () => {
+    const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
+    // Empty plots draw no crop sprites, so any <img> here would be bed decor.
+    expect(container.querySelectorAll('img')).toHaveLength(0);
+  });
+
+  it('does not apply the grain filter to the plot subtree', () => {
+    const { container } = render(<FarmGrid plots={mkPlots(4)} unlockedPlots={4} />);
+    const section = container.querySelector('section[aria-label="Farm plots"]');
+    // Guard the traversal: without this the loop is skipped when the labelled
+    // section is missing, and the test would pass vacuously.
+    expect(section).not.toBeNull();
+    let node: HTMLElement | null = section as HTMLElement;
+    while (node && node !== container) {
+      expect(node.className).not.toMatch(/pp-grain/);
+      node = node.parentElement;
+    }
+  });
+});

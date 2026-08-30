@@ -2,6 +2,7 @@ import type { CropId, CropDefinition } from '../engine/types';
 import { CROP_DEFINITIONS, coins } from '../engine/constants';
 import { Coin } from './Coin';
 import { CropSprite } from './CropSprite';
+import { PALETTE } from '../theme/palette';
 
 const CROP_EMOJI: Record<CropId, string> = {
   radish: '🌱',
@@ -16,9 +17,9 @@ const CROP_EMOJI: Record<CropId, string> = {
  * BUY price stay as text (sharp_edges.md → colorblind-failure).
  */
 const CROP_THEME: Record<CropId, { cardBg: string; border: string }> = {
-  radish:  { cardBg: '#6E2A24', border: '#C0392B' },
-  parsnip: { cardBg: '#3A5220', border: '#4E8A2E' },
-  pumpkin: { cardBg: '#7C3E14', border: '#C87820' },
+  radish:  { cardBg: PALETTE.cropRadishBg,  border: PALETTE.cropRadishBorder },
+  parsnip: { cardBg: PALETTE.cropParsnipBg, border: PALETTE.cropParsnipBorder },
+  pumpkin: { cardBg: PALETTE.cropPumpkinBg, border: PALETTE.cropPumpkinBorder },
 };
 
 interface SeedCardProps {
@@ -138,7 +139,7 @@ function CropStats({
       </div>
 
       {/* T018b — estimated net profit display (light mint reads on the tinted card) */}
-      <p className="text-xs text-[#BFE6A8] font-pixel">
+      <p className="text-xs text-farm-profitMint font-pixel">
         {adjustedProfit !== null ? (
           <span>
             Est. profit:{' '}
@@ -184,7 +185,7 @@ export function SeedCard({
       className={seedCardClass(isSelected, dimmed)}
       style={{
         backgroundColor: theme.cardBg,
-        borderColor: isSelected ? '#F5C842' : theme.border,
+        borderColor: isSelected ? PALETTE.gold : theme.border,
         textShadow: '0 1px 1px rgba(0,0,0,0.55)',
       }}
     >

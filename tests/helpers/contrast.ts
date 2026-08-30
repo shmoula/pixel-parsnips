@@ -28,11 +28,22 @@ export function composite(fg: string, alpha: number, bg: string): Rgb {
   return [0, 1, 2].map(i => Math.round(f[i] * alpha + b[i] * (1 - alpha))) as unknown as Rgb;
 }
 
+/** WCAG contrast ratio between two already-resolved opaque colours. */
+export function ratioBetween(a: Rgb, b: Rgb): number {
+  const la = luminance(a);
+  const lb = luminance(b);
+  const hi = Math.max(la, lb);
+  const lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 /** Contrast ratio of an (optionally translucent) foreground over a background. */
 export function contrastRatio(fg: string, bg: string, alpha = 1): number {
-  const a = luminance(composite(fg, alpha, bg));
-  const b = luminance(hexToRgb(bg));
-  const hi = Math.max(a, b);
-  const lo = Math.min(a, b);
-  return (hi + 0.05) / (lo + 0.05);
+  return ratioBetween(composite(fg, alpha, bg), hexToRgb(bg));
+}
+
+/** Re-encodes a composited colour so it can feed back into `composite` as the
+ *  foreground of a second layer (e.g. a translucent wrapper over the bed). */
+export function rgbToHex([r, g, b]: Rgb): string {
+  return '#' + [r, g, b].map(c => Math.round(c).toString(16).padStart(2, '0')).join('');
 }

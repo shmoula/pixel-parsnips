@@ -1,5 +1,4 @@
 import type { PlotState } from '../engine/types';
-import { PALETTE } from '../theme/palette';
 import { PlotCard } from './PlotCard';
 
 interface FarmGridProps {
@@ -32,66 +31,20 @@ function firstPlantablePlotId(plots: PlotState[], unlockedPlots: number): number
 export function FarmGrid({ plots, currentDay = 1, fertilizerInventory = 0, recoveryDays, unlockedPlots, nextPlotPrice, canAffordPlot, onPlant, onApplyFertilizer, onClearPestDamage, onBuyPlot }: FarmGridProps) {
   const plantAnchorId = firstPlantablePlotId(plots, unlockedPlots ?? plots.length);
   return (
-    // T017 — textured farm canvas: dark tilled soil + grain filter + fence border + decor
-    <div className="relative rounded-xl overflow-hidden p-3 bg-[#2A1A0E] [filter:url(#pp-grain)] shadow-inner">
+    // 028 — the grain sits on its own absolutely-positioned layer, not on the
+    // wrapper. On the wrapper it filtered the whole subtree, and an SVG
+    // turbulence filter over pixel art fights the `image-rendering: pixelated`
+    // that keeps the LPC crop sprites crisp.
+    <div className="relative isolate rounded-xl overflow-hidden p-3 bg-farm-field shadow-inner">
+      <div aria-hidden="true" className="absolute inset-0 -z-10 [filter:url(#pp-grain)] bg-farm-field pointer-events-none" />
 
-      {/* Decorative fence border frame */}
+      {/* 028 — the bed's edge. A border plus an inset shadow so the grid reads
+          as a recessed plot of earth; the pre-028 code called this a "fence
+          border" and drew a flat rounded rectangle. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 rounded-xl border-4 border-farm-chipBorder pointer-events-none"
+        className="absolute inset-0 rounded-xl border-4 border-farm-plotBorder pointer-events-none shadow-[inset_0_2px_10px_rgba(0,0,0,0.45)]"
       />
-
-      {/* Pebbles — top-left cluster */}
-      <svg
-        aria-hidden="true"
-        focusable="false"
-        className="absolute top-1 left-2 pointer-events-none"
-        width="28"
-        height="20"
-      >
-        <ellipse cx="7"  cy="13" rx="6" ry="5"  fill={PALETTE.chipBorder} opacity="0.75" />
-        <ellipse cx="19" cy="8"  rx="5" ry="4"  fill={PALETTE.chipBorder} opacity="0.55" />
-        <ellipse cx="24" cy="16" rx="3" ry="2.5" fill={PALETTE.chipBorder} opacity="0.5" />
-      </svg>
-
-      {/* Pebbles — bottom-right cluster */}
-      <svg
-        aria-hidden="true"
-        focusable="false"
-        className="absolute bottom-1 right-2 pointer-events-none"
-        width="28"
-        height="20"
-      >
-        <ellipse cx="6"  cy="8"  rx="5" ry="4"   fill={PALETTE.chipBorder} opacity="0.55" />
-        <ellipse cx="18" cy="13" rx="6" ry="5"   fill={PALETTE.chipBorder} opacity="0.75" />
-        <ellipse cx="24" cy="6"  rx="3" ry="2.5" fill={PALETTE.chipBorder} opacity="0.5" />
-      </svg>
-
-      {/* Grass tufts — mid-left edge */}
-      <svg
-        aria-hidden="true"
-        focusable="false"
-        className="absolute top-1/3 left-0.5 pointer-events-none"
-        width="10"
-        height="22"
-      >
-        <line x1="3"  y1="22" x2="2"  y2="10" stroke="#4A7230" strokeWidth="2" strokeLinecap="round" />
-        <line x1="6"  y1="22" x2="5"  y2="6"  stroke="#4A7230" strokeWidth="2" strokeLinecap="round" />
-        <line x1="9"  y1="22" x2="8"  y2="12" stroke="#4A7230" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-
-      {/* Grass tuft — top-right edge */}
-      <svg
-        aria-hidden="true"
-        focusable="false"
-        className="absolute top-0.5 right-1/4 pointer-events-none"
-        width="14"
-        height="12"
-      >
-        <line x1="3"  y1="12" x2="2"  y2="4"  stroke="#4A7230" strokeWidth="2" strokeLinecap="round" />
-        <line x1="7"  y1="12" x2="6"  y2="2"  stroke="#4A7230" strokeWidth="2" strokeLinecap="round" />
-        <line x1="11" y1="12" x2="10" y2="5"  stroke="#4A7230" strokeWidth="2" strokeLinecap="round" />
-      </svg>
 
       {/* Farm plots grid */}
       <section aria-label="Farm plots">

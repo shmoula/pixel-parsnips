@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { PlotState } from '../engine/types';
 import { EXHAUSTION_RECOVERY_DAYS, CROP_DEFINITIONS } from '../engine/constants';
+import { PALETTE } from '../theme/palette';
 import { ProgressRing } from './ProgressRing';
 import { Coin } from './Coin';
 import { CropSprite } from './CropSprite';
@@ -86,7 +87,7 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
         aria-label={`Buy plot · ${plotPrice}🪙, plot ${plot.id + 1}`}
         disabled={!canAffordPlot}
         onClick={() => onBuyPlot?.(plot.id)}
-        className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-gold/60 bg-[#160F07] p-1 select-none hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-gold/60 bg-farm-plot p-1 select-none hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <span className="text-2xl opacity-70">🔒</span>
         <span className="font-pixel text-caption leading-none text-farm-gold text-center">Buy plot <span className="whitespace-nowrap">· {plotPrice}<Coin /></span></span>
@@ -96,10 +97,10 @@ function LockedPlot({ plot, isNextPurchasable, plotPrice, canAffordPlot, onBuyPl
   return (
     <div
       aria-label={`Locked plot ${plot.id + 1}`}
-      className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-[#3D2510]/80 bg-[#160F07] opacity-80 select-none p-1"
+      className="flex flex-col items-center justify-center gap-1 w-full aspect-square overflow-hidden rounded-lg border-2 border-farm-plotBorder/80 bg-farm-plot select-none p-1"
     >
       <span className="text-2xl opacity-60">🔒</span>
-      <span className="font-pixel text-caption text-[#B8A894]">Locked</span>
+      <span className="font-pixel text-caption text-farm-plotLockedLabel">Locked</span>
     </div>
   );
 }
@@ -114,12 +115,12 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
       className="
         flex flex-col items-center justify-center
         w-full aspect-square overflow-hidden rounded-lg border-2
-        border-farm-red bg-[#2A1010]
+        border-farm-red bg-farm-plotPest
         select-none p-1 shadow-inner
       "
     >
       <span className="text-2xl">🐛</span>
-      <span className="text-body font-pixel text-farm-red/90 mt-1">Pest Damage</span>
+      <span className="text-body font-pixel text-farm-danger mt-1">Pest Damage</span>
       <button
         type="button"
         aria-label="Clear Plot — remove pest damage"
@@ -127,7 +128,7 @@ function PestDamagedPlot({ plot, onClearPestDamage }: {
         className="
           mt-1 font-pixel text-body px-1.5 py-0.5 rounded
           bg-farm-red text-farm-parchment
-          hover:bg-[#d94040] active:scale-95 transition-all cursor-pointer
+          hover:bg-farm-redHover active:scale-95 transition-all cursor-pointer
         "
       >
         Clear Plot
@@ -154,14 +155,14 @@ function ExhaustedPlot({ plot, daysUntilRecovery, hasFertilizer, onApplyFertiliz
       "
       style={{
         background: [
-          'repeating-linear-gradient(20deg, #3a2010 0px, #3a2010 8px, #2a1208 9px, #2a1208 10px)',
-          'repeating-linear-gradient(-30deg, transparent 0px, transparent 12px, #1a0a02 13px, #1a0a02 14px)',
+          `repeating-linear-gradient(20deg, ${PALETTE.exhaustedMid} 0px, ${PALETTE.exhaustedMid} 8px, ${PALETTE.exhaustedDark} 9px, ${PALETTE.exhaustedDark} 10px)`,
+          `repeating-linear-gradient(-30deg, transparent 0px, transparent 12px, ${PALETTE.exhaustedShadow} 13px, ${PALETTE.exhaustedShadow} 14px)`,
         ].join(', '),
         filter: 'grayscale(0.4)',
       }}
     >
       <span className="text-2xl">🪨</span>
-      <span className="text-caption font-pixel text-farm-stone/80 mt-1 leading-snug">
+      <span className="text-caption font-pixel text-farm-parchment/80 mt-1 leading-snug">
         {daysUntilRecovery}d remaining
       </span>
       {hasFertilizer ? (
@@ -256,8 +257,8 @@ function GrowingCropCard({ plot }: {
         'flex flex-col items-center justify-center',
         'w-full aspect-square overflow-hidden rounded-lg border-2 p-1',
         isReady
-          ? 'border-farm-grass ring-2 ring-farm-grass/50 bg-[#162810]'
-          : 'border-farm-gold/60 bg-[#1A2C10]',
+          ? 'border-farm-grass ring-2 ring-farm-grass/50 bg-farm-plotReady'
+          : 'border-farm-gold/60 bg-farm-plotGrowing',
         'select-none shadow-inner',
       ].join(' ')}
     >
@@ -342,13 +343,13 @@ export function PlotCard({ plot, currentDay = 1, fertilizerInventory = 0, recove
         group
         flex flex-col items-center justify-center
         w-full aspect-square overflow-hidden rounded-lg
-        border border-[#3D2510]/80
+        border border-farm-plotBorder/80
         hover:border-farm-gold/50 hover:brightness-125
         cursor-pointer select-none
         transition-all duration-150
       "
       style={{
-        background: 'repeating-linear-gradient(180deg, #2A1A0E 0px, #2A1A0E 5px, #221408 5px, #221408 7px)',
+        background: `repeating-linear-gradient(180deg, ${PALETTE.tilledLight} 0px, ${PALETTE.tilledLight} 5px, ${PALETTE.tilledDark} 5px, ${PALETTE.tilledDark} 7px)`,
       }}
     >
       <span className="text-body font-pixel text-farm-gold">

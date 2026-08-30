@@ -169,7 +169,7 @@ function FlashDroughtBanner({ daysRemaining }: { daysRemaining: number }) {
     <p
       role="alert"
       aria-label="Flash Drought warning"
-      className="font-pixel text-body text-farm-red bg-farm-red/20 border border-farm-red/70 tracking-wide px-3 py-2 rounded"
+      className="font-pixel text-body text-farm-parchment bg-farm-red/20 border border-farm-red/70 tracking-wide px-3 py-2 rounded"
     >
       <EmojiIcon>☀️🔥</EmojiIcon> Flash Drought — crops planted today grow at half speed.{' '}
       {daysRemaining} day{suffix} remaining.
@@ -211,7 +211,7 @@ function UnwinnableBanner({ isUnwinnable, onRestart }: { isUnwinnable: boolean; 
     <div
       role="alert"
       aria-label="Run cannot recover"
-      className="flex flex-wrap items-center justify-between gap-2 font-pixel text-body text-farm-red bg-farm-red/20 border border-farm-red/70 px-3 py-2 rounded"
+      className="flex flex-wrap items-center justify-between gap-2 font-pixel text-body text-farm-parchment bg-farm-red/20 border border-farm-red/70 px-3 py-2 rounded"
     >
       <span>
         <EmojiIcon>💸</EmojiIcon> Out of options — you can't afford seeds and nothing is growing.
