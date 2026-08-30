@@ -10,6 +10,7 @@ import type {
 } from '../engine/types';
 import type { Medal } from '../engine/medals';
 import type { OnboardingStep } from '../engine/onboarding';
+import { deathCauseForState, type DeathCauseId } from '../engine/runPostMortem';
 
 export const ANALYTICS_SCHEMA_VERSION = 1;
 
@@ -79,6 +80,14 @@ export interface EventPropsMap {
     disasters_survived: number;
     peak_harvest_streak: number;
     medal: Medal;
+    /**
+     * F9 — which cause-of-death title the bankruptcy screen showed, or null when the
+     * run did not end in bankruptcy. 026 shipped the five titles untuned on purpose
+     * ("first-pass, tune against real runs"), but the cause was never sent, so the
+     * distribution could only ever be measured against simulator bots. This is the
+     * property that makes the real-run distribution observable.
+     */
+    death_cause: DeathCauseId | null;
   };
   shop_purchased: {
     item_type: 'seed' | 'fertilizer' | 'building';
@@ -125,7 +134,7 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   day_completed: 2,
   plot_unlocked: 2,
   season_completed: 1,
-  run_ended: 1,
+  run_ended: 2,
   shop_purchased: 1,
   onboarding_step_reached: 1,
   onboarding_completed: 1,
@@ -192,5 +201,6 @@ export function buildRunEndedProps(
     disasters_survived: state.disastersSurvived,
     peak_harvest_streak: state.peakHarvestStreak,
     medal,
+    death_cause: outcome === 'bankrupt' ? deathCauseForState(state) : null,
   };
 }

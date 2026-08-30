@@ -55,7 +55,7 @@ which takes the entire Monetization section off the table.
 | G11 | ✅ **In-run narrative events** — authored 1–2 per season Farm Events with binary choices (Traveling Merchant, Bountiful Spring, Drought Warning) | High | M | p2·C, p3·2, p4·B, p5·3.1 | **GREENLIT — top remaining pick (2026-07-21).** The single biggest un-built gameplay layer; highest replay value left. **Fold the deferred G4** (per-day objectives / per-season contracts) into this feature rather than building it standalone. **Spec approved (2026-07-21): [022-narrative-events](specs/022-narrative-events/spec.md)** — 6-event catalog (3 Proposal-C events + 2 contract events folding G4 in + 1 pay-for-buff), guaranteed 1–2 windowed events/season, own start-of-day modal, typed effect primitives, schema 9→10, sim-gated (heuristic + acceptAll/declineAll bounds), analytics + PostHog dashboard. <br>**DONE (2026-07-24).** Shipped as [022-narrative-events](specs/022-narrative-events/spec.md) via subagent-driven-development (17 tasks, two-stage spec+quality review per task). Pure `src/engine/farmEvents.ts` + data-only catalog; schema 9→10 with defensive migration + hardening; run-2 auto-unlock gate; blocking choice modal + HUD contract chip (📜) + Day-Summary event/contract lines + run-end unlock tease + "New!" ribbon; 4 analytics events (`farm_event_fired`/`farm_event_choice`/`contract_completed`/`contract_expired`) + `play_started.events_enabled`; sim event policies (`--eventPolicy heuristic\|acceptAll\|declineAll`) + `events022` preset. Sim-gated: all three policies land in the 15–35% win / 1.0–1.3× overshoot band (see [tuning-results.md](specs/022-narrative-events/tuning-results.md)) — only lever moved from the authored proposal was the two contract consolations (12→20, 10→18); single-crop bots still fail. 834 tests, lint clean. PostHog "Narrative Events" dashboard (id 907101) was provisioned separately on **2026-08-20** — the deferred main-session step — via [023-analytics-coverage](specs/023-analytics-coverage/spec.md) (the gameplay delivery above shipped 2026-07-24). |
 | G12 | ✅ **Harvest streak counter** — consecutive harvest-days with small escalating coin bonuses (5/10/15/20) | High | S | p5·3.5 → **shipped as [008-harvest-streak](specs/008-harvest-streak/spec.md)** | **DONE (2026-06-06).** Bonus capped at +20 (4× +5), streak count uncapped for HUD chip and the Longest-streak personal best. Resets on miss-days and at season boundaries (not on season_failed). Bonus is added to balance before the bankruptcy check, so it counts toward survival. |
 | G13 | ✅ **Farm Reputation tier (HUD title)** — cosmetic title that escalates with days survived (Struggling Smallholder → Master of the Harvest) | Low | S | p5·3.3 | Pure display change. Adds narrative arc to existing day counter. **Post-007**: now layers cleanly on top of the medal system — could derive the title from `bestDaysSurvived` / `bestSeasonReached` already persisted by `records.ts`, no new state required. **DONE (2026-06-16).** Shipped as [011-farm-reputation-tier](specs/011-farm-reputation-tier/spec.md) — current-run, day-based front-loaded 7-tier ladder; pure display via new src/engine/reputation.ts; always-visible HUD chip; no state/schema change. **SUPERSEDED (2026-08-27) by [027-hud-legibility](specs/027-hud-legibility/spec.md):** the HUD chip is removed and `src/engine/reputation.ts` deleted. The title was derived from the day counter the HUD already shows, and its 7-tier ladder duplicated the 5-tier medal on the same axis (disagreeing outright at day 61). Its titles now *are* the medal labels, so the feature lives on at run end rather than being reverted. |
-| G14 | ✅ **Persistent achievements** — small curated set stored in localStorage, earned once, multiple play styles covered | Medium | M | p5·3.4 | **GREENLIT (2026-07-21) — second pick after G11.** Cheap: `records.ts` already owns a separate localStorage key (`pixel-parsnips-records`) with a tested load/migrate/defensive-parse pattern — achievements follow the same shape (own `schemaVersion`, never crashes on malformed JSON, untouched by Restart). Watch for grind-bait ("harvest 1000 crops"); favor skill/resilience achievements. |
+| G14 | **Persistent achievements** — small curated set stored in localStorage, earned once, multiple play styles covered | Medium | M | p5·3.4 | **GREENLIT (2026-07-21) — second pick after G11.** Cheap: `records.ts` already owns a separate localStorage key (`pixel-parsnips-records`) with a tested load/migrate/defensive-parse pattern — achievements follow the same shape (own `schemaVersion`, never crashes on malformed JSON, untouched by Restart). Watch for grind-bait ("harvest 1000 crops"); favor skill/resilience achievements. |
 | G15 | ❌ **Run legacy / meta-progression bonuses** — small starting bonus on next run based on previous performance | ~~Low~~ | M | p3·4 | **SKIPPED (2026-07-21).** Breaks the single-session roguelite identity (p4's argument); balance risk > payoff for a hobby build. Data is already persisted if this is ever revisited. |
 
 ---
@@ -71,9 +71,86 @@ which takes the entire Monetization section off the table.
 | F5 | ✅ **Player onboarding ("Your First Harvest")** — first-run guided overlay (fill plots with radishes → advance → payoff) + always-on empty-day safeguard + run-end "Replay tutorial". | High | M | UI.md #5 → shipped as [014-player-onboarding](specs/014-player-onboarding/spec.md) | **DONE.** Own localStorage key (survives Restart); turn-1 weather pinned safe; analytics deferred to A1. |
 | F6 | **Farm-scene building sprites** — owned 019 buildings get pixel sprites anchored on the 018 backdrop | Low | S–M | 019 follow-up | Pure presentation; shop cards + banner lines shipped in 019. **Deferred to 029 by 028.** Cannot hang off `PageBackdrop`: it is `fixed`, `-z-10` and positioned in viewport percentages, so a building would sit behind the grid on a short viewport and in the open on a tall one. Needs a new in-flow farmyard container plus five new sprites. |
 | F7 | ✅ **Mobile lease visibility** — surface the per-day lease at mobile widths | Low | S | UI.md audit → shipped as [027-hud-legibility](specs/027-hud-legibility/spec.md) | **DONE.** Not shipped as the proposed balance-chip sub-label: the balance chip already carries a caption and a late-season warning, so a third line would grow the HUD on the width that can least afford it, and `farm-stone` fails AA on `farm-chip` (3.751). Shipped instead as a merged **daily ledger chip** — lease and the harvest-streak bonus are both coins-per-day, so they share one chip that replaced both the streak chip and the old `hidden sm:flex` readout. Measured at 375px: the chip's mobile form has a hard 81px budget; an emoji inside it costs ~10px and pushes the HUD to a third row. |
-| F8 | **Autosave indicator** — a subtle "Saved ✓" flash in the HUD after significant actions (Next Day, plant, purchase), ~1s then fade. | Low | S | UI.md audit (open item) | The game already autosaves to localStorage after every action; players have no signal it happens. Pure feedback layer — reduces "closed the tab, did I lose my run?" anxiety. |
+| F8 | 💤 **Autosave indicator** — a subtle "Saved ✓" flash in the HUD after significant actions (Next Day, plant, purchase), ~1s then fade. | ~~Low~~ | S | UI.md audit | **DEFERRED (2026-08-30).** The game already autosaves to localStorage after every action, so this is a reassurance layer over behaviour that is not actually broken — it adds a recurring HUD interruption to solve an anxiety no player has reported. The HUD is also the most space-constrained surface in the game (see **F10**), which makes it the worst place to spend a new element. Revisit only if save-loss confusion shows up in real feedback. |
+| F9 | **Death-cause title tuning** — two of the five 026 cause-of-death titles are mis-calibrated on the live economy: `fed_the_taxman` fires on 0–3% of bankrupt runs and `idle_hands` on 46–87%. | Low | S–M | [026-post-mortem](specs/026-post-mortem/plan.md) follow-up; matrix below | **HELD, now measurable.** Deliberately not tuned at ship time — thresholds were always "first-pass, tune against real runs" (026 §C3) — but the cause was never sent to analytics, so the hold could never end. `run_ended` now carries `death_cause` (2026-08-30). See "F9 — measured baseline" below. |
 | F10 | **Mobile HUD density at ≤360px** — the header wraps to three rows at 360px under worst-case load, and did so before 027 too. | Low | S–M | [027](specs/027-hud-legibility/spec.md) follow-up | Measured at 360px: the season chip (94px) and balance chip (151px) consume 245 of the 328px available, leaving no room for a third chip beside them. The balance chip is wide because of its `Goal 105·D20` caption, so **that caption is the lever** — the small chips are not. 027 got 375px down to two rows and deliberately did not chase 360px, which needs the balance chip restructured rather than the small chips shrunk. |
 | F11 | ✅ **Farm scene coherence** — palette consolidation, play-surface and chrome lift, farm-grid art migration | Medium | M | [028-farm-scene-coherence](specs/028-farm-scene-coherence/spec.md) | **DONE.** 46 hardcoded hex literals across 5 components folded into `PALETTE`, so the contrast gate finally covers the surface the player looks at all game — which immediately exposed two labels at 2.89:1 (pest tile, exhausted tile), both now AA. Fields and HUD lifted out of near-black; the chrome lift was only possible by re-picking `danger`, which alone capped the available `chip` lift at 2.9% instead of 18.3%. Grid decor migrated from four inline SVGs to the 018 PNG registry, and the grain filter moved off the plot subtree where it was smudging the LPC crop sprites. |
+
+
+### F9 — measured baseline (2026-08-25)
+
+`npm run sim -- --trials 500 --seed 42`, all four strategies. Percentages are of **bankrupt runs**
+per row, not of all trials. `events022` is the live economy (`proposed` + buildings + farm events);
+the other presets are kept for comparison.
+
+| config | strategy | bankrupt | fed_the_taxman | weathered_out | overextended | idle_hands | out_of_seed_money |
+|---|---|---|---|---|---|---|---|
+| baseline | radishOnly | 36 | 17% | 17% | 0% | 67% | 0% |
+| baseline | parsnipOnly | 67 | 12% | 13% | 0% | 54% | 21% |
+| baseline | pumpkinOnly | 500 | 0% | 13% | 0% | 87% | 0% |
+| baseline | smartMixed | 2 | 0% | 0% | 0% | 100% | 0% |
+| proposed | radishOnly | 203 | 45% | 9% | 0% | 45% | 0% |
+| proposed | parsnipOnly | 260 | 15% | 18% | 0% | 50% | 17% |
+| proposed | pumpkinOnly | 233 | 39% | 9% | 0% | 24% | 27% |
+| proposed | smartMixed | 142 | 0% | 19% | 20% | 49% | 12% |
+| buildings019 | radishOnly | 260 | 2% | 15% | 0% | 83% | 0% |
+| buildings019 | parsnipOnly | 322 | 2% | 25% | 0% | 54% | 19% |
+| buildings019 | pumpkinOnly | 500 | 0% | 13% | 0% | 87% | 0% |
+| buildings019 | smartMixed | 195 | 0% | 17% | 15% | 62% | 6% |
+| **events022** | **radishOnly** | **280** | **2%** | **13%** | **0%** | **85%** | **0%** |
+| **events022** | **parsnipOnly** | **306** | **3%** | **34%** | **0%** | **46%** | **17%** |
+| **events022** | **pumpkinOnly** | **500** | **0%** | **13%** | **0%** | **87%** | **0%** |
+| **events022** | **smartMixed** | **184** | **0%** | **16%** | **12%** | **67%** | **5%** |
+
+**Health criterion** (026 plan, Task 7): no cause above ~60%, none that never fires. On the live
+economy it **fails at both ends**.
+
+**Why `idle_hands` dominates.** You go bankrupt because you cannot pay lease, which usually means you
+could not afford seeds either — so the board is empty on the fatal day almost by definition.
+`emptyPlots > unlockedPlots / 2` is therefore true on most deaths, and because it sits *above*
+`out_of_seed_money` in the priority order it starves the actual default. It is less a cause than the
+default wearing a costume.
+
+**Why `fed_the_taxman` is silent.** Not a broken threshold: on the `proposed` preset, at the *same*
+6% tax rate, it fires at 45% for `radishOnly` and 39% for `pumpkinOnly` (15% for `parsnipOnly`, 0%
+for `smartMixed`). Buildings and farm events raise gross harvest income enough that cumulative tax
+rarely reaches `TAXMAN_SHARE` (25% of it). Note also that `smartMixed` reinvests rather than hoards,
+so the strategy closest to a real player structurally cannot trigger the one title that names the
+game's thesis.
+
+**Candidate fixes, in cost order:**
+
+1. **Lower `TAXMAN_SHARE`** ([`runPostMortem.ts:114`](src/engine/runPostMortem.ts)) from `0.25` to
+   ~`0.12–0.15` and re-measure. One constant, no schema impact, a few test fixtures. **S.**
+2. **Give `idle_hands` a duration test** — "half the board empty for 3+ consecutive days" rather than
+   a fatal-day snapshot. `RunDayRecord` has no empty-plot count, so this needs a seventh field and
+   `SCHEMA_VERSION` 11 → 12 with a migration branch. **S–M, and it is its own small feature.**
+
+**Recommendation: still hold on the thresholds.** Tuning against bots risks fitting the wrong
+distribution — the bot population does not contain the hoarding behaviour `fed_the_taxman` exists to
+catch. Use this table as the before.
+
+#### 2026-08-30 — the hold had no exit ramp; now it does
+
+Re-examining F9 turned up the reason the hold could never have ended on its own: **the cause of death
+was never sent to analytics.** `run_ended` carried seven properties and none of them was the cause,
+so "revisit once real-run data exists" was waiting on data nothing was collecting. Confirmed against
+the live PostHog project's ingested property list, not just the source.
+
+What the live data showed at that point — 33 `run_ended` events since 2026-07-06, 26 of them
+bankrupt, from 5 people (11 runs on `pixel-parsnips.vercel.app` from 3 people; the rest local dev).
+Real-player volume is real but negligible, so the bot-vs-player objection stands unchanged.
+
+**Shipped instead of a tuning pass:** `run_ended` now carries `death_cause` (`DeathCauseId | null`,
+null for non-bankrupt outcomes, since the title is only shown on the bankruptcy screen).
+`buildRunEndedProps` already received the full `GameState` and `deathCauseForState` was already a
+pure one-call helper, so this is one line plus the type field; `EVENT_VERSIONS.run_ended` 1 → 2.
+No game-schema impact — `SCHEMA_VERSION` stays 11.
+
+**Ending condition for the hold:** enough real bankrupt runs on the deployed build to read the
+`death_cause` distribution directly, then compare against the `events022` row above. At the current
+~3 players that is a long way off; the point of the change is that the clock is now running at all.
+Revisit if `run_ended` with `outcome = 'bankrupt'` passes roughly 100 real runs.
 
 ---
 
