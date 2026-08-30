@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PALETTE } from '../src/theme/palette';
-import { contrastRatio } from './helpers/contrast';
+import { composite, contrastRatio, ratioBetween, rgbToHex } from './helpers/contrast';
 
 /** WCAG AA for normal-size text. Every pair below is body or caption text. */
 const AA = 4.5;
@@ -33,7 +33,9 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
   { name: 'growing tile text',  where: 'PlotCard.tsx growing tile',     fg: PALETTE.parchment,       bg: PALETTE.plotGrowing, alpha: 0.8 },
   { name: 'ready tile text',    where: 'PlotCard.tsx ready tile',       fg: PALETTE.parchment,       bg: PALETTE.plotReady, alpha: 0.8 },
   { name: 'pest label',         where: 'PlotCard.tsx pest tile',        fg: PALETTE.danger,          bg: PALETTE.plotPest },
-  { name: 'exhausted label',    where: 'PlotCard.tsx exhausted tile',   fg: PALETTE.parchment,       bg: PALETTE.exhaustedMid, alpha: 0.8 },
+  // The exhausted-tile label is NOT a flat pair: its wrapper carries opacity-75,
+  // so it is gated in its own block below (a flat parchment/80-on-exhaustedMid
+  // ratio is optimistic — see there).
 
   // Seed cards (028) — each crop's tinted card renders three text roles: the crop name
   // (parchment/90), the grow/yield stats (parchment/75) and the est.-profit line (profitMint).
@@ -66,8 +68,10 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
  *    HUD undo) on `farm-chip` ≈ 1.94:1 — a deliberately de-emphasized-until-
  *    hover pattern
  *  - Shop "New buildings unlock in Season N" `farm-stone` on `farm-chip/60`
- *    ≈ 3.45:1 (the /60 alpha composites over the page, so the rendered value is
- *    lighter than a flat stone-on-chip)
+ *    ≈ 2.96:1. The /60 alpha does NOT composite over the page: this block sits
+ *    inside Shop.tsx's `<aside>`, whose backdrop is the wood-plank texture (or
+ *    the `awningFallback` #4A2F1A solid when the asset is absent). Measured over
+ *    that solid fixture, `chip/60` resolves to #4a3119 and stone lands at 2.96:1.
  *  - Shop fertilizer sub-label ("Restores an exhausted plot instantly")
  *    `farm-stone` on `farm-chip` ≈ 2.93:1 — a de-emphasized caption on the
  *    `stone` foreground 028 deliberately does not change
@@ -84,15 +88,42 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
  * and lightening `bar` will move every one of them. Re-derive, do not eyeball.
  *
  * 028 — two play-surface labels that used to belong on this list are now fixed and
- * enforced in PAIRS instead: the "Pest Damage" label (was farm-red/90 on the pest
- * tile, 2.89:1) and the exhausted tile's "Nd remaining" (was farm-stone/80, 2.89:1).
- * Both were invisible to this gate until 028 tokenised the play surface.
+ * enforced: the "Pest Damage" label (was farm-red/90 on the pest tile, 2.89:1,
+ * now a PAIRS row) and the exhausted tile's "Nd remaining" (was farm-stone/80,
+ * 2.89:1, now parchment/80 gated in the rendered-layers block below). Both were
+ * invisible to this gate until 028 tokenised the play surface.
  */
 
 describe('palette contrast (WCAG AA, normal text)', () => {
   it.each(PAIRS)('$name ($where) clears 4.5:1', ({ fg, bg, alpha }) => {
     expect(contrastRatio(fg, bg, alpha ?? 1)).toBeGreaterThanOrEqual(AA);
   });
+});
+
+/**
+ * 028 — the exhausted-tile label, gated as it actually renders.
+ *
+ * `ExhaustedPlot` (PlotCard.tsx) is the one enforced surface whose wrapper is not
+ * opaque: the whole tile carries `opacity-75` (and `grayscale(0.4)`) and composites
+ * over FarmGrid's `field` bed. A flat parchment/80-on-exhaustedMid ratio reads 8.69:1,
+ * but that is optimistic — the text and its background BOTH darken toward the bed, so
+ * the rendered ratio is lower. We model the opacity composite (exactly defined) as the
+ * gate; grayscale(0.4) on these near-neutral browns shifts luminance <1% (spot-checked
+ * 5.49 → 5.55), so omitting it keeps the assertion on the conservative side. The light
+ * gradient band (`exhaustedMid`) is the worst case for the light label.
+ */
+describe('exhausted-plot label (rendered through opacity-75 over the field bed)', () => {
+  const WRAPPER_OPACITY = 0.75;
+  const LABEL_ALPHA = 0.8; // text-farm-parchment/80
+  it.each(['exhaustedMid', 'exhaustedDark'] as const)(
+    '%s band clears 4.5:1 as rendered',
+    band => {
+      const labelPixel = rgbToHex(composite(PALETTE.parchment, LABEL_ALPHA, PALETTE[band]));
+      const fg = composite(labelPixel, WRAPPER_OPACITY, PALETTE.field);
+      const bg = composite(PALETTE[band], WRAPPER_OPACITY, PALETTE.field);
+      expect(ratioBetween(fg, bg)).toBeGreaterThanOrEqual(AA);
+    },
+  );
 });
 
 describe('contrast helper', () => {

@@ -621,9 +621,13 @@ measure each separately:
 
 - `farm-red` on `farm-chip`: `contrastRatio(PALETTE.red, PALETTE.chip)`
 - `farm-stone/60` on `farm-chip`: `contrastRatio(PALETTE.stone, PALETTE.chip, 0.6)`
-- `farm-stone` on `farm-chip/60`: the background is `chip` at 60% alpha over the page, so
-  composite it first — `contrastRatio(PALETTE.stone, '#' + composite(PALETTE.chip, 0.6,
-  PALETTE.page).map(...).join(''))` — rather than reusing the `stone/60 on chip` formula.
+- `farm-stone` on `farm-chip/60`: the background is `chip` at 60% alpha, and it does *not*
+  composite over the page — the `bg-farm-chip/60` block sits inside Shop.tsx's `<aside>`,
+  whose backdrop is the wood-plank texture (or the `awningFallback` #4A2F1A solid when the
+  asset is absent). Use that solid as the deterministic fixture and composite `chip/60` over
+  it first — `contrastRatio(PALETTE.stone, rgbToHex(composite(PALETTE.chip, 0.6,
+  PALETTE.awningFallback)))` — rather than reusing the `stone/60 on chip` formula or the page
+  backdrop. (Over `awningFallback` this lands at ≈2.96:1, not the 3.45:1 a page backdrop implies.)
 
 A lighter `chip` moves these *further* from AA, not closer, so if any has become egregious,
 say so in the commit rather than quietly re-quoting it.
