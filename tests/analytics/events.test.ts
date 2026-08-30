@@ -6,7 +6,9 @@ import {
   buildRunEndedProps,
   runOutcomeForPhase,
 } from '../../src/analytics/events';
-import type { DailyLogEntry, GameState } from '../../src/engine/types';
+import { initialGameState } from '../../src/engine/gameEngine';
+import { DEFAULT_ECONOMY } from '../../src/engine/economy';
+import type { DailyLogEntry, GameState, RunDayRecord } from '../../src/engine/types';
 
 function makeLog(over: Partial<DailyLogEntry> = {}): DailyLogEntry {
   return {
@@ -57,6 +59,10 @@ describe('events schema', () => {
 
   it('declares credits_viewed at version 1', () => {
     expect(EVENT_VERSIONS.credits_viewed).toBe(1);
+  });
+
+  it('bumps run_ended to 2 for the F9 death-cause property', () => {
+    expect(EVENT_VERSIONS.run_ended).toBe(2);
   });
 });
 
@@ -148,6 +154,31 @@ describe('buildRunEndedProps', () => {
       disasters_survived: 2,
       peak_harvest_streak: 5,
       medal: 'gold',
+      death_cause: null,
     });
+  });
+
+  it('carries the death cause when the run went bankrupt (F9)', () => {
+    // Tax at half of gross income clears TAXMAN_SHARE (0.25) outright.
+    const history: RunDayRecord[] = [
+      { day: 1, closingBalance: 40, taxDeducted: 50, harvestIncome: 100, unlockedPlots: 4, buildingCount: 0 },
+    ];
+    const state: GameState = { ...initialGameState(DEFAULT_ECONOMY), runHistory: history };
+
+    const props = buildRunEndedProps(state, 'bankrupt', 1, 'none');
+
+    expect(props.death_cause).toBe('fed_the_taxman');
+  });
+
+  it('leaves the death cause null for runs that did not go bankrupt (F9)', () => {
+    const history: RunDayRecord[] = [
+      { day: 1, closingBalance: 40, taxDeducted: 50, harvestIncome: 100, unlockedPlots: 4, buildingCount: 0 },
+    ];
+    const state: GameState = { ...initialGameState(DEFAULT_ECONOMY), runHistory: history };
+
+    // The same state that would derive `fed_the_taxman` reports nothing when the
+    // run did not end in bankruptcy — the cause is only meaningful on that screen.
+    expect(buildRunEndedProps(state, 'season_failed', 2, 'none').death_cause).toBeNull();
+    expect(buildRunEndedProps(state, 'won', 4, 'gold').death_cause).toBeNull();
   });
 });
