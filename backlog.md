@@ -83,7 +83,7 @@ which takes the entire Monetization section off the table.
 per row, not of all trials. `events022` is the live economy (`proposed` + buildings + farm events);
 the other presets are kept for comparison.
 
-| config | strategy | bankrupt | fed_the_taxman | weathered_out | bought the farm | idle_hands | out_of_seed_money |
+| config | strategy | bankrupt | fed_the_taxman | weathered_out | overextended | idle_hands | out_of_seed_money |
 |---|---|---|---|---|---|---|---|
 | baseline | radishOnly | 36 | 17% | 17% | 0% | 67% | 0% |
 | baseline | parsnipOnly | 67 | 12% | 13% | 0% | 54% | 21% |
@@ -111,11 +111,12 @@ could not afford seeds either — so the board is empty on the fatal day almost 
 `out_of_seed_money` in the priority order it starves the actual default. It is less a cause than the
 default wearing a costume.
 
-**Why `fed_the_taxman` is silent.** Not a broken threshold: it fires at 39–45% on the `proposed`
-preset at the *same* 6% tax rate. Buildings and farm events raise gross harvest income enough that
-cumulative tax rarely reaches `TAXMAN_SHARE` (25% of it). Note also that `smartMixed` reinvests
-rather than hoards, so the strategy closest to a real player structurally cannot trigger the one
-title that names the game's thesis.
+**Why `fed_the_taxman` is silent.** Not a broken threshold: on the `proposed` preset, at the *same*
+6% tax rate, it fires at 45% for `radishOnly` and 39% for `pumpkinOnly` (15% for `parsnipOnly`, 0%
+for `smartMixed`). Buildings and farm events raise gross harvest income enough that cumulative tax
+rarely reaches `TAXMAN_SHARE` (25% of it). Note also that `smartMixed` reinvests rather than hoards,
+so the strategy closest to a real player structurally cannot trigger the one title that names the
+game's thesis.
 
 **Candidate fixes, in cost order:**
 
