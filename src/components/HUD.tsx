@@ -284,7 +284,7 @@ export function HUD({
               {displayedBalance}
             </span>
             <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
-              <span className="sm:hidden">Goal {season.target}·D{seasonLen}</span>
+              <span className="sm:hidden">Goal {season.target} @D{seasonLen}</span>
               <span className="hidden sm:inline">Goal {season.target} by day {seasonLen}</span>
               {showWarning && (
                 <span className="text-farm-red">

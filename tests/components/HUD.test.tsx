@@ -451,8 +451,14 @@ describe('HUD — late-season warning', () => {
   // The default jsdom matchMedia stub reports every query as false, i.e. narrow.
   it('appends the days-left warning after the goal caption', () => {
     render(<HUD {...baseProps} currentDay={18} coinBalance={50} />);
-    const caption = screen.getByText(/goal 105.D20/i).parentElement!;
+    const caption = screen.getByText(/goal 105 @D20/i).parentElement!;
     const text = caption.textContent ?? '';
     expect(text.indexOf('days left')).toBeGreaterThan(text.indexOf('Goal'));
+  });
+
+  it('uses @ rather than a middot between the goal and its deadline', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={100} />);
+    expect(screen.getByText('Goal 105 @D20')).toBeInTheDocument();
+    expect(screen.queryByText(/Goal 105·D20/)).toBeNull();
   });
 });
