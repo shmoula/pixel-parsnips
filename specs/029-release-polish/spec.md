@@ -104,6 +104,32 @@ reads. The final shipped state is **312 of 328**.
    Requires threading `onLastTurn` and `hasLastTurn` through `GameMenu` into
    `GameMenuPopover`, both of which currently receive neither.
 
+### As-built measurement
+
+Measured in Chromium against the running dev build (Task 5), header `<header>` at each
+viewport. **Row-1 used** counts the widths of the first-row items plus their 8px gaps; the
+budget is `viewport − 32` (the header's horizontal padding). Two loads are reported: the
+one-row worst case (a live streak flame injected into the day chip) and the same plus the
+widest contract chip the game can produce — a fifth element that was never part of the
+one-row budget.
+
+| Viewport | Load | Rows | Header height | Row-1 used | Available |
+|---|---|---|---|---|---|
+| 360px | baseline | 1 | 65px | 293px | 328px |
+| 360px | + streak flame | **1** | 65px | **312px** | 328px |
+| 360px | + streak + contract chip | 2 | 117px | 260px | 328px |
+| 390px | baseline | 1 | 65px | 293px | 358px |
+| 390px | + streak flame | 1 | 65px | 312px | 358px |
+| 390px | + streak + contract chip | 2 | 117px | 260px | 358px |
+| 320px | baseline | 2 | 117px | 241px | 288px |
+| 320px | + streak flame | 2 | 117px | 260px | 288px |
+
+The target viewports (360px, 390px) hold at **one row** under the streak-flame worst case,
+landing at **312 of 328** at 360px exactly as designed. The contract chip is a fifth element
+outside the one-row budget and legitimately wraps to a second row. **320px is two rows** at
+every load — declared out of scope in §A's non-goals, and recorded here so that non-goal is
+tested rather than assumed.
+
 ## B. Balance chip low-state palette
 
 Add one token and use it for both halves of the warning:
