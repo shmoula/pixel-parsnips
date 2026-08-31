@@ -22,6 +22,7 @@ export default {
           chipHover: PALETTE.chipHover,
           page: PALETTE.page,
           danger: PALETTE.danger,
+          warn: PALETTE.warn,
           field: PALETTE.field,
           plot: PALETTE.plot,
           plotGrowing: PALETTE.plotGrowing,

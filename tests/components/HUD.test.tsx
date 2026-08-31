@@ -429,6 +429,24 @@ describe('HUD — 024 game menu', () => {
   });
 });
 
+describe('HUD — 029 low-balance warning uses the palette', () => {
+  it('paints the low state with farm-warn, not a Tailwind default', () => {
+    // Season-1 lease is 15, so 43 is inside the low band (≤ 3× lease) but above critical.
+    render(<HUD {...baseProps} currentDay={6} coinBalance={43} />);
+    const coins = screen.getByLabelText(/coins: 43/i);
+    expect(coins.className).toContain('text-farm-warn');
+    expect(coins.className).not.toMatch(/yellow-\d/);
+  });
+
+  it('keeps gold for a comfortable balance and danger for a critical one', () => {
+    const { unmount } = render(<HUD {...baseProps} currentDay={6} coinBalance={300} />);
+    expect(screen.getByLabelText(/coins: 300/i).className).toContain('text-farm-gold');
+    unmount();
+    render(<HUD {...baseProps} currentDay={6} coinBalance={10} />);
+    expect(screen.getByLabelText(/coins: 10/i).className).toContain('text-farm-danger');
+  });
+});
+
 describe('HUD — late-season warning', () => {
   // The default jsdom matchMedia stub reports every query as false, i.e. narrow.
   it('appends the days-left warning after the goal caption', () => {

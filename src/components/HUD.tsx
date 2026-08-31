@@ -27,7 +27,7 @@ function getDangerLevel(coinBalance: number, leasePerDay: number): DangerLevel {
 
 function getBalanceBorderClass(danger: DangerLevel): string {
   if (danger === 'critical') return 'border-farm-red/80 animate-pulse';
-  if (danger === 'low') return 'border-yellow-600/70';
+  if (danger === 'low') return 'border-farm-warn/70';
   return 'border-farm-chipBorder/60';
 }
 
@@ -168,7 +168,7 @@ function getBalanceTextClass(danger: DangerLevel): string {
   // Lighter than farm-red so the "critical" balance keeps a ≥4.5:1 contrast
   // ratio against the dark farm-chip background (WCAG AA / Lighthouse a11y).
   if (danger === 'critical') return 'text-farm-danger';
-  if (danger === 'low') return 'text-yellow-300';
+  if (danger === 'low') return 'text-farm-warn';
   return 'text-farm-gold';
 }
 

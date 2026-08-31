@@ -17,6 +17,7 @@ const AA = 4.5;
  */
 const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string; alpha?: number }> = [
   { name: 'critical balance',   where: 'HUD.tsx balance chip',       fg: PALETTE.danger,    bg: PALETTE.chip },
+  { name: 'low balance',        where: 'HUD.tsx balance chip',       fg: PALETTE.warn,      bg: PALETTE.chip },
   { name: 'gold value',         where: 'HUD.tsx chips',              fg: PALETTE.gold,      bg: PALETTE.chip },
   { name: 'caption',            where: 'HUD.tsx chip captions',      fg: PALETTE.parchment, bg: PALETTE.chip, alpha: 0.7 },
   { name: 'menu row label',     where: 'GameMenuPopover.tsx rows',   fg: PALETTE.parchment, bg: PALETTE.soil, alpha: 0.9 },
@@ -92,6 +93,13 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
  * now a PAIRS row) and the exhausted tile's "Nd remaining" (was farm-stone/80,
  * 2.89:1, now parchment/80 gated in the rendered-layers block below). Both were
  * invisible to this gate until 028 tokenised the play surface.
+ *
+ * 029 — the low-balance chip's `border-farm-warn/70` (HUD.tsx, `getBalanceBorderClass`)
+ * is a non-text UI component (a chip border, no glyphs), so WCAG 1.4.11 judges it
+ * against 3:1, not the 4.5:1 AA text threshold this file enforces, and it is
+ * deliberately left out of PAIRS. Measured: `farm-warn` (#F0A830) at 70% alpha over
+ * `farm-chip` (#4A3218) is 3.735:1, clearing the 3:1 non-text bar. The text pairing
+ * (`text-farm-warn`, full opacity) IS gated above as the "low balance" row, at 5.878:1.
  */
 
 describe('palette contrast (WCAG AA, normal text)', () => {
