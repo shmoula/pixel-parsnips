@@ -109,7 +109,12 @@ export function BankruptcyScreen({
         />
         <StatRow
           label="Season reached"
-          value={`${seasonReached} (${season.name})`}
+          value={
+            <>
+              {seasonReached}{' '}
+              <span className="text-caption ml-1.5">{season.name}</span>
+            </>
+          }
           isNewBest={newBests.has('bestSeasonReached')}
         />
         <StatRow

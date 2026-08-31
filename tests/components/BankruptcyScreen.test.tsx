@@ -224,3 +224,31 @@ describe('BankruptcyScreen — 025 post-mortem', () => {
     expect(screen.queryByText(/the taxman took/i)).toBeNull();
   });
 });
+
+// 029 — `2 (Summer Heat)` wrapped to two lines at text-title. The season *number* stays
+// full size, matching every other row's hero number; only the name is demoted. Parens go,
+// because brackets around a smaller-sized name read as noise.
+describe('BankruptcyScreen — 029 season-reached value', () => {
+  it('renders the number and name without parentheses', () => {
+    renderScreen({ daysPlayed: 25, seasonReached: 2 });
+    expect(screen.getByText('Summer Heat')).toBeInTheDocument();
+    expect(screen.queryByText(/\(Summer Heat\)/)).toBeNull();
+  });
+
+  it('keeps the season number at title size and demotes only the name', () => {
+    renderScreen({ daysPlayed: 25, seasonReached: 2 });
+    const name = screen.getByText('Summer Heat');
+    expect(name.className).toContain('text-caption');
+    const value = name.parentElement!;
+    expect(value.className).toContain('text-title');
+    expect(value.textContent).toMatch(/^2\s+Summer Heat$/);
+  });
+
+  // The longest value the game can produce: Autumn Pressure is the longest of the five
+  // season names, and endless mode is always "Deep Winter".
+  it('handles the longest possible season name', () => {
+    renderScreen({ daysPlayed: 45, seasonReached: 3 });
+    const name = screen.getByText('Autumn Pressure');
+    expect(name.parentElement!.textContent).toMatch(/^3\s+Autumn Pressure$/);
+  });
+});
