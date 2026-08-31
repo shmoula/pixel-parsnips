@@ -74,11 +74,10 @@ Game state is saved to localStorage under the key `pixel-parsnips-state` (schema
 
 ## Screenshots
 
-Add images to the `public` folder and update the paths below.
-
-![Farm grid screenshot](public/Screenshot1.png)
-![Farm grid screenshot](public/Screenshot2.png)
-![Farm grid screenshot](public/Screenshot3.png)
+![The farm mid-run, with crops at several growth stages](docs/screenshots/farm.png)
+![Exhausted and disaster-hit plots](docs/screenshots/disaster.png)
+![The Day Summary breaking down harvest income, lease and tax](docs/screenshots/day-summary.png)
+![The shop, showing seed cards and the buildings track](docs/screenshots/shop.png)
 
 ## License
 
