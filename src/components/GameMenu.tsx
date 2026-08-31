@@ -29,6 +29,11 @@ interface GameMenuProps {
   onRestart: () => void;
   /** Flags the tutorial for replay and restarts the run. */
   onReplayTutorial: () => void;
+  /** 029 — reopens the previous turn's Day Summary. Below sm this menu is the
+      only way to reach it; the HUD button is `hidden sm:inline-flex`. */
+  onLastTurn: () => void;
+  /** False when there is no previous turn to reopen; disables the row. */
+  hasLastTurn: boolean;
 }
 
 /**
@@ -42,7 +47,7 @@ interface GameMenuProps {
  * outside click). The rows, toggles and credits modal live in the lazily loaded
  * {@link GameMenuPopover}.
  */
-export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
+export function GameMenu({ onRestart, onReplayTutorial, onLastTurn, hasLastTurn }: GameMenuProps) {
   const [open, setOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
   const gearRef = useRef<HTMLButtonElement>(null);
@@ -120,6 +125,8 @@ export function GameMenu({ onRestart, onReplayTutorial }: GameMenuProps) {
             rowSelector={ANY_ROW}
             onRestart={onRestart}
             onReplayTutorial={onReplayTutorial}
+            onLastTurn={onLastTurn}
+            hasLastTurn={hasLastTurn}
             dismiss={() => setOpen(false)}
             onOpenCredits={openCredits}
           />

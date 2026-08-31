@@ -417,9 +417,13 @@ describe('HUD — 024 game menu', () => {
     expect(screen.queryByRole('button', { name: /mute sound effects/i })).toBeNull();
   });
 
-  it('keeps Last Turn on the HUD rather than in the menu', () => {
+  // 029 — the button costs 99px of a 328px mobile header. It is a re-open affordance (the
+  // Day Summary opens itself each turn), so below sm it lives in the gear menu instead.
+  it('gates the Last Turn button to sm+ and keeps it in the DOM', () => {
     render(<HUD {...baseProps} currentDay={1} coinBalance={100} hasLastTurn />);
-    expect(screen.getByRole('button', { name: /view last turn summary/i })).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: /view last turn summary/i });
+    expect(button.className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(button.className).toMatch(/sm:inline-flex/);
   });
 });
 

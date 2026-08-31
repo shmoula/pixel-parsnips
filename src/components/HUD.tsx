@@ -304,6 +304,7 @@ export function HUD({
             onClick={onLastTurn}
             disabled={!hasLastTurn}
             className="
+              hidden sm:inline-flex
               font-pixel text-caption px-2 py-1.5 min-h-[44px] md:min-h-0 rounded uppercase tracking-widest
               bg-farm-chip text-farm-stone/60 border border-farm-chipBorder/50
               hover:enabled:bg-farm-chipHover hover:enabled:text-farm-parchment/80 hover:enabled:border-farm-chipBorder
@@ -333,7 +334,12 @@ export function HUD({
                 the letters' optical centre. */}
             {nextDayText(canAdvanceProductively)} <span aria-hidden="true" className="inline-block ml-1.5 -translate-y-[0.2em]">→</span>
           </button>
-          <GameMenu onRestart={onRestart} onReplayTutorial={onReplayTutorial} />
+          <GameMenu
+            onRestart={onRestart}
+            onReplayTutorial={onReplayTutorial}
+            onLastTurn={onLastTurn}
+            hasLastTurn={hasLastTurn}
+          />
         </div>
       </div>
     </header>
