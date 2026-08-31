@@ -101,21 +101,16 @@ function StreakFlame({ harvestStreak }: { harvestStreak: number }) {
 }
 
 /**
- * The per-day coin ledger: the lease you owe, every night.
+ * The per-day coin ledger: the lease you owe, every night. Desktop only.
  *
- * Introduced in 027 to surface the lease below 640px (F7) — it lived in a desktop-only
- * `hidden sm:flex` wrapper before, so mobile players could not see the per-day cost
- * before advancing. It briefly also carried the harvest-streak bonus; that moved to
- * `StreakFlame` on the day chip, leaving this chip one figure to read.
+ * 027 introduced this to surface the lease below 640px (F7). A device review of the live
+ * build found the compact form that fit the mobile width budget — `−15/d` — communicated
+ * nothing, so 029 withdrew the mobile half: the chip is `hidden sm:flex`, and mobile
+ * players read the nightly charge in the Day Summary, where it is itemised. The 61px this
+ * frees is part of what gets the mobile header onto one row (specs/029-release-polish §A).
  *
- * WIDTH BUDGET: at 375px the header has 343px for its first row, and `StreakFlame` on
- * the day chip costs 19px of it (94px → 113px). That is paid for here: the mobile lease
- * reads `−15/d` (61px), not `−15/day` (77px). Measured — shrinking the flame instead does
- * not work (even a 10px glyph still wraps to a third row), so the suffix is the lever.
- * Keep this span emoji-free and free of `tracking-widest`. See specs/027-hud-legibility.
- *
- * COLOUR: `farm-stone` is unusable here — it measures 3.751 on `farm-chip` and fails
- * WCAG AA. The cost uses `farm-parchment/70` (7.06) and the preview `farm-gold/70` (5.47).
+ * COLOUR: `farm-stone` is unusable here — it measures 3.751 on `farm-chip` and fails WCAG
+ * AA. The cost uses `farm-parchment/70` (7.06) and the preview `farm-gold/70` (5.47).
  */
 function DailyLedgerChip({
   leasePerDay,
@@ -137,19 +132,15 @@ function DailyLedgerChip({
     <div
       aria-label={description}
       title={description}
-      className="flex items-center gap-1 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60 cursor-help"
+      className="hidden sm:flex items-center gap-1 bg-farm-chip px-2.5 py-1 rounded border border-farm-chipBorder/60 cursor-help"
     >
-      <span className="font-pixel text-caption text-farm-parchment/70">
-        {/* U+2212 MINUS SIGN, not a hyphen. */}
-        <span className="sm:hidden">−{leasePerDay}/d</span>
-        <span className="hidden sm:inline uppercase tracking-widest">
-          Lease {leasePerDay}<Coin />/day
-          {nextSeasonLease !== null && (
-            <span className="ml-1 text-farm-gold/70">
-              (rises to {nextSeasonLease} next season)
-            </span>
-          )}
-        </span>
+      <span className="font-pixel text-caption text-farm-parchment/70 uppercase tracking-widest">
+        Lease {leasePerDay}<Coin />/day
+        {nextSeasonLease !== null && (
+          <span className="ml-1 text-farm-gold/70">
+            (rises to {nextSeasonLease} next season)
+          </span>
+        )}
       </span>
     </div>
   );
@@ -275,7 +266,7 @@ export function HUD({
           </span>
         </ExpandableChip>
         <div data-onboarding="balance-chip" data-coin-target className={`flex items-center gap-1.5 bg-farm-chip px-2.5 py-1 rounded border ${balanceBorderClass}`}>
-          <span className="text-lg leading-none" aria-hidden="true">🪙</span>
+          <span className="hidden sm:inline text-lg leading-none" aria-hidden="true">🪙</span>
           <div className="flex flex-col justify-center leading-tight">
             <span
               className={`font-pixel text-title ${balanceTextClass}`}

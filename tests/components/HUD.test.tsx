@@ -106,34 +106,15 @@ describe('HUD — 027 reputation chip removed', () => {
 // In jsdom there is no Tailwind CSS, so `sm:hidden` and `hidden sm:inline` spans are all
 // present in the DOM; tests that care about one width query that width's spans directly.
 describe('HUD — daily ledger chip', () => {
-  /** Concatenated text of the chip's mobile-only spans. */
-  function mobileText(chip: HTMLElement): string {
-    return [...chip.querySelectorAll('.sm\\:hidden')].map(e => e.textContent).join('');
-  }
-
-  it('shows the lease at streak 0', () => {
-    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={0} />);
-    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
-    expect(mobileText(chip)).toBe('−15/d');
-    expect(chip).toHaveTextContent(/Lease 15/);
-  });
-
-  it('keeps the same lease form when a streak is live', () => {
-    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
-    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
-    expect(mobileText(chip)).toBe('−15/d');
+  it('shows the full lease form at sm+', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} />);
+    expect(screen.getByLabelText(/lease: 15 coins per day/i)).toHaveTextContent(/Lease 15/);
   });
 
   it('carries no streak bonus figure', () => {
     render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
     const chip = screen.getByLabelText(/lease: 15 coins per day/i);
     expect(chip).not.toHaveTextContent(/\+\d/);
-  });
-
-  it('keeps emoji out of the mobile form (width budget — see spec.md)', () => {
-    render(<HUD {...baseProps} currentDay={5} coinBalance={100} harvestStreak={3} />);
-    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
-    expect(mobileText(chip)).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 
   it('shows the end-of-season lease preview in the sm+ form', () => {
@@ -167,16 +148,29 @@ describe('HUD — daily ledger chip', () => {
     expect(screen.queryByLabelText(/^Harvest streak: \d+ days$/)).toBeNull();
   });
 
-  it('shows the lease at mobile widths — the chip is never width-gated (F7)', () => {
-    const { container } = render(<HUD {...baseProps} currentDay={5} coinBalance={100} />);
+  // 029 reverses 027's F7 decision for mobile only. The chip existed to surface the lease
+  // below 640px, but the compact form it needed to fit the width budget — `−15/d` — was
+  // measured on a real device as communicating nothing. The nightly charge is itemised in
+  // the Day Summary, so withdrawing the mobile chip costs little and buys the header row.
+  it('hides the whole ledger chip below sm (029 reverses F7 on mobile)', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} />);
     const chip = screen.getByLabelText(/lease: 15 coins per day/i);
-    // The pre-027 readout lived in a `hidden sm:flex` wrapper. Nothing in the chip's
-    // ancestry may hide it below sm.
-    let node: HTMLElement | null = chip;
-    while (node && node !== container) {
-      expect(node.className).not.toMatch(/(^|\s)hidden(\s|$)/);
-      node = node.parentElement;
-    }
+    expect(chip.className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(chip.className).toMatch(/sm:flex/);
+  });
+
+  it('carries no mobile-only lease form any more', () => {
+    render(<HUD {...baseProps} currentDay={5} coinBalance={100} />);
+    const chip = screen.getByLabelText(/lease: 15 coins per day/i);
+    expect(chip.querySelectorAll('.sm\\:hidden')).toHaveLength(0);
+  });
+
+  it('hides the decorative coin glyph below sm to buy header width', () => {
+    render(<HUD {...baseProps} currentDay={1} coinBalance={130} />);
+    const chip = screen.getByLabelText(/coins: 130/i).closest('[data-coin-target]')!;
+    const coin = [...chip.querySelectorAll('span')].find(s => s.textContent === '🪙')!;
+    expect(coin.className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(coin.className).toMatch(/sm:inline/);
   });
 });
 
