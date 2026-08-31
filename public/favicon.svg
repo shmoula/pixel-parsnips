@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <!--
+    029 — pixel-grid parsnip: tapered cream root, green fronds, on a 16x16 grid so
+    it stays crisp at both 16px and 32px. Verified legible at 16px, where the
+    silhouette is all that survives.
+
+    A standalone asset cannot import PALETTE, so these are literals by necessity.
+    They mirror: cropParsnipBorder #4E8A2E, grass #357028, awningCream #E8D9A8.
+    The shading tone #C8B486 exists only here. Keep them in step with the palette
+    by hand if it changes.
+  -->
+  <rect x="1" y="0" width="3" height="4" fill="#357028"/>
+  <rect x="12" y="0" width="3" height="4" fill="#357028"/>
+  <rect x="4" y="0" width="8" height="4" fill="#4E8A2E"/>
+  <rect x="2" y="4" width="12" height="3" fill="#E8D9A8"/>
+  <rect x="3" y="7" width="10" height="3" fill="#E8D9A8"/>
+  <rect x="5" y="10" width="6" height="3" fill="#E8D9A8"/>
+  <rect x="7" y="13" width="2" height="3" fill="#E8D9A8"/>
+  <rect x="10" y="4" width="4" height="3" fill="#C8B486"/>
+  <rect x="10" y="7" width="3" height="3" fill="#C8B486"/>
+  <rect x="9" y="10" width="2" height="3" fill="#C8B486"/>
+</svg>
