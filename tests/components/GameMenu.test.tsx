@@ -325,3 +325,19 @@ describe('GameMenu — 029 last-turn row', () => {
     expect(screen.getByRole('menuitem', { name: /restart run/i })).toHaveFocus();
   });
 });
+
+describe('GameMenu — 029 gear icon', () => {
+  it('draws the gear as inline SVG, not an emoji', () => {
+    render(<GameMenu {...menuProps} />);
+    const gear = screen.getByRole('button', { name: /game menu/i });
+    expect(gear.querySelector('svg')).not.toBeNull();
+    expect(gear.textContent).toBe('');
+  });
+
+  it('needs no platform-specific optical nudge', () => {
+    render(<GameMenu {...menuProps} />);
+    const gear = screen.getByRole('button', { name: /game menu/i });
+    expect(gear.innerHTML).not.toMatch(/translate-y/);
+    expect(gear.innerHTML).not.toMatch(/brightness/);
+  });
+});

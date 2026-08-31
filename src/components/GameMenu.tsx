@@ -107,15 +107,31 @@ export function GameMenu({ onRestart, onReplayTutorial, onLastTurn, hasLastTurn 
           active:scale-95 transition-all
         "
       >
-        {/* A standalone icon centred in a fixed-size button. This is NOT the
-            EmojiIcon text-baseline lift (there is no adjacent text to align to);
-            it is a pure vertical-centring nudge. Measured with a button-centre
-            guide against a 7x-magnified copy of the real button: the glyph reads
-            low at 0, so `-translate-y-[0.05em]` lifts it onto (a hair above)
-            centre. `leading-none` stops text-[22px]'s tall line box
-            from re-inflating the button; ⚙️ is a colour emoji, so `text-*` never
-            tinted it and `brightness-125` is what lifts it out of the bar. */}
-        <span aria-hidden="true" className="text-[22px] leading-none brightness-125 -translate-y-[0.05em]">⚙️</span>
+        {/* 029 — an inline SVG, not ⚙️. The emoji needed a hand-measured optical nudge,
+            and that measurement is per-platform: tuned against Chromium's emoji font, it
+            read off-centre in iOS Safari, where Apple Color Emoji has different vertical
+            metrics. An SVG centres by geometry on every platform, so it needs no
+            per-platform nudge. `currentColor` colours it from a Tailwind text-* utility
+            instead of a brightness filter — here the fixed text-farm-parchment/90; the
+            hover affordance is the button's bg/border, not the icon.
+            Geometry verified at 44px and 4x in a browser; it breaks first at 16px. */}
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          className="h-[22px] w-[22px] text-farm-parchment/90"
+        >
+          <rect x="6.5" y="0" width="3" height="4" />
+          <rect x="6.5" y="12" width="3" height="4" />
+          <rect x="0" y="6.5" width="4" height="3" />
+          <rect x="12" y="6.5" width="4" height="3" />
+          <rect x="1.8" y="2.6" width="3" height="3" transform="rotate(45 3.3 4.1)" />
+          <rect x="11.2" y="2.6" width="3" height="3" transform="rotate(45 12.7 4.1)" />
+          <rect x="1.8" y="10.4" width="3" height="3" transform="rotate(45 3.3 11.9)" />
+          <rect x="11.2" y="10.4" width="3" height="3" transform="rotate(45 12.7 11.9)" />
+          <path fillRule="evenodd" d="M8 3a5 5 0 100 10A5 5 0 008 3zm0 3a2 2 0 110 4 2 2 0 010-4z" />
+        </svg>
       </button>
 
       {open && (
