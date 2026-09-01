@@ -117,10 +117,14 @@ export function BankruptcyScreen({
         <StatRow
           label="Season reached"
           value={
-            <>
-              {seasonReached}{' '}
-              <span className="text-caption ml-1.5">{season.name}</span>
-            </>
+            // 029 — the season name stacks beneath the number rather than sitting inline.
+            // At the recap's fixed ~320px card width the label and a two-part inline value
+            // ("1 Spring Thaw") could not share a line, so both wrapped and the name split
+            // mid-phrase. Stacking keeps the label on one line and the name whole.
+            <span className="flex flex-col items-end leading-none gap-1">
+              <span>{seasonReached}</span>
+              <span className="text-caption">{season.name}</span>
+            </span>
           }
           isNewBest={newBests.has('bestSeasonReached')}
         />

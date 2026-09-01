@@ -236,21 +236,27 @@ describe('BankruptcyScreen — 029 season-reached value', () => {
     expect(screen.queryByText(/\(Summer Heat\)/)).toBeNull();
   });
 
-  it('keeps the season number at title size and demotes only the name', () => {
+  it('keeps the season number at title size and stacks the name beneath it at caption size', () => {
     renderScreen({ daysPlayed: 25, seasonReached: 2 });
     const name = screen.getByText('Summer Heat');
     expect(name.className).toContain('text-caption');
-    const value = name.parentElement!;
-    expect(value.className).toContain('text-title');
-    expect(value.textContent).toMatch(/^2\s+Summer Heat$/);
+    // number and name are separate stacked spans; the number carries no size override, so it
+    // renders at the value span's inherited text-title size.
+    const number = name.previousElementSibling!;
+    expect(number.textContent).toBe('2');
+    expect(number.className).not.toContain('text-caption');
+    // the enclosing value span is the title-sized one
+    expect(name.closest('.text-title')).not.toBeNull();
   });
 
   // The longest value the game can produce: Autumn Pressure is the longest of the five
-  // season names, and endless mode is always "Deep Winter".
-  it('handles the longest possible season name', () => {
+  // season names, and endless mode is always "Deep Winter". Stacked on its own line, the
+  // name is a single element that never splits mid-phrase.
+  it('handles the longest possible season name without splitting it', () => {
     renderScreen({ daysPlayed: 45, seasonReached: 3 });
     const name = screen.getByText('Autumn Pressure');
-    expect(name.parentElement!.textContent).toMatch(/^3\s+Autumn Pressure$/);
+    expect(name.textContent).toBe('Autumn Pressure');
+    expect(name.previousElementSibling!.textContent).toBe('3');
   });
 });
 
