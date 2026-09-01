@@ -28,6 +28,14 @@ export const PALETTE = {
   /** Critical-balance red, kept readable on `chip` (see the contrast test). */
   danger: '#F59A90',
 
+  /**
+   * Low-balance warning. Warmer than `gold` and cooler than `danger`, so the
+   * balance chip's safe → warn → critical ladder reads as one hue family. It
+   * replaces Tailwind's `yellow-300`/`yellow-600`, whose greener yellow read as
+   * a style inconsistency rather than as a warning.
+   */
+  warn: '#F0A830',
+
   // ── Play surface (028) ────────────────────────────────────────────────────
   // These were hardcoded in FarmGrid/PlotCard until 028 and were therefore
   // invisible to tests/palette.contrast.test.ts. Task 5 lifted the healthy-soil

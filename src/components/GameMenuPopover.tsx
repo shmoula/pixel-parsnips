@@ -94,6 +94,10 @@ interface GameMenuPopoverProps {
   onRestart: () => void;
   /** Flags the tutorial for replay and restarts the run. */
   onReplayTutorial: () => void;
+  /** 029 — reopens the previous turn's Day Summary. */
+  onLastTurn: () => void;
+  /** False when there is no previous turn to reopen. */
+  hasLastTurn: boolean;
   /** Closes the menu without moving focus (a modal or restart takes over). */
   dismiss: () => void;
   /** Opens the credits modal (owned by the shell so it outlives this popover). */
@@ -112,6 +116,8 @@ export function GameMenuPopover({
   rowSelector,
   onRestart,
   onReplayTutorial,
+  onLastTurn,
+  hasLastTurn,
   dismiss,
   onOpenCredits,
 }: GameMenuPopoverProps) {
@@ -130,7 +136,11 @@ export function GameMenuPopover({
   // here (not in the shell) because the shell opens before this lazy chunk
   // mounts, so its ref is still null when an open-keyed effect would run.
   useEffect(() => {
-    popoverRef.current?.querySelector<HTMLElement>(rowSelector)?.focus();
+    // Skip disabled rows — "View last turn" is the first DOM row and is disabled
+    // whenever there is no previous turn (the common case), so focusing the first
+    // *match* regardless of state would leave focus stuck on the gear behind the
+    // open popover instead of moving into the menu.
+    popoverRef.current?.querySelector<HTMLElement>(`${rowSelector}:not(:disabled)`)?.focus();
   }, [popoverRef, rowSelector]);
 
   function toggleSound() {
@@ -164,6 +174,18 @@ export function GameMenuPopover({
           bg-farm-soil border border-farm-chipBorder rounded-lg
         "
       >
+        <button
+          type="button"
+          role="menuitem"
+          disabled={!hasLastTurn}
+          onClick={() => {
+            dismiss();
+            onLastTurn();
+          }}
+          className={ROW_CLASS}
+        >
+          View last turn
+        </button>
         <ArmedRow
           label="Restart run"
           armedLabel="Tap again to restart"

@@ -113,7 +113,8 @@ describe('BankruptcyScreen — harvest streak (008)', () => {
       records: { ...emptyRecords, totalRunsCompleted: 2, bestHarvestStreak: 6 },
       newBests: new Set(['bestHarvestStreak']),
     });
-    const streakRow = screen.getByText('Longest streak').closest('div')!;
+    // .bg-farm-ink is the whole StatRow card; the badge now lives on its own line within it.
+    const streakRow = screen.getByText('Longest streak').closest('.bg-farm-ink')!;
     expect(streakRow).toHaveTextContent('6');
     expect(within(streakRow).getByLabelText(/new personal best/i)).toBeInTheDocument();
     expect(screen.getByText(/Best streak/i)).toBeInTheDocument();
@@ -222,5 +223,69 @@ describe('BankruptcyScreen — 025 post-mortem', () => {
     renderScreen({ runHistory: [], deathCause: 'out_of_seed_money' });
     expect(screen.getByText(/plant early and harvest often|keep a reserve|went bankrupt early/i)).toBeInTheDocument();
     expect(screen.queryByText(/the taxman took/i)).toBeNull();
+  });
+});
+
+// 029 — `2 (Summer Heat)` wrapped to two lines at text-title. The season *number* stays
+// full size, matching every other row's hero number; only the name is demoted. Parens go,
+// because brackets around a smaller-sized name read as noise.
+describe('BankruptcyScreen — 029 season-reached value', () => {
+  it('renders the number and name without parentheses', () => {
+    renderScreen({ daysPlayed: 25, seasonReached: 2 });
+    expect(screen.getByText('Summer Heat')).toBeInTheDocument();
+    expect(screen.queryByText(/\(Summer Heat\)/)).toBeNull();
+  });
+
+  it('keeps the season number at title size and stacks the name beneath it at caption size', () => {
+    renderScreen({ daysPlayed: 25, seasonReached: 2 });
+    const name = screen.getByText('Summer Heat');
+    expect(name.className).toContain('text-caption');
+    // number and name are separate stacked spans; the number carries no size override, so it
+    // renders at the value span's inherited text-title size.
+    const number = name.previousElementSibling!;
+    expect(number.textContent).toBe('2');
+    expect(number.className).not.toContain('text-caption');
+    // the enclosing value span is the title-sized one
+    expect(name.closest('.text-title')).not.toBeNull();
+  });
+
+  // The longest value the game can produce: Autumn Pressure is the longest of the five
+  // season names, and endless mode is always "Deep Winter". Stacked on its own line, the
+  // name is a single element that never splits mid-phrase.
+  it('handles the longest possible season name without splitting it', () => {
+    renderScreen({ daysPlayed: 45, seasonReached: 3 });
+    const name = screen.getByText('Autumn Pressure');
+    expect(name.textContent).toBe('Autumn Pressure');
+    expect(name.previousElementSibling!.textContent).toBe('3');
+  });
+});
+
+describe('BankruptcyScreen — 029 new-best badge on its own line', () => {
+  // On-device (iOS Safari) the inline `🏆 New Best!` badge shared the label's line and,
+  // in the two-part Season-reached value, wrapped mid-badge. The badge now sits on its own
+  // line beneath the value so line 1 (label ↔ value) never competes with it for width.
+  it('puts the badge on a second line, out of both the label and the value', () => {
+    renderScreen({
+      daysPlayed: 25,
+      seasonReached: 2,
+      newBests: new Set(['bestSeasonReached']),
+    });
+    const badge = screen.getByLabelText('new personal best');
+    const label = screen.getByText('Season reached');
+    const value = screen.getByText('Summer Heat').parentElement!;
+
+    expect(label).not.toContainElement(badge);
+    expect(value).not.toContainElement(badge);
+    // The badge follows the value in document order — i.e. it is on the line below it.
+    expect(
+      Boolean(value.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING),
+    ).toBe(true);
+  });
+
+  it('still renders one badge per new-best stat', () => {
+    renderScreen({
+      newBests: new Set(['bestDaysSurvived', 'bestPeakBalance', 'bestSeasonReached']),
+    });
+    expect(screen.getAllByLabelText('new personal best')).toHaveLength(3);
   });
 });
