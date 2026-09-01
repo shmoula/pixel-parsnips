@@ -5,6 +5,9 @@ import { composite, contrastRatio, ratioBetween, rgbToHex } from './helpers/cont
 /** WCAG AA for normal-size text. Every pair below is body or caption text. */
 const AA = 4.5;
 
+/** WCAG 1.4.11 for non-text UI components (a chip border, an icon — no glyphs). */
+const AA_NON_TEXT = 3;
+
 /**
  * 025 — the enforced contrast pairs.
  *
@@ -105,6 +108,21 @@ const PAIRS: ReadonlyArray<{ name: string; where: string; fg: string; bg: string
 describe('palette contrast (WCAG AA, normal text)', () => {
   it.each(PAIRS)('$name ($where) clears 4.5:1', ({ fg, bg, alpha }) => {
     expect(contrastRatio(fg, bg, alpha ?? 1)).toBeGreaterThanOrEqual(AA);
+  });
+});
+
+/**
+ * 029 — the low-balance chip's border, gated at the 3:1 non-text bar.
+ *
+ * `border-farm-warn/70` (HUD.tsx, `getBalanceBorderClass`) is a non-text UI component,
+ * so WCAG 1.4.11 judges it against 3:1, not the 4.5:1 AA above — which is why it is kept
+ * out of PAIRS. But the doc note above only *records* its measured 3.735:1; left un-asserted,
+ * a future `warn`/`chip` change could drift it below 3:1 with only stale prose to notice.
+ * This is the gate for that border, exactly as the PAIRS list is the gate for the text pairs.
+ */
+describe('palette contrast (WCAG 1.4.11, non-text UI)', () => {
+  it('low-balance chip border (farm-warn/70 on farm-chip) clears 3:1', () => {
+    expect(contrastRatio(PALETTE.warn, PALETTE.chip, 0.7)).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 });
 

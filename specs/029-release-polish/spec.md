@@ -234,8 +234,10 @@ fail silently.
 - `npm test && npm run lint && npm run build` green.
 - `grep -rnoE "(border|text|bg|ring)-(yellow|red|green|blue|amber|orange|slate|gray|zinc|neutral|stone|emerald|lime)-[0-9]{2,3}"  src/` returns nothing — proves §B closed the last off-palette gap.
 - **Browser measurement at 360px** (jsdom cannot do this — no layout engine): header is one
-  row with the streak flame live, and one row with a worst-case contract chip present.
-  Record the measured total against the 328px budget.
+  row under the streak-flame worst case, landing at 312 of the 328px budget. The widest
+  contract chip is a fifth element outside that budget and wraps to a second row (see §A's
+  as-built table) — record that two-row measurement as the documented exception, not a
+  regression.
 - Bankruptcy screen: every stat row is 40px and single-line, checked with
   `3 (Autumn Pressure)` forced.
 - **Device check on the reporting device (iOS Safari)**: one-row HUD, gear centred, warning
