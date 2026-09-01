@@ -113,7 +113,8 @@ describe('BankruptcyScreen — harvest streak (008)', () => {
       records: { ...emptyRecords, totalRunsCompleted: 2, bestHarvestStreak: 6 },
       newBests: new Set(['bestHarvestStreak']),
     });
-    const streakRow = screen.getByText('Longest streak').closest('div')!;
+    // .bg-farm-ink is the whole StatRow card; the badge now lives on its own line within it.
+    const streakRow = screen.getByText('Longest streak').closest('.bg-farm-ink')!;
     expect(streakRow).toHaveTextContent('6');
     expect(within(streakRow).getByLabelText(/new personal best/i)).toBeInTheDocument();
     expect(screen.getByText(/Best streak/i)).toBeInTheDocument();
@@ -250,5 +251,35 @@ describe('BankruptcyScreen — 029 season-reached value', () => {
     renderScreen({ daysPlayed: 45, seasonReached: 3 });
     const name = screen.getByText('Autumn Pressure');
     expect(name.parentElement!.textContent).toMatch(/^3\s+Autumn Pressure$/);
+  });
+});
+
+describe('BankruptcyScreen — 029 new-best badge on its own line', () => {
+  // On-device (iOS Safari) the inline `🏆 New Best!` badge shared the label's line and,
+  // in the two-part Season-reached value, wrapped mid-badge. The badge now sits on its own
+  // line beneath the value so line 1 (label ↔ value) never competes with it for width.
+  it('puts the badge on a second line, out of both the label and the value', () => {
+    renderScreen({
+      daysPlayed: 25,
+      seasonReached: 2,
+      newBests: new Set(['bestSeasonReached']),
+    });
+    const badge = screen.getByLabelText('new personal best');
+    const label = screen.getByText('Season reached');
+    const value = screen.getByText('Summer Heat').parentElement!;
+
+    expect(label).not.toContainElement(badge);
+    expect(value).not.toContainElement(badge);
+    // The badge follows the value in document order — i.e. it is on the line below it.
+    expect(
+      Boolean(value.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING),
+    ).toBe(true);
+  });
+
+  it('still renders one badge per new-best stat', () => {
+    renderScreen({
+      newBests: new Set(['bestDaysSurvived', 'bestPeakBalance', 'bestSeasonReached']),
+    });
+    expect(screen.getAllByLabelText('new personal best')).toHaveLength(3);
   });
 });

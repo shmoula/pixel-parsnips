@@ -31,7 +31,7 @@ function NewBestBadge() {
   return (
     <span
       aria-label="new personal best"
-      className="ml-2 font-pixel text-caption text-farm-gold"
+      className="font-pixel text-caption text-farm-gold"
     >
       🏆 New Best!
     </span>
@@ -46,12 +46,19 @@ interface StatRowProps {
 
 function StatRow({ label, value, isNewBest }: StatRowProps) {
   return (
-    <div className="flex justify-between items-center px-4 py-2 bg-farm-ink rounded">
-      <span className="font-pixel text-body text-farm-parchment/70">
-        {label}
-        {isNewBest && <NewBestBadge />}
-      </span>
-      <span className="font-pixel text-title text-farm-gold">{value}</span>
+    <div className="flex flex-col px-4 py-2 bg-farm-ink rounded">
+      <div className="flex justify-between items-center gap-2">
+        <span className="font-pixel text-body text-farm-parchment/70">{label}</span>
+        <span className="font-pixel text-title text-farm-gold text-right">{value}</span>
+      </div>
+      {/* 029 — the badge sits on its own line beneath the value, not inline with the label.
+          On iOS Safari at 360px the inline form wrapped mid-badge, worst on the two-part
+          Season-reached value; a dedicated line keeps line 1 (label ↔ value) uncramped. */}
+      {isNewBest && (
+        <div className="flex justify-end mt-1">
+          <NewBestBadge />
+        </div>
+      )}
     </div>
   );
 }
